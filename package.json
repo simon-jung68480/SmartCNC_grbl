@@ -1,0 +1,38 @@
+{
+  "name": "smart-cnc",
+  "version": "1.0.0",
+  "description": "Interface de commande CNC moderne pour Arduino Uno + CNC Shield V3.0 (GRBL 1.1)",
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx server/index.ts",
+    "build": "vite build",
+    "start": "node --import tsx server/index.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@serialport/parser-readline": "^13.0.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "serialport": "^13.0.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.173.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.173.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

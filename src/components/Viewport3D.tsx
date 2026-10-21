@@ -1,0 +1,1190 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import {
+  Box,
+  Compass,
+  Crosshair,
+  Eye,
+  Grid,
+  Layers,
+  Maximize2,
+  Navigation,
+  Ruler,
+  Clock,
+  Activity,
+} from 'lucide-react';
+import {
+  Coordinates,
+  GCodeSegment,
+  GrblStatus,
+  HeightmapGrid,
+  ParsedGCodeStats,
+} from '../types/cnc';
+import { sampleHeightmapZ } from '../utils/gcodeParser';
+
+export interface Viewport3DProps {
+  status: GrblStatus;
+  segments: GCodeSegment[];
+  stats: ParsedGCodeStats | null;
+  currentLineIndex?: number;
+  heightmap?: HeightmapGrid;
+  machineEnvelope?: Coordinates;
+  gridZOffset?: number;
+  gridMajorStep?: number;
+  customBedDimensions?: { x: number; y: number } | null;
+  onOpenFraming?: () => void;
+}
+
+/**
+ * Crée un Sprite Three.js contenant du texte net sur fond badge clair sobre
+ */
+function createTextSprite(
+  text: string,
+  options: {
+    color?: string;
+    bgColor?: string;
+    borderColor?: string;
+    fontSize?: number;
+    scale?: number;
+  } = {}
+): THREE.Sprite {
+  const {
+    color = '#1e293b',
+    bgColor = 'rgba(255, 255, 255, 0.92)',
+    borderColor = 'rgba(148, 163, 184, 0.8)',
+    fontSize = 26,
+    scale = 10,
+  } = options;
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d')!;
+  const font = `600 ${fontSize}px "JetBrains Mono", "Fira Code", monospace`;
+  ctx.font = font;
+
+  const metrics = ctx.measureText(text);
+  const padX = 16;
+  const padY = 8;
+  const width = Math.ceil(metrics.width + padX * 2);
+  const height = Math.ceil(fontSize + padY * 2);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  ctx.fillStyle = bgColor;
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 2;
+  const r = 6;
+  ctx.beginPath();
+  ctx.moveTo(r, 1);
+  ctx.lineTo(width - r, 1);
+  ctx.quadraticCurveTo(width - 1, 1, width - 1, r);
+  ctx.lineTo(width - 1, height - r);
+  ctx.quadraticCurveTo(width - 1, height - 1, width - r, height - 1);
+  ctx.lineTo(r, height - 1);
+  ctx.quadraticCurveTo(1, height - 1, 1, height - r);
+  ctx.lineTo(1, r);
+  ctx.quadraticCurveTo(1, 1, r, 1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, width / 2, height / 2 + 1);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+
+  const sprite = new THREE.Sprite(material);
+  const aspect = width / height;
+  sprite.scale.set(scale * aspect * 0.45, scale * 0.45, 1);
+  sprite.renderOrder = 999;
+  return sprite;
+}
+
+/**
+ * Convertit une valeur normalisée [0..1] en couleur thermique Bleu -> Vert -> Rouge
+ */
+function heightmapColorRamp(t: number): THREE.Color {
+  const clamped = Math.max(0, Math.min(1, t));
+  const color = new THREE.Color();
+  color.setHSL((1 - clamped) * 0.62, 0.85, 0.45);
+  return color;
+}
+
+/**
+ * Formatte une durée en secondes en format lisible (ex: 4m 12s)
+ */
+function formatDuration(sec: number): string {
+  if (!Number.isFinite(sec) || sec <= 0) return '0s';
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  if (m === 0) return `${s}s`;
+  const h = Math.floor(m / 60);
+  const remM = m % 60;
+  if (h > 0) return `${h}h ${remM}m`;
+  return `${m}m ${s}s`;
+}
+
+export const Viewport3D: React.FC<Viewport3DProps> = ({
+  status,
+  segments,
+  stats,
+  currentLineIndex = 0,
+  heightmap,
+  machineEnvelope = { x: 300, y: 300, z: 80 },
+  gridZOffset = 0,
+  gridMajorStep = 50,
+  customBedDimensions = null,
+  onOpenFraming,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Toggles d'affichage
+  const [showRapids, setShowRapids] = useState<boolean>(true);
+  const [showBoundingBox, setShowBoundingBox] = useState<boolean>(true);
+  const [showHeightmap, setShowHeightmap] = useState<boolean>(true);
+  const [showMachineGrid, setShowMachineGrid] = useState<boolean>(true);
+  const [followTool, setFollowTool] = useState<boolean>(false);
+
+  // Références Three.js
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+
+  // Groupes de scène
+  const machineGroupRef = useRef<THREE.Group | null>(null);
+  const workOriginGroupRef = useRef<THREE.Group | null>(null);
+  const toolpathGroupRef = useRef<THREE.Group | null>(null);
+  const bboxGroupRef = useRef<THREE.Group | null>(null);
+  const heightmapGroupRef = useRef<THREE.Group | null>(null);
+  const toolHeadGroupRef = useRef<THREE.Group | null>(null);
+  const spindleConeRef = useRef<THREE.Mesh | null>(null);
+
+  // Géométries dynamiques pour mise à jour incrémentale O(delta) de la couleur d'avancement
+  const cutColorAttrRef = useRef<THREE.BufferAttribute | null>(null);
+  const cutSegLineIndicesRef = useRef<Int32Array>(new Int32Array(0));
+  const lastColoredSegPtrRef = useRef<number>(0);
+  const lastColoredLineIndexRef = useRef<number>(0);
+
+  // Références réactives pour la boucle d'animation requestAnimationFrame
+  const statusRef = useRef<GrblStatus>(status);
+  statusRef.current = status;
+  const followToolRef = useRef<boolean>(followTool);
+  followToolRef.current = followTool;
+  const prevWcoRef = useRef<Coordinates>({
+    x: status.wco?.x || 0,
+    y: status.wco?.y || 0,
+    z: status.wco?.z || 0,
+  });
+
+  // Initialisation de la scène Three.js
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 500;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#eef2f6');
+    sceneRef.current = scene;
+
+    // Caméra Z-Up (standard CNC : X droite, Y profondeur, Z hauteur)
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 4000);
+    camera.up.set(0, 0, 1);
+    camera.position.set(150, -210, 175);
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance',
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.screenSpacePanning = true;
+    controls.maxDistance = 2000;
+    controls.minDistance = 8;
+    controls.target.set(80, 60, 0);
+    controls.update();
+    controlsRef.current = controls;
+
+    // Éclairages CAO/FAO clairs
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
+    dirLight1.position.set(200, -180, 260);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xcbd5e1, 0.55);
+    dirLight2.position.set(-150, 220, 180);
+    scene.add(dirLight2);
+
+    // Groupes principaux
+    const machineGroup = new THREE.Group();
+    const workOriginGroup = new THREE.Group();
+    const toolpathGroup = new THREE.Group();
+    const bboxGroup = new THREE.Group();
+    const heightmapGroup = new THREE.Group();
+    const toolHeadGroup = new THREE.Group();
+
+    // Position initiale du plateau machine selon le WCO actuel
+    const initWco = statusRef.current?.wco || { x: 0, y: 0, z: 0 };
+    machineGroup.position.set(-initWco.x, -initWco.y, -initWco.z);
+    const initWpos = statusRef.current?.wpos || { x: 0, y: 0, z: 0 };
+    toolHeadGroup.position.set(initWpos.x, initWpos.y, initWpos.z);
+
+    scene.add(machineGroup);
+    scene.add(workOriginGroup);
+    scene.add(heightmapGroup);
+    scene.add(toolpathGroup);
+    scene.add(bboxGroup);
+    scene.add(toolHeadGroup);
+
+    machineGroupRef.current = machineGroup;
+    workOriginGroupRef.current = workOriginGroup;
+    toolpathGroupRef.current = toolpathGroup;
+    bboxGroupRef.current = bboxGroup;
+    heightmapGroupRef.current = heightmapGroup;
+    toolHeadGroupRef.current = toolHeadGroup;
+
+    // Trièdre d'origine pièce (WPos 0,0,0 : X Rouge, Y Vert, Z Bleu)
+    const axisLen = 32;
+    const xArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 0, 0.1),
+      axisLen,
+      0xdc2626,
+      4.5,
+      2.5
+    );
+    const yArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 0.1),
+      axisLen,
+      0x16a34a,
+      4.5,
+      2.5
+    );
+    const zArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, 0.1),
+      axisLen,
+      0x2563eb,
+      4.5,
+      2.5
+    );
+    workOriginGroup.add(xArrow, yArrow, zArrow);
+
+    const xTag = createTextSprite('X0', {
+      color: '#dc2626',
+      bgColor: 'rgba(255, 255, 255, 0.92)',
+      borderColor: 'rgba(220, 38, 38, 0.55)',
+      scale: 6.5,
+    });
+    xTag.position.set(axisLen + 5, 0, 1);
+    const yTag = createTextSprite('Y0', {
+      color: '#16a34a',
+      bgColor: 'rgba(255, 255, 255, 0.92)',
+      borderColor: 'rgba(22, 163, 74, 0.55)',
+      scale: 6.5,
+    });
+    yTag.position.set(0, axisLen + 5, 1);
+    const zTag = createTextSprite('Z0', {
+      color: '#2563eb',
+      bgColor: 'rgba(255, 255, 255, 0.92)',
+      borderColor: 'rgba(37, 99, 235, 0.55)',
+      scale: 6.5,
+    });
+    zTag.position.set(0, 0, axisLen + 5);
+    workOriginGroup.add(xTag, yTag, zTag);
+
+    // Construction sobre de la broche + fraise 3D (Mode Clair CAO/FAO)
+    // 1. Cône de fraise carbure (pointe en (0,0,0), hauteur 14mm vers +Z)
+    const tipGeo = new THREE.ConeGeometry(2.0, 14, 16);
+    tipGeo.rotateX(-Math.PI / 2);
+    tipGeo.translate(0, 0, 7);
+    const tipMat = new THREE.MeshStandardMaterial({
+      color: 0x0284c7,
+      metalness: 0.4,
+      roughness: 0.35,
+    });
+    const tipMesh = new THREE.Mesh(tipGeo, tipMat);
+
+    const fluteGeo = new THREE.EdgesGeometry(new THREE.CylinderGeometry(0.4, 2.05, 13.5, 6));
+    fluteGeo.rotateX(Math.PI / 2);
+    fluteGeo.translate(0, 0, 7);
+    const fluteLines = new THREE.LineSegments(
+      fluteGeo,
+      new THREE.LineBasicMaterial({ color: 0x0369a1, transparent: true, opacity: 0.7 })
+    );
+    tipMesh.add(fluteLines);
+    toolHeadGroup.add(tipMesh);
+    spindleConeRef.current = tipMesh;
+
+    // 2. Pince ER11 (Collet)
+    const colletGeo = new THREE.CylinderGeometry(5.2, 4.0, 8, 20);
+    colletGeo.rotateX(Math.PI / 2);
+    colletGeo.translate(0, 0, 18);
+    const colletMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.5,
+      roughness: 0.35,
+    });
+    toolHeadGroup.add(new THREE.Mesh(colletGeo, colletMat));
+
+    // 3. Corps de broche en acier clair
+    const bodyGeo = new THREE.CylinderGeometry(12, 12, 28, 24);
+    bodyGeo.rotateX(Math.PI / 2);
+    bodyGeo.translate(0, 0, 36);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.45,
+      roughness: 0.4,
+    });
+    toolHeadGroup.add(new THREE.Mesh(bodyGeo, bodyMat));
+
+    // 4. Repère circulaire discret à la pointe de l'outil
+    const crosshairGeo = new THREE.RingGeometry(2.4, 3.0, 24);
+    const crosshairMat = new THREE.MeshBasicMaterial({
+      color: 0x0284c7,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const crosshairMesh = new THREE.Mesh(crosshairGeo, crosshairMat);
+    crosshairMesh.position.set(0, 0, 0.05);
+    toolHeadGroup.add(crosshairMesh);
+
+    // Boucle d'animation
+    let animFrameId = 0;
+
+    const animate = () => {
+      animFrameId = requestAnimationFrame(animate);
+
+      const curStatus = statusRef.current;
+      const wpos = curStatus?.wpos || { x: 0, y: 0, z: 0 };
+      const wco = curStatus?.wco || { x: 0, y: 0, z: 0 };
+
+      // Détection d'un changement d'origine pièce (clic sur X=0, Y=0, Z=0)
+      const prevWco = prevWcoRef.current;
+      const dwx = wco.x - prevWco.x;
+      const dwy = wco.y - prevWco.y;
+      const dwz = wco.z - prevWco.z;
+      const wcoChanged =
+        Math.abs(dwx) > 1e-4 || Math.abs(dwy) > 1e-4 || Math.abs(dwz) > 1e-4;
+
+      // Le plateau machine est toujours positionné à (-wco.x, -wco.y, -wco.z) dans le repère pièce (WPos)
+      if (machineGroupRef.current) {
+        machineGroupRef.current.position.set(-wco.x, -wco.y, -wco.z);
+      }
+
+      if (wcoChanged) {
+        prevWcoRef.current = { x: wco.x, y: wco.y, z: wco.z };
+        // Placement immédiat de la fraise et compensation de la caméra de -deltaWco :
+        // ainsi la fraise et le plateau machine restent fixes à l'écran et seul le tracé G-Code + origine (0,0,0) se calent sous la fraise
+        if (toolHeadGroupRef.current) {
+          toolHeadGroupRef.current.position.set(wpos.x, wpos.y, wpos.z);
+        }
+        if (cameraRef.current && controlsRef.current) {
+          cameraRef.current.position.x -= dwx;
+          cameraRef.current.position.y -= dwy;
+          cameraRef.current.position.z -= dwz;
+          controlsRef.current.target.x -= dwx;
+          controlsRef.current.target.y -= dwy;
+          controlsRef.current.target.z -= dwz;
+        }
+      } else if (toolHeadGroupRef.current) {
+        toolHeadGroupRef.current.position.set(wpos.x, wpos.y, wpos.z);
+        if (followToolRef.current && controlsRef.current) {
+          controlsRef.current.target.lerp(toolHeadGroupRef.current.position, 0.25);
+        }
+      }
+
+      // Rotation de la fraise quand la broche tourne
+      const isSpindleSpinning =
+        curStatus.spindleSpeed > 0 &&
+        (curStatus.accessories?.spindleCw ||
+          curStatus.accessories?.spindleCcw ||
+          curStatus.state === 'Run');
+
+      if (spindleConeRef.current && isSpindleSpinning) {
+        spindleConeRef.current.rotation.z -= 0.3;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0 && cameraRef.current && rendererRef.current) {
+          cameraRef.current.aspect = w / h;
+          cameraRef.current.updateProjectionMatrix();
+          rendererRef.current.setSize(w, h);
+        }
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      cancelAnimationFrame(animFrameId);
+      resizeObserver.disconnect();
+      controls.dispose();
+      renderer.dispose();
+    };
+  }, []);
+
+  // Construction du plateau de la CNC Router (grille millimétrée + graduations 50mm + cadre machine continu)
+  useEffect(() => {
+    const group = machineGroupRef.current;
+    if (!group) return;
+    group.clear();
+
+    const maxX = (customBedDimensions && customBedDimensions.x > 0 ? customBedDimensions.x : machineEnvelope.x) || 300;
+    const maxY = (customBedDimensions && customBedDimensions.y > 0 ? customBedDimensions.y : machineEnvelope.y) || 300;
+    const maxZ = machineEnvelope.z || 80;
+    const zOffset = gridZOffset || 0;
+    const majorStep = gridMajorStep || 50;
+
+    // Plateau machine en blanc cassé (Mode Clair CAO/FAO)
+    const bedGeo = new THREE.PlaneGeometry(maxX, maxY);
+    bedGeo.translate(maxX / 2, maxY / 2, zOffset - 0.15);
+    const bedMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+    });
+    group.add(new THREE.Mesh(bedGeo, bedMat));
+
+    // Grille millimétrée (pas de 10mm fine + pas de majorStep principale)
+    const minorPositions: number[] = [];
+    const majorPositions: number[] = [];
+
+    for (let x = 0; x <= maxX; x += 10) {
+      const target = x % majorStep === 0 ? majorPositions : minorPositions;
+      target.push(x, 0, zOffset, x, maxY, zOffset);
+    }
+    for (let y = 0; y <= maxY; y += 10) {
+      const target = y % majorStep === 0 ? majorPositions : minorPositions;
+      target.push(0, y, zOffset, maxX, y, zOffset);
+    }
+
+    const minorGeo = new THREE.BufferGeometry();
+    minorGeo.setAttribute('position', new THREE.Float32BufferAttribute(minorPositions, 3));
+    group.add(
+      new THREE.LineSegments(
+        minorGeo,
+        new THREE.LineBasicMaterial({ color: 0xdbe2ea, transparent: true, opacity: 0.85 })
+      )
+    );
+
+    const majorGeo = new THREE.BufferGeometry();
+    majorGeo.setAttribute('position', new THREE.Float32BufferAttribute(majorPositions, 3));
+    group.add(
+      new THREE.LineSegments(
+        majorGeo,
+        new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.95 })
+      )
+    );
+
+    // Graduations tous les majorStep sur X et Y
+    for (let x = 0; x <= maxX; x += majorStep) {
+      const lbl = createTextSprite(`${x}`, {
+        color: '#1e293b',
+        bgColor: 'rgba(255, 255, 255, 0.92)',
+        borderColor: 'rgba(148, 163, 184, 0.8)',
+        fontSize: 22,
+        scale: 6.5,
+      });
+      lbl.position.set(x, -7, zOffset + 0.2);
+      group.add(lbl);
+    }
+    for (let y = majorStep; y <= maxY; y += majorStep) {
+      const lbl = createTextSprite(`${y}`, {
+        color: '#1e293b',
+        bgColor: 'rgba(255, 255, 255, 0.92)',
+        borderColor: 'rgba(148, 163, 184, 0.8)',
+        fontSize: 22,
+        scale: 6.5,
+      });
+      lbl.position.set(-9, y, zOffset + 0.2);
+      group.add(lbl);
+    }
+
+    // Volume enveloppe machine en lignes continues fines (pas de pointillés pour ne pas confondre avec G0)
+    const envBoxGeo = new THREE.BoxGeometry(maxX, maxY, maxZ);
+    envBoxGeo.translate(maxX / 2, maxY / 2, zOffset + maxZ / 2);
+    const envEdges = new THREE.EdgesGeometry(envBoxGeo);
+    const envLines = new THREE.LineSegments(
+      envEdges,
+      new THREE.LineBasicMaterial({
+        color: 0x64748b,
+        transparent: true,
+        opacity: 0.45,
+      })
+    );
+    group.add(envLines);
+  }, [machineEnvelope.x, machineEnvelope.y, machineEnvelope.z, gridZOffset, gridMajorStep, customBedDimensions]);
+
+  // Visibilité de la grille machine
+  useEffect(() => {
+    if (machineGroupRef.current) {
+      machineGroupRef.current.visible = showMachineGrid;
+    }
+  }, [showMachineGrid]);
+
+  // Construction du parcours d'outil 3D haute performance (Float32Array pré-alloués)
+  useEffect(() => {
+    const group = toolpathGroupRef.current;
+    if (!group) return;
+    group.clear();
+    cutColorAttrRef.current = null;
+    cutSegLineIndicesRef.current = new Int32Array(0);
+    lastColoredSegPtrRef.current = 0;
+    lastColoredLineIndexRef.current = 0;
+
+    if (!segments || segments.length === 0) return;
+
+    const totalSegs = segments.length;
+    // Échantillonnage léger sur les très gros fichiers (> 180 000 segments) pour maintenir 60 FPS
+    const sampleStep = totalSegs > 180000 ? Math.ceil(totalSegs / 180000) : 1;
+
+    // 1er passage rapide pour compter les segments G0 et G1/G2/G3 retenus
+    let rapidCount = 0;
+    let cutCount = 0;
+
+    for (let i = 0; i < totalSegs; i++) {
+      const seg = segments[i];
+      if (seg.type === 'G0') {
+        // Ignorer le tout premier segment G0 artificiel partant de (0,0,0) pour le dégagement initial
+        if (
+          i === 0 &&
+          seg.start.x === 0 &&
+          seg.start.y === 0 &&
+          seg.start.z === 0
+        ) {
+          continue;
+        }
+        rapidCount++;
+      } else {
+        if (sampleStep > 1 && i % sampleStep !== 0 && i !== totalSegs - 1) {
+          const dx = seg.end.x - seg.start.x;
+          const dy = seg.end.y - seg.start.y;
+          const dz = seg.end.z - seg.start.z;
+          if (dx * dx + dy * dy + dz * dz < 0.25) {
+            continue;
+          }
+        }
+        cutCount++;
+      }
+    }
+
+    const rapidPositions = new Float32Array(rapidCount * 6);
+    const cutPositions = new Float32Array(cutCount * 6);
+    const cutColors = new Float32Array(cutCount * 6);
+    const cutLineIndices = new Int32Array(cutCount);
+
+    const pendingColor = new THREE.Color('#0284c7');
+    let rPtr = 0;
+    let cPtr = 0;
+    let cIdxPtr = 0;
+    let lastEnd: Coordinates | null = null;
+
+    for (let i = 0; i < totalSegs; i++) {
+      const seg = segments[i];
+      if (seg.type === 'G0') {
+        if (
+          i === 0 &&
+          seg.start.x === 0 &&
+          seg.start.y === 0 &&
+          seg.start.z === 0
+        ) {
+          lastEnd = seg.end;
+          continue;
+        }
+        rapidPositions[rPtr++] = seg.start.x;
+        rapidPositions[rPtr++] = seg.start.y;
+        rapidPositions[rPtr++] = seg.start.z;
+        rapidPositions[rPtr++] = seg.end.x;
+        rapidPositions[rPtr++] = seg.end.y;
+        rapidPositions[rPtr++] = seg.end.z;
+        lastEnd = seg.end;
+      } else {
+        if (sampleStep > 1 && i % sampleStep !== 0 && i !== totalSegs - 1) {
+          const dx = seg.end.x - seg.start.x;
+          const dy = seg.end.y - seg.start.y;
+          const dz = seg.end.z - seg.start.z;
+          if (dx * dx + dy * dy + dz * dz < 0.25) {
+            continue;
+          }
+        }
+        const sx = sampleStep > 1 && lastEnd ? lastEnd.x : seg.start.x;
+        const sy = sampleStep > 1 && lastEnd ? lastEnd.y : seg.start.y;
+        const sz = sampleStep > 1 && lastEnd ? lastEnd.z : seg.start.z;
+
+        const base = cPtr;
+        cutPositions[base] = sx;
+        cutPositions[base + 1] = sy;
+        cutPositions[base + 2] = sz;
+        cutPositions[base + 3] = seg.end.x;
+        cutPositions[base + 4] = seg.end.y;
+        cutPositions[base + 5] = seg.end.z;
+
+        cutColors[base] = pendingColor.r;
+        cutColors[base + 1] = pendingColor.g;
+        cutColors[base + 2] = pendingColor.b;
+        cutColors[base + 3] = pendingColor.r;
+        cutColors[base + 4] = pendingColor.g;
+        cutColors[base + 5] = pendingColor.b;
+
+        cPtr += 6;
+        cutLineIndices[cIdxPtr++] = seg.lineIndex;
+        lastEnd = seg.end;
+      }
+    }
+
+    // 1. Segments Rapides G0 : SEULS traits en pointillés de la scène 3D (orange vif #ea580c)
+    if (rapidCount > 0) {
+      const rapidGeo = new THREE.BufferGeometry();
+      rapidGeo.setAttribute('position', new THREE.BufferAttribute(rapidPositions, 3));
+      const rapidMat = new THREE.LineDashedMaterial({
+        color: 0xea580c,
+        dashSize: 2.0,
+        gapSize: 1.5,
+        transparent: true,
+        opacity: 0.85,
+      });
+      const rapidLines = new THREE.LineSegments(rapidGeo, rapidMat);
+      rapidLines.computeLineDistances();
+      rapidLines.name = 'rapids';
+      rapidLines.visible = showRapids;
+      group.add(rapidLines);
+    }
+
+    // 2. Segments d'Usinage G1/G2/G3
+    if (cutCount > 0) {
+      const cutGeo = new THREE.BufferGeometry();
+      cutGeo.setAttribute('position', new THREE.BufferAttribute(cutPositions, 3));
+      const colorAttr = new THREE.BufferAttribute(cutColors, 3);
+      cutGeo.setAttribute('color', colorAttr);
+
+      const cutMat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.98,
+      });
+      const cutLines = new THREE.LineSegments(cutGeo, cutMat);
+      cutLines.name = 'cuts';
+      group.add(cutLines);
+
+      cutColorAttrRef.current = colorAttr;
+      cutSegLineIndicesRef.current = cutLineIndices;
+    }
+  }, [segments]);
+
+  // Visibilité des déplacements rapides G0
+  useEffect(() => {
+    const group = toolpathGroupRef.current;
+    if (!group) return;
+    const rapidsObj = group.getObjectByName('rapids');
+    if (rapidsObj) {
+      rapidsObj.visible = showRapids;
+    }
+  }, [showRapids]);
+
+  // Mise à jour incrémentale O(delta) des couleurs d'avancement (sans boucler sur 100k+ segments à chaque frame)
+  useEffect(() => {
+    const colorAttr = cutColorAttrRef.current;
+    const lineIndices = cutSegLineIndicesRef.current;
+    const len = lineIndices.length;
+    if (!colorAttr || len === 0) return;
+
+    const doneColor = new THREE.Color('#16a34a');
+    const pendingColor = new THREE.Color('#0284c7');
+    const array = colorAttr.array as Float32Array;
+
+    // Si retour à zéro ou recul de ligne, on réinitialise la plage précédemment colorée
+    if (currentLineIndex === 0 || currentLineIndex < lastColoredLineIndexRef.current) {
+      const resetLimit = lastColoredSegPtrRef.current;
+      for (let i = 0; i < resetLimit; i++) {
+        const offset = i * 6;
+        array[offset] = pendingColor.r;
+        array[offset + 1] = pendingColor.g;
+        array[offset + 2] = pendingColor.b;
+        array[offset + 3] = pendingColor.r;
+        array[offset + 4] = pendingColor.g;
+        array[offset + 5] = pendingColor.b;
+      }
+      lastColoredSegPtrRef.current = 0;
+      lastColoredLineIndexRef.current = 0;
+      if (currentLineIndex === 0) {
+        colorAttr.needsUpdate = true;
+        return;
+      }
+    }
+
+    // Avance uniquement sur la nouvelle tranche de segments franchie depuis la dernière frame
+    let ptr = lastColoredSegPtrRef.current;
+    let updated = false;
+    while (ptr < len && lineIndices[ptr] < currentLineIndex) {
+      const offset = ptr * 6;
+      array[offset] = doneColor.r;
+      array[offset + 1] = doneColor.g;
+      array[offset + 2] = doneColor.b;
+      array[offset + 3] = doneColor.r;
+      array[offset + 4] = doneColor.g;
+      array[offset + 5] = doneColor.b;
+      ptr++;
+      updated = true;
+    }
+
+    lastColoredSegPtrRef.current = ptr;
+    lastColoredLineIndexRef.current = currentLineIndex;
+
+    if (updated) {
+      colorAttr.needsUpdate = true;
+    }
+  }, [currentLineIndex, segments]);
+
+  // Construction de la Boîte Englobante (Bounding Box) en lignes continues fines (#0369a1)
+  useEffect(() => {
+    const group = bboxGroupRef.current;
+    if (!group) return;
+    group.clear();
+
+    if (!stats || stats.motionLines === 0) return;
+
+    const { min, max, size } = stats.bounds;
+    const sx = Math.max(0.5, size.x);
+    const sy = Math.max(0.5, size.y);
+    const sz = Math.max(0.5, size.z);
+    const cx = (min.x + max.x) / 2;
+    const cy = (min.y + max.y) / 2;
+    const cz = (min.z + max.z) / 2;
+
+    const boxGeo = new THREE.BoxGeometry(sx, sy, sz);
+    boxGeo.translate(cx, cy, cz);
+    const edges = new THREE.EdgesGeometry(boxGeo);
+    const boxLines = new THREE.LineSegments(
+      edges,
+      new THREE.LineBasicMaterial({
+        color: 0x0369a1,
+        transparent: true,
+        opacity: 0.65,
+      })
+    );
+    group.add(boxLines);
+
+    // Étiquette de dimensions X × Y × Z mm
+    const dimLabel = createTextSprite(
+      `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`,
+      {
+        color: '#1e293b',
+        bgColor: 'rgba(255, 255, 255, 0.92)',
+        borderColor: 'rgba(148, 163, 184, 0.8)',
+        fontSize: 22,
+        scale: 9,
+      }
+    );
+    dimLabel.position.set(cx, max.y + 8, max.z + 6);
+    group.add(dimLabel);
+  }, [stats]);
+
+  // Visibilité de la boîte englobante
+  useEffect(() => {
+    if (bboxGroupRef.current) {
+      bboxGroupRef.current.visible = showBoundingBox;
+    }
+  }, [showBoundingBox]);
+
+  // Construction du maillage 3D de la Heightmap
+  useEffect(() => {
+    const group = heightmapGroupRef.current;
+    if (!group) return;
+    group.clear();
+
+    if (!heightmap || !heightmap.points || heightmap.points.length === 0) return;
+
+    const hasProbedPoints = heightmap.points.some((p) => p.probed && p.z !== null);
+    if (!hasProbedPoints && !heightmap.enabled) return;
+
+    const width = Math.max(5, heightmap.maxX - heightmap.minX);
+    const height = Math.max(5, heightmap.maxY - heightmap.minY);
+    const segX = Math.max(16, (heightmap.cols - 1) * 8);
+    const segY = Math.max(16, (heightmap.rows - 1) * 8);
+
+    const planeGeo = new THREE.PlaneGeometry(width, height, segX, segY);
+    const posAttr = planeGeo.attributes.position as THREE.BufferAttribute;
+
+    let zMin = Infinity;
+    let zMax = -Infinity;
+    for (const pt of heightmap.points) {
+      if (pt.z !== null && Number.isFinite(pt.z)) {
+        if (pt.z < zMin) zMin = pt.z;
+        if (pt.z > zMax) zMax = pt.z;
+      }
+    }
+    if (!Number.isFinite(zMin)) {
+      zMin = -0.5;
+      zMax = 0.5;
+    }
+    const zSpan = Math.max(0.05, zMax - zMin);
+
+    const colors = new Float32Array(posAttr.count * 3);
+    const visualScaleZ = zSpan < 1.5 ? 5.0 : 1.0;
+
+    for (let i = 0; i < posAttr.count; i++) {
+      const localX = posAttr.getX(i);
+      const localY = posAttr.getY(i);
+      const worldX = heightmap.minX + width / 2 + localX;
+      const worldY = heightmap.minY + height / 2 + localY;
+      const zVal = sampleHeightmapZ(worldX, worldY, heightmap);
+
+      posAttr.setXYZ(i, worldX, worldY, zVal * visualScaleZ + 0.15);
+
+      const norm = (zVal - zMin) / zSpan;
+      const col = heightmapColorRamp(norm);
+      colors[i * 3] = col.r;
+      colors[i * 3 + 1] = col.g;
+      colors[i * 3 + 2] = col.b;
+    }
+
+    planeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    planeGeo.computeVertexNormals();
+
+    const surfaceMat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+    });
+    group.add(new THREE.Mesh(planeGeo, surfaceMat));
+
+    const wireMat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.7,
+    });
+    group.add(new THREE.Mesh(planeGeo, wireMat));
+
+    for (const pt of heightmap.points) {
+      const zVal = pt.z ?? 0;
+      const sphereGeo = new THREE.SphereGeometry(1.1, 10, 10);
+      const sphereMat = new THREE.MeshBasicMaterial({
+        color: pt.probed ? heightmapColorRamp((zVal - zMin) / zSpan) : new THREE.Color('#64748b'),
+      });
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      sphere.position.set(pt.x, pt.y, zVal * visualScaleZ + 0.25);
+      group.add(sphere);
+    }
+  }, [heightmap]);
+
+  // Visibilité du maillage Heightmap
+  useEffect(() => {
+    if (heightmapGroupRef.current) {
+      heightmapGroupRef.current.visible = showHeightmap;
+    }
+  }, [showHeightmap]);
+
+  // Fonctions de vues caméra rapides
+  const getSceneCenterAndRadius = useCallback(() => {
+    if (stats && stats.motionLines > 0) {
+      const cx = (stats.bounds.min.x + stats.bounds.max.x) / 2;
+      const cy = (stats.bounds.min.y + stats.bounds.max.y) / 2;
+      const cz = (stats.bounds.min.z + stats.bounds.max.z) / 2;
+      const maxDim = Math.max(stats.bounds.size.x, stats.bounds.size.y, stats.bounds.size.z, 40);
+      return { center: new THREE.Vector3(cx, cy, cz), dist: maxDim * 1.65 };
+    }
+    const wco = statusRef.current?.wco || { x: 0, y: 0, z: 0 };
+    return {
+      center: new THREE.Vector3(
+        machineEnvelope.x / 3 - wco.x,
+        machineEnvelope.y / 3 - wco.y,
+        -wco.z
+      ),
+      dist: 220,
+    };
+  }, [stats, machineEnvelope.x, machineEnvelope.y]);
+
+  const setViewPreset = useCallback(
+    (preset: 'iso' | 'xy' | 'xz' | 'yz' | 'center') => {
+      const camera = cameraRef.current;
+      const controls = controlsRef.current;
+      if (!camera || !controls) return;
+
+      setFollowTool(false);
+      const { center, dist } = getSceneCenterAndRadius();
+      controls.target.copy(center);
+
+      switch (preset) {
+        case 'iso':
+        case 'center':
+          camera.position.set(center.x + dist * 0.65, center.y - dist * 0.85, center.z + dist * 0.75);
+          break;
+        case 'xy':
+          camera.position.set(center.x, center.y - 0.01, center.z + dist * 1.25);
+          break;
+        case 'xz':
+          camera.position.set(center.x, center.y - dist * 1.25, center.z + 5);
+          break;
+        case 'yz':
+          camera.position.set(center.x + dist * 1.25, center.y, center.z + 5);
+          break;
+      }
+      controls.update();
+    },
+    [getSceneCenterAndRadius]
+  );
+
+  // Recentrage automatique initial au chargement d'un nouveau programme G-Code
+  useEffect(() => {
+    if (stats && stats.motionLines > 0) {
+      setViewPreset('iso');
+    }
+  }, [stats?.fileName, stats?.totalLines]);
+
+  return (
+    <div className="relative w-full h-full min-h-[380px] bg-[#eef2f6] rounded-lg overflow-hidden border border-slate-300 shadow-sm select-none flex flex-col">
+      {/* Canvas 3D Three.js */}
+      <div ref={containerRef} className="w-full h-full flex-1 cursor-grab active:cursor-grabbing" />
+
+      {/* Barre d'outils et légende flottantes supérieures en Mode Clair */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 pointer-events-none z-10">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          {/* Vues caméra */}
+          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setViewPreset('iso')}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
+              title="Vue 3D Isométrique"
+            >
+              <Compass className="w-3.5 h-3.5 text-slate-600" />
+              <span>3D Iso</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPreset('xy')}
+              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
+              title="Vue de Dessus (Plan XY)"
+            >
+              XY
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPreset('xz')}
+              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
+              title="Vue de Face (Plan XZ)"
+            >
+              XZ
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewPreset('yz')}
+              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
+              title="Vue de Côté (Plan YZ)"
+            >
+              YZ
+            </button>
+            <div className="h-4 w-px bg-slate-300 mx-0.5" />
+            <button
+              type="button"
+              onClick={() => setViewPreset('center')}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
+              title="Centrer la caméra sur la pièce"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
+              <span>Centrer</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFollowTool((v) => !v)}
+              className={`flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded transition-colors ${
+                followTool
+                  ? 'bg-sky-600 border-sky-700 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Verrouiller la caméra sur la fraise en temps réel"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>Suivre Fraise</span>
+            </button>
+          </div>
+
+          {/* Toggles d'affichage */}
+          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setShowRapids((v) => !v)}
+              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
+                showRapids
+                  ? 'bg-orange-50 text-orange-700 border-orange-300'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Afficher / Masquer les déplacements rapides G0 (pointillés)"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>G0 Rapides</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBoundingBox((v) => !v)}
+              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
+                showBoundingBox
+                  ? 'bg-sky-50 text-sky-800 border-sky-300'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Afficher / Masquer la boîte englobante cotée"
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>Dimensions</span>
+            </button>
+
+            {onOpenFraming && (
+              <button
+                type="button"
+                onClick={onOpenFraming}
+                disabled={!status.connected || status.state === 'Run'}
+                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300 disabled:opacity-40"
+                title="Ouvrir l'assistant de traçage de cadre (Framing)"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+                <span>Cadrer</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowHeightmap((v) => !v)}
+              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
+                showHeightmap
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Afficher / Masquer le maillage 3D Heightmap"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Heightmap</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowMachineGrid((v) => !v)}
+              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
+                showMachineGrid
+                  ? 'bg-slate-200 text-slate-900 border-slate-400'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Afficher / Masquer le plateau et la grille machine"
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span>Grille</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Légende compacte des couleurs en flux naturel sous les barres d'outils (anti-superposition) */}
+        <div className="self-start flex flex-wrap items-center gap-3 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded px-2.5 py-1 text-[11px] pointer-events-auto">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-3 border-b-2 border-dashed border-orange-600 inline-block" />
+            G0 Rapide (Pointillés)
+          </span>
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-3 h-0.5 bg-sky-600 inline-block" />
+            Coupe G1/G2/G3
+          </span>
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-3 h-0.5 bg-green-600 inline-block" />
+            Exécuté
+          </span>
+        </div>
+      </div>
+
+      {/* Bandeau télémétrique compact en bas du viewport */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md px-3 py-1.5 text-xs pointer-events-none">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <Ruler className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500">Pièce :</span>
+            <span className="font-mono font-semibold text-slate-900">
+              {stats
+                ? `${stats.bounds.size.x.toFixed(1)} × ${stats.bounds.size.y.toFixed(1)} × ${stats.bounds.size.z.toFixed(1)} mm`
+                : '—'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500">Parcours :</span>
+            <span className="font-mono font-semibold text-slate-900">
+              {stats ? `${stats.totalDistanceMm.toFixed(0)} mm` : '0 mm'}
+            </span>
+            {stats && stats.cuttingDistanceMm > 0 && (
+              <span className="text-[11px] text-slate-500">
+                (Coupe {stats.cuttingDistanceMm.toFixed(0)} mm)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500">Durée :</span>
+            <span className="font-mono font-semibold text-slate-900">
+              {stats ? formatDuration(stats.estimatedTimeSec) : '0s'}
+            </span>
+          </div>
+
+          {heightmap?.enabled && (
+            <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
+              <Layers className="w-3 h-3 text-emerald-600" />
+              <span className="text-[11px] font-semibold">Heightmap Active</span>
+            </div>
+          )}
+        </div>
+
+        {/* Position actuelle de l'outil (WPos) */}
+        <div className="flex items-center gap-2 font-mono text-xs bg-slate-100 border border-slate-300 px-2.5 py-1 rounded">
+          <Eye className="w-3.5 h-3.5 text-slate-500" />
+          <span className="text-red-600 font-bold">
+            X:{status.wpos.x.toFixed(2)}
+          </span>
+          <span className="text-emerald-700 font-bold">
+            Y:{status.wpos.y.toFixed(2)}
+          </span>
+          <span className="text-blue-700 font-bold">
+            Z:{status.wpos.z.toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Viewport3D;
