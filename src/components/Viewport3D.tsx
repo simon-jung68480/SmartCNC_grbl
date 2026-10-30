@@ -34,6 +34,9 @@ export interface Viewport3DProps {
   gridMajorStep?: number;
   customBedDimensions?: { x: number; y: number } | null;
   onOpenFraming?: () => void;
+  /** Present only in the laser workshop: measured footprint and laser head. */
+  laserBeamWidth?: number;
+  laserTrace?: GCodeSegment[];
 }
 
 /**
@@ -148,8 +151,11 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   gridMajorStep = 50,
   customBedDimensions = null,
   onOpenFraming,
+  laserBeamWidth,
+  laserTrace,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const updateLaserTraceRef = useRef<((trace: GCodeSegment[] | undefined) => void) | null>(null);
 
   // Toggles d'affichage
   const [showRapids, setShowRapids] = useState<boolean>(true);
@@ -319,6 +325,28 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     zTag.position.set(0, 0, axisLen + 5);
     workOriginGroup.add(xTag, yTag, zTag);
 
+    if (laserBeamWidth !== undefined) {
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(15, 15, 27),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.4 })
+      );
+      body.position.z = 22;
+      toolHeadGroup.add(body);
+      const nozzleGeometry = new THREE.CylinderGeometry(4, 3, 6, 20);
+      nozzleGeometry.rotateX(Math.PI / 2);
+      nozzleGeometry.translate(0, 0, 6);
+      toolHeadGroup.add(new THREE.Mesh(
+        nozzleGeometry,
+        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 })
+      ));
+      const spot = new THREE.Mesh(
+        new THREE.CircleGeometry(Math.max(laserBeamWidth / 2, 0.1), 24),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide })
+      );
+      spot.name = 'laser-spot';
+      spot.position.z = 0.04;
+      toolHeadGroup.add(spot);
+    } else {
     // Construction sobre de la broche + fraise 3D (Mode Clair CAO/FAO)
     // 1. Cône de fraise carbure (pointe en (0,0,0), hauteur 14mm vers +Z)
     const tipGeo = new THREE.ConeGeometry(2.0, 14, 16);
@@ -375,6 +403,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const crosshairMesh = new THREE.Mesh(crosshairGeo, crosshairMat);
     crosshairMesh.position.set(0, 0, 0.05);
     toolHeadGroup.add(crosshairMesh);
+    }
 
     // Boucle d'animation
     let animFrameId = 0;
@@ -707,6 +736,91 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     }
   }, [segments]);
 
+  // Measured laser footprint. Kept separate from the CNC line geometry.
+  useEffect(() => {
+    const group = toolpathGroupRef.current;
+    if (!group || laserBeamWidth === undefined || laserBeamWidth <= 0) return;
+    const cuts = segments.filter(segment => segment.type !== 'G0' && segment.spindleSpeed > 0);
+    if (!cuts.length) return;
+    const step = Math.max(1, Math.ceil(cuts.length / 20000));
+    const count = Math.ceil(cuts.length / step);
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide
+    });
+    const mesh = new THREE.InstancedMesh(geometry, material, count);
+    const capGeometry = new THREE.CircleGeometry(0.5, 16);
+    const caps = new THREE.InstancedMesh(capGeometry, material, count * 2);
+    const partial = new THREE.InstancedMesh(geometry, material, 1);
+    const partialCaps = new THREE.InstancedMesh(capGeometry, material, 2);
+    // Geometry is uploaded once; playback changes instance counts and only the current stroke.
+    mesh.frustumCulled = caps.frustumCulled = partial.frustumCulled = partialCaps.frustumCulled = false;
+    const matrix = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const rotation = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    const axis = new THREE.Vector3(0, 0, 1);
+    const writeStroke = (target: THREE.InstancedMesh, ends: THREE.InstancedMesh, index: number, segment: GCodeSegment) => {
+      const dx = segment.end.x - segment.start.x, dy = segment.end.y - segment.start.y;
+      position.set(
+        (segment.start.x + segment.end.x) / 2,
+        (segment.start.y + segment.end.y) / 2,
+        (segment.start.z + segment.end.z) / 2 + 0.04
+      );
+      rotation.setFromAxisAngle(axis, Math.atan2(dy, dx));
+      scale.set(Math.hypot(dx, dy), laserBeamWidth, 1);
+      matrix.compose(position, rotation, scale);
+      target.setMatrixAt(index, matrix);
+      scale.set(laserBeamWidth, laserBeamWidth, 1);
+      rotation.identity();
+      position.set(segment.start.x, segment.start.y, segment.start.z + 0.04);
+      matrix.compose(position, rotation, scale);
+      ends.setMatrixAt(index * 2, matrix);
+      position.set(segment.end.x, segment.end.y, segment.end.z + 0.04);
+      matrix.compose(position, rotation, scale);
+      ends.setMatrixAt(index * 2 + 1, matrix);
+    };
+    for (let i = 0; i < cuts.length; i += step) {
+      writeStroke(mesh, caps, i / step, cuts[i]);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    caps.instanceMatrix.needsUpdate = true;
+    partial.count = partialCaps.count = 0;
+    group.add(mesh, caps, partial, partialCaps);
+    updateLaserTraceRef.current = trace => {
+      const last = trace?.at(-1);
+      const hasPartial = !!last && last !== cuts[trace!.length - 1];
+      const fullCount = trace ? trace.length - (hasPartial ? 1 : 0) : cuts.length;
+      mesh.count = Math.ceil(fullCount / step);
+      caps.count = mesh.count * 2;
+      partial.count = hasPartial ? 1 : 0;
+      partialCaps.count = hasPartial ? 2 : 0;
+      if (hasPartial && last) {
+        writeStroke(partial, partialCaps, 0, last);
+        partial.instanceMatrix.needsUpdate = partialCaps.instanceMatrix.needsUpdate = true;
+      }
+    };
+    return () => {
+      updateLaserTraceRef.current = null;
+      group.remove(mesh, caps, partial, partialCaps);
+      mesh.dispose(); caps.dispose(); partial.dispose(); partialCaps.dispose();
+      geometry.dispose(); capGeometry.dispose(); material.dispose();
+    };
+  }, [segments, laserBeamWidth]);
+
+  useEffect(() => {
+    const cuts = toolpathGroupRef.current?.getObjectByName('cuts');
+    if (cuts) cuts.visible = laserTrace === undefined;
+    updateLaserTraceRef.current?.(laserTrace);
+  }, [segments, laserTrace, laserBeamWidth]);
+
+  useEffect(() => {
+    const spot = toolHeadGroupRef.current?.getObjectByName('laser-spot') as THREE.Mesh | undefined;
+    if (!spot || laserBeamWidth === undefined) return;
+    spot.geometry.dispose();
+    spot.geometry = new THREE.CircleGeometry(Math.max(laserBeamWidth / 2, 0.1), 24);
+  }, [laserBeamWidth]);
+
   // Visibilité des déplacements rapides G0
   useEffect(() => {
     const group = toolpathGroupRef.current;
@@ -1033,7 +1147,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
               title="Verrouiller la caméra sur la fraise en temps réel"
             >
               <Crosshair className="w-3.5 h-3.5" />
-              <span>Suivre Fraise</span>
+              <span>{laserBeamWidth === undefined ? 'Suivre Fraise' : 'Suivre la tête laser'}</span>
             </button>
           </div>
 
@@ -1118,11 +1232,11 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           </span>
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-3 h-0.5 bg-sky-600 inline-block" />
-            Coupe G1/G2/G3
+            {laserBeamWidth === undefined ? 'Coupe G1/G2/G3' : 'Parcours laser'}
           </span>
           <span className="flex items-center gap-1.5 font-medium">
             <span className="w-3 h-0.5 bg-green-600 inline-block" />
-            Exécuté
+            {laserBeamWidth === undefined ? 'Exécuté' : 'Gravure effectuée'}
           </span>
         </div>
       </div>

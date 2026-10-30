@@ -144,6 +144,29 @@ export class GrblController extends EventEmitter {
     return this.status;
   }
 
+  private startingLaserSimulation = false;
+
+  public async simulateLaserJob(fileName: string, gcode: string, maxPower = 1000): Promise<void> {
+    if (this.startingLaserSimulation) throw new Error('Une simulation démarre déjà.');
+    if (this.status.connected && !this.status.isSimulator) {
+      throw new Error('Déconnectez la machine réelle avant de lancer le simulateur Arduino.');
+    }
+    if (['running', 'paused'].includes(this.jobStatus.state) || (this.status.connected && this.status.state !== 'Idle')) {
+      throw new Error('Arrêtez le programme en cours avant de lancer une simulation.');
+    }
+    if (!gcode.trim()) throw new Error('Le programme est vide.');
+    this.startingLaserSimulation = true;
+    try {
+      if (!this.status.connected) await this.connect('SIMULATOR');
+      if (!this.status.isSimulator) throw new Error('Le simulateur Arduino doit être connecté.');
+      this.updateSetting(32, 1);
+      this.updateSetting(30, Number.isFinite(maxPower) && maxPower > 0 ? maxPower : 1000);
+      this.startJob(fileName, gcode, false);
+    } finally {
+      this.startingLaserSimulation = false;
+    }
+  }
+
   public getJobStatus(): JobStatus {
     this.updateJobTiming();
     return this.jobStatus;
@@ -1760,16 +1783,10 @@ export class GrblController extends EventEmitter {
     if (/\bM0?3\b/.test(cmd)) {
       this.status.accessories.spindleCw = true;
       this.status.accessories.spindleCcw = false;
-      if (this.status.spindleSpeed === 0) {
-        this.status.spindleSpeed = this.settingsMap.get(30) || 10000;
-      }
     }
     if (/\bM0?4\b/.test(cmd)) {
       this.status.accessories.spindleCcw = true;
       this.status.accessories.spindleCw = false;
-      if (this.status.spindleSpeed === 0) {
-        this.status.spindleSpeed = this.settingsMap.get(30) || 10000;
-      }
     }
     if (/\bM0?5\b/.test(cmd)) {
       this.status.accessories.spindleCw = false;

@@ -43,6 +43,7 @@ import { GrblSettingsModal } from './components/GrblSettingsModal';
 import { MobilePendantView } from './components/MobilePendantView';
 import { SoundSettingsModal } from './components/SoundSettingsModal';
 import { FramingModal } from './components/FramingModal';
+import { LaserWorkshop } from './components/LaserWorkshop';
 import {
   playProbeContactBeep,
   playJobCompleteMelody,
@@ -174,6 +175,8 @@ export const App: React.FC = () => {
     primaryUrl: string;
   } | null>(null);
 
+  const [workshop, setWorkshop] = useState<'cnc' | 'laser'>('cnc');
+
   const [mobileTab, setMobileTab] = useState<'pilotage' | '3d-gcode' | 'outils-console'>('pilotage');
 
   const setPendantModeWithUrl = useCallback((active: boolean) => {
@@ -255,11 +258,13 @@ export const App: React.FC = () => {
     });
 
     s.on('disconnect', () => {
+      setGrblSettings([]);
       setSocketConnected(false);
     });
 
     s.on('cnc:status', (newStatus: GrblStatus) => {
       setStatus(newStatus);
+      if (!newStatus.connected) setGrblSettings([]);
       if (newStatus.connected && newStatus.portPath) {
         setSelectedPort(newStatus.portPath);
       }
@@ -786,6 +791,29 @@ export const App: React.FC = () => {
         </div>
       </header>
 
+      <nav aria-label="Ateliers" className="flex shrink-0 bg-white border-b border-slate-300 px-3">
+        {(['cnc', 'laser'] as const).map(mode => <button key={mode} type="button" disabled={isRunning || isPaused || status.state === 'Jog'} onClick={() => { setWorkshop(mode); if (mode === 'laser' && status.connected) socket?.emit('cnc:settings:get'); }} className={`px-5 py-2 text-sm font-bold border-b-2 disabled:opacity-50 ${workshop === mode ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-600'}`} aria-current={workshop === mode ? 'page' : undefined}>Atelier {mode === 'cnc' ? 'CNC' : 'laser'}</button>)}
+      </nav>
+      <div className={workshop === 'laser' ? 'flex flex-1 min-h-0' : 'hidden'}>
+        <LaserWorkshop
+          status={status} job={job} settings={grblSettings}
+          machineEnvelope={machineEnvelope} preferences={preferences} active={workshop === 'laser'}
+          onRefreshSettings={() => socket?.emit('cnc:settings:get')}
+          onStart={(name, gcode) => socket?.emit('cnc:job:start', { fileName: name, gcode, applyHeightmap: false })}
+          onSimulate={(fileName, gcode, maxPower) => new Promise<void>((resolve, reject) => {
+            if (!socket?.connected) { reject(new Error('Le serveur est déconnecté.')); return; }
+            socket.timeout(10000).emit('cnc:laser:simulate', { fileName, gcode, maxPower },
+              (timeout: Error | null, result: { ok: boolean; error?: string }) => {
+                if (timeout) reject(new Error('Le simulateur ne répond pas. Relancez le serveur SmartCNC.'));
+                else if (!result?.ok) reject(new Error(result?.error || 'Simulation impossible.'));
+                else resolve();
+              });
+          })}
+          onPause={handlePauseJob} onResume={handleResumeJob} onStop={handleStopJob}
+          onJog={handleJog} onZero={handleZeroWorkAxis} onLaserOff={() => handleSendCommand('M5')}
+        />
+      </div>
+      {workshop === 'cnc' && <>
       {/* =====================================================================
           MOBILE / TABLET TABS (< 1024px)
       ===================================================================== */}
@@ -993,6 +1021,7 @@ export const App: React.FC = () => {
           </div>
         </section>
       </main>
+      </>}
 
       {/* =====================================================================
           MODAL 1 : ÉDITEUR DE CONFIGURATION GRBL ($$)

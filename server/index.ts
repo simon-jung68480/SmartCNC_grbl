@@ -334,6 +334,18 @@ async function startServer() {
       }
     );
 
+    socket.on('cnc:laser:simulate', async (
+      payload: { fileName: string; gcode: string; maxPower?: number },
+      cb?: (result: { ok: boolean; error?: string }) => void,
+    ) => {
+      try {
+        await controller.simulateLaserJob(payload.fileName, payload.gcode, payload.maxPower);
+        cb?.({ ok: true });
+      } catch (error) {
+        cb?.({ ok: false, error: error instanceof Error ? error.message : 'Simulation impossible.' });
+      }
+    });
+
     socket.on('cnc:job:pause', () => {
       controller.pauseJob();
     });
@@ -377,7 +389,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(__dirname, '../dist');
+    const distPath = process.env.SMARTCNC_DIST_PATH || path.resolve(__dirname, '../dist');
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -385,6 +397,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, () => {
+    if (process.send) process.send({ type: 'ready' });
     const netInfo = getLocalNetworkInfo(PORT);
     console.log(`\n============================================================`);
     console.log(`  SmartCNC Server (GRBL 1.1 / Arduino Uno + CNC Shield V3.0)`);

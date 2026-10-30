@@ -127,13 +127,13 @@ Double-cliquez simplement sur le fichier :
 ```
 Lancer-SmartCNC.bat
 ```
-Ce script lance le serveur local et ouvre automatiquement votre navigateur sur [http://localhost:3000](http://localhost:3000).
+Ce script construit et lance SmartCNC dans sa propre fenêtre. Le serveur local démarre et s'arrête avec l'application.
 
 #### Option B — En ligne de commande :
 ```bash
-npm run dev
+npm run desktop
 ```
-Puis ouvrez votre navigateur à l'adresse **http://localhost:3000**.
+Pour créer un installateur Windows, lancez `npm run dist:win`. Il sera disponible dans le dossier `release`. Le port 3000 doit être libre.
 
 ---
 
@@ -164,6 +164,45 @@ Cliquez sur le bouton **« Paramètres ($$ & App) »** dans l'en-tête pour acc�
    - **Dégagement vertical Z de sécurité** avant tout retour à l'origine `X0 Y0`.
    - **Réglages sonores** (volume général, activation/test de chaque signal).
    - **Sensibilité manette Gamepad** (zone morte et vitesse de consigne).
+
+---
+
+## Atelier laser : préparation et gravure
+
+L’onglet **Atelier laser** utilise la même connexion GRBL que l’atelier CNC, avec un programme indépendant. Le dessin et les réglages restent en mémoire lorsqu’on change d’atelier.
+
+1. **Importer ou choisir un test** : SVG, DXF ASCII, PNG, JPEG, WebP, BMP ou G-code. La bibliothèque propose une matrice vitesse/puissance à carrés remplis, un carré avec cercle de précision et des lignes de mise au point.
+2. **Préparer** : dimensions en mm, proportions, position et ancrage ; rotation et miroirs pour les contours. Régler vitesse, puissance en %, nombre de passes et commande M4 ou M3. La valeur S maximale doit correspondre à `$30` de la machine. La matrice utilise ses propres plages de vitesse et de puissance.
+3. **Générer et contrôler** : la vue 3D utilise le même plateau, la même grille, les mêmes graduations et les mêmes décalages machine/pièce que l’atelier CNC. Le plan XY permet de voir la largeur estimée des traits, de cadrer toute la machine ou uniquement la gravure, et d’afficher les déplacements laser éteint. Les limites incluent le rayon du spot. Toute modification impose une nouvelle génération avant export ou lancement.
+4. **Cadrer** : le bouton parcourt le rectangle englobant avec une marge, laser éteint, à la hauteur Z actuelle. Il ne déplace jamais Z. Pour les images, la marge inclut le débordement d’accélération du balayage.
+5. **Exporter ou lancer** : exporter le programme `.nc`, ou démarrer après vérification du mode laser `$32=1`, de l’origine, du parcours et des protections. Les commandes de pause, reprise et arrêt restent disponibles.
+
+### Formats et limites
+
+- **SVG** : chemins, sous-chemins, courbes, arcs, groupes transformés et formes simples. Modes contours, remplissage ou remplissage + contours. Les aplats et les règles `fill-rule` (`nonzero` / `evenodd`) sont conservés ; les trous restent vides et les éléments peints qui se chevauchent sont réunis. On peut aussi forcer le remplissage des contours sans aplat. Convertir textes et instances en chemins ; appliquer les masques, découpes et transformations CSS avant l’export. Les éléments ignorés sont signalés. Le document n’est jamais inséré dans la page.
+- **DXF** : lignes, polylignes avec bulges, cercles, arcs, ellipses, splines non rationnelles et blocs transformés. Les unités du fichier sont converties en mm ; sans unité, 1 unité = 1 mm. Les textes, hachures, splines rationnelles et entités non prises en charge sont signalés. Les dessins doivent être dans le plan XY.
+- **Images** : balayage horizontal aller-retour, niveaux de gris à 32 puissances ou noir/blanc par seuil, inversion et pas de balayage réglable. La transparence devient blanche. Une marge laser éteint permet d’accélérer hors de la gravure. Il ne s’agit pas d’une vectorisation automatique. Le traitement est limité à 1 million de pixels multipliés par les passes et 300 000 lignes de programme.
+- **G-code externe** : conservé sans réécriture. Les limites représentent les déplacements avec M3/M4 et S positif. Un départ XY indéterminé, un changement de repère, une commande de position non prise en charge ou des arcs discrétisés peuvent empêcher le cadrage automatique. L’estimation de durée ne tient pas compte des accélérations.
+
+### Surfaces et hachures
+
+Le remplissage propose un pas en mm, un angle et un second balayage croisé à 90°. Les contours DXF fermés imbriqués utilisent la règle paire/impaire pour les trous. Les hachures sont compensées vers l’intérieur d’un demi-spot afin de limiter les débordements. Les détails plus fins que le spot peuvent disparaître. Un pas supérieur à la largeur du spot laisse potentiellement des bandes non gravées ; un bouton propose un pas à 80 % de cette largeur. Le mode « remplissage + contours » ajoute les limites des surfaces visibles et les tracés non remplis, avec leur largeur réelle estimée.
+
+Dans les SVG, le blanc opaque représente une zone non gravée. Un fond blanc placé derrière le motif n’est ni rempli ni tracé ; une forme blanche au-dessus du noir retire cette surface, et une forme noire peinte ensuite la rétablit. L’ordre des formes et les trous `evenodd` / `nonzero` sont conservés. Les dimensions et le placement du motif excluent les fonds blancs non gravés. Le blanc semi-transparent nécessite une conversion en image pour conserver les niveaux de gris.
+
+### Lecture dans le simulateur Arduino
+
+Après génération ou importation du G-code, **Simuler le G-code** connecte automatiquement le simulateur GRBL et lance le programme. Une machine réelle doit être déconnectée au préalable. Le mode laser et l’échelle de puissance sont réglés uniquement dans le simulateur. **Pause**, **Reprendre** et **Arrêter** pilotent cette lecture, comme dans l’atelier CNC.
+
+Les vues 3D et XY dessinent progressivement les traits réellement parcourus, jusqu’à la position courante de la tête, avec la largeur du spot. Les déplacements à puissance nulle ne gravent pas. Le tracé reste visible après arrêt ; une nouvelle lecture repart de zéro. **Afficher le dessin complet** permet de consulter le résultat prévu pendant la lecture.
+
+### Réglage du hors focus
+
+Activer **Hors focus et traits larges**, puis renseigner le décalage et la largeur de spot mesurée sur le matériau. Le logiciel ne déduit pas cette largeur du décalage Z : elle dépend de la mise au point réelle. La largeur renseignée sert à l’aperçu, aux limites, au cadrage et à la compensation du remplissage. Sans hors focus, la largeur indicative est de 0,15 mm.
+
+Par défaut, le focus se règle manuellement et aucun mouvement Z n’est ajouté. L’option explicite **Appliquer ce décalage avec l’axe Z** utilise une référence Z pièce au focus et une avance Z : le programme rejoint `Z référence + décalage` avant le premier déplacement XY, laser éteint. Un retour à la référence en fin de programme est optionnel, toujours laser éteint. Un décalage positif monte la tête ; un décalage négatif la descend. Le G-code externe reste conservé et ne reçoit aucune commande Z supplémentaire. Le cadrage ne modifie jamais Z.
+
+Le traitement des dessins et des images s’effectue localement. Aucun programme généré n’active `$32` automatiquement. Les tests de conversion, de remplissage et de génération se lancent avec `npm test`.
 
 ---
 
