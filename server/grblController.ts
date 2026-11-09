@@ -29,6 +29,8 @@ interface SimMotionSegment {
   isRapid: boolean;
   isJog?: boolean;
   isHoming?: boolean;
+  homingAxes?: Array<'x' | 'y' | 'z'>;
+  homingContact?: boolean;
   isProbe?: boolean;
   probeSurfaceZ?: number;
   lineByteLength: number;
@@ -1675,25 +1677,41 @@ export class GrblController extends EventEmitter {
     }
 
     if (cmd === '$H') {
-      const plannedEnd = this.getPlannedEndMpos();
+      if (!this.settingsMap.get(22)) {
+        this.handleIncomingLine('error:5');
+        return;
+      }
+      if (this.currentSimMotion || this.simMotionQueue.length || !['Idle', 'Alarm'].includes(this.status.state)) {
+        this.handleIncomingLine('error:8');
+        return;
+      }
+      this.status.alarmCode = undefined;
+      this.status.alarmMessage = undefined;
       this.status.state = 'Home';
-      this.simMotionQueue.push({
-        targetMpos: { x: plannedEnd.x, y: plannedEnd.y, z: 0 },
-        feedRate: (this.settingsMap.get(25) || 500) * 1.5,
-        isRapid: false,
-        isHoming: true,
-        lineByteLength: 0
-      });
-      this.simMotionQueue.push({
-        targetMpos: { x: 0, y: 0, z: 0 },
-        feedRate: (this.settingsMap.get(25) || 500) * 2,
-        isRapid: false,
-        isHoming: true,
-        lineByteLength: byteLength,
-        onComplete: () => {
-          this.handleIncomingLine('ok');
+      const direction = this.settingsMap.get(23) ?? 0;
+      const pullOff = this.settingsMap.get(27) ?? 2;
+      const seek = this.settingsMap.get(25) ?? 500;
+      const locate = this.settingsMap.get(24) ?? 25;
+      const target = { ...this.status.mpos };
+      // GRBL's default machine range is [-travel, 0]. Homing is not a
+      // coordinated G1 move: every contacted axis must stop independently.
+      for (const axes of [['z'], ['x', 'y']] as Array<Array<'x' | 'y' | 'z'>>) {
+        for (const [contact, feedRate] of [[true, seek], [false, seek], [true, locate], [false, locate]] as const) {
+          for (const axis of axes) {
+            const index = { x: 0, y: 1, z: 2 }[axis];
+            const negative = Boolean(direction & (1 << index));
+            const switchPosition = negative ? -(this.settingsMap.get(130 + index) ?? 300) : 0;
+            target[axis] = switchPosition + (contact ? 0 : negative ? pullOff : -pullOff);
+          }
+          this.simMotionQueue.push({
+            targetMpos: { ...target }, feedRate, isRapid: false, isHoming: true,
+            homingAxes: axes, homingContact: contact, lineByteLength: 0
+          });
         }
-      });
+      }
+      const final = this.simMotionQueue[this.simMotionQueue.length - 1];
+      final.lineByteLength = byteLength;
+      final.onComplete = () => this.handleIncomingLine('ok');
       this.emitStatus();
       return;
     }
@@ -2115,9 +2133,9 @@ export class GrblController extends EventEmitter {
       const dx = seg.targetMpos.x - this.status.mpos.x;
       const dy = seg.targetMpos.y - this.status.mpos.y;
       const dz = seg.targetMpos.z - this.status.mpos.z;
-      const dist = Math.hypot(dx, dy, dz);
+      const dist = seg.isHoming ? Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) : Math.hypot(dx, dy, dz);
 
-      const segOv = seg.isRapid
+      const segOv = seg.isHoming ? 1 : seg.isRapid
         ? this.status.overrides.rapid / 100
         : this.status.overrides.feed / 100;
       const effectiveFeedMmMin = Math.max(10, seg.feedRate * segOv);
@@ -2129,6 +2147,9 @@ export class GrblController extends EventEmitter {
         const timeUsed = speedMmSec > 0 ? dist / speedMmSec : 0;
         remainingTimeSec = Math.max(0, remainingTimeSec - timeUsed);
         this.status.mpos = { ...seg.targetMpos };
+        if (seg.homingAxes) {
+          for (const axis of seg.homingAxes) this.status.pins[`${axis}Limit`] = Boolean(seg.homingContact);
+        }
         this.recomputeSimWpos();
         moved = true;
         const completed = this.currentSimMotion;
@@ -2138,11 +2159,19 @@ export class GrblController extends EventEmitter {
         }
       } else {
         const ratio = maxDistThisStep / dist;
+        const previousMpos = { ...this.status.mpos };
         this.status.mpos = {
           x: Number((this.status.mpos.x + dx * ratio).toFixed(3)),
           y: Number((this.status.mpos.y + dy * ratio).toFixed(3)),
           z: Number((this.status.mpos.z + dz * ratio).toFixed(3))
         };
+        if (seg.homingAxes) {
+          const delta = { x: dx, y: dy, z: dz };
+          for (const axis of seg.homingAxes) {
+            this.status.mpos[axis] = Number((previousMpos[axis] + Math.sign(delta[axis]) * Math.min(Math.abs(delta[axis]), maxDistThisStep)).toFixed(3));
+            this.status.pins[`${axis}Limit`] = Boolean(seg.homingContact && Math.abs(this.status.mpos[axis] - seg.targetMpos[axis]) < 0.001);
+          }
+        }
         this.recomputeSimWpos();
         moved = true;
         remainingTimeSec = 0;

@@ -41,6 +41,10 @@ import {
 import { prepareLaserFill, type LaserFillSettings } from "../utils/laserFill";
 import type { AppPreferences } from "../utils/appPreferences";
 import { LaserPreview } from "./LaserPreview";
+import { LaserDesignEditor } from "./LaserDesignEditor";
+import { LaserCalibrationPanel } from "./LaserCalibrationPanel";
+import { duplicateLaserObject, generateLaserDocument, type LaserDocumentObject } from "../utils/laserDocument";
+import { parseLaserProject, serializeLaserProject } from "../utils/laserProject";
 
 interface Props {
   status: GrblStatus;
@@ -60,7 +64,7 @@ interface Props {
   onLaserOff: () => void;
 }
 type Source =
-  | { kind: "vector"; name: string; paths: LaserPath[]; warnings: string[] }
+  | { kind: "vector"; name: string; paths: LaserPath[]; warnings: string[]; objects: LaserDocumentObject[]; selectedId: string }
   | { kind: "raster"; name: string; image: RasterData; previewUrl: string }
   | { kind: "test"; name: string }
   | { kind: "gcode"; name: string };
@@ -188,6 +192,9 @@ export const LaserWorkshop: React.FC<Props> = ({
       overscan: 2,
     }),
     [lockedRatio, setLockedRatio] = useState(true);
+  const documentObjects = useMemo(() => source.kind === "vector" ? source.objects.map(object => object.id === source.selectedId ? { ...object, placement, cut, fill } : object) : [], [source, placement, cut, fill]);
+  const [savedVector, setSavedVector] = useState<Extract<Source, { kind: "vector" }> | null>(null);
+  useEffect(() => { if (source.kind === "vector") setSavedVector({ ...source, objects: documentObjects }); }, [source, documentObjects]);
   const signature = useMemo(
     () => ({
       source,
@@ -216,6 +223,7 @@ export const LaserWorkshop: React.FC<Props> = ({
     [margin, setMargin] = useState(2),
     [showCode, setShowCode] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const projectUploadRef = useRef<HTMLInputElement>(null);
   const laserMode = settings.find((s) => s.id === 32)?.value,
     machineMaxPower = settings.find((s) => s.id === 30)?.value;
   const busy =
@@ -312,6 +320,34 @@ export const LaserWorkshop: React.FC<Props> = ({
           : {}),
       };
     });
+  const loadObject = (objects: LaserDocumentObject[], selectedId: string) => {
+    const object = objects.find(object => object.id === selectedId) ?? objects[0];
+    if (!object) return;
+    setSource({ kind: "vector", name: object.name, paths: object.paths, warnings: object.warnings, objects, selectedId: object.id });
+    setPlacement(object.placement);
+    setFill(object.fill);
+    setCut(current => ({ ...object.cut, maxPower: current.maxPower, mode: current.mode, focus: current.focus }));
+  };
+  const saveProject = () => {
+    try {
+      const content = serializeLaserProject({ objects: documentObjects, selectedId: source.kind === "vector" ? source.selectedId : "", cut });
+      const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
+      const link = document.createElement("a"); link.href = url; link.download = "atelier.smartlaser.json"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { setError((error as Error).message); }
+  };
+  const openProject = async (file: File) => {
+    setError(""); setWorking(true);
+    try {
+      if (file.size > 32 * 1024 * 1024) throw new Error("Projet trop volumineux (32 Mo maximum).");
+      const project = parseLaserProject(await file.text());
+      loadObject(project.objects, project.selectedId);
+      const selected = project.objects.find(object => object.id === project.selectedId)!;
+      setCut({ ...selected.cut, maxPower: project.cut.maxPower, mode: project.cut.mode, focus: project.cut.focus });
+      setProgram(null); setConfirmed(false);
+    } catch (error) { setError((error as Error).message); }
+    finally { setWorking(false); }
+  };
   const selectPattern = (kind: Pattern) => {
     setPattern(kind);
     setSource({
@@ -352,17 +388,17 @@ export const LaserWorkshop: React.FC<Props> = ({
           ext === "svg"
             ? importer.importSvg(await file.text())
             : importer.importDxf(await file.text());
-        setSource({
-          kind: "vector",
-          name: file.name,
-          paths: result.paths,
-          warnings: result.warnings,
-        });
-        setPlacement({
+        const object: LaserDocumentObject = {
+          id: crypto.randomUUID(), name: file.name, paths: result.paths, warnings: result.warnings, enabled: true,
+          cut: { ...cut }, fill: { ...fill }, placement: {
           ...initialPlacement,
           width: Number(result.widthMm.toFixed(3)),
           height: Number(result.heightMm.toFixed(3)),
-        });
+          x: source.kind === "vector" ? placement.x + 5 : 0,
+          y: source.kind === "vector" ? placement.y + 5 : 0,
+        } };
+        if (documentObjects.length >= 200) throw new Error("Maximum 200 objets par projet.");
+        loadObject([...documentObjects, object], object.id);
       } else if (["png", "jpg", "jpeg", "webp", "bmp"].includes(ext || "")) {
         const image = await importer.importRaster(file);
         setSource({
@@ -407,11 +443,12 @@ export const LaserWorkshop: React.FC<Props> = ({
             (placement.anchor === "center" ? placement.height / 2 : 0),
         };
         code = generateRasterGCode(source.image, config, cut, source.name);
+      } else if (source.kind === "vector") {
+        const generated = generateLaserDocument(documentObjects, cut);
+        code = generated.code; notes = generated.notes;
       } else if (source.kind !== "gcode") {
         const paths =
-          source.kind === "vector"
-            ? source.paths
-            : pattern === "material"
+          pattern === "material"
               ? materialTestPaths(test)
               : calibrationPaths(pattern, calibrationSize);
         const b = boundsOfPaths(paths),
@@ -420,19 +457,10 @@ export const LaserWorkshop: React.FC<Props> = ({
               ? { ...placement, width: b.width, height: b.height }
               : placement;
         let placed = placePaths(paths, config);
-        if (source.kind === "vector") {
-          const prepared = prepareLaserFill(
-            placed,
-            fill,
-            laserSpotDiameter(cut),
-          );
-          placed = prepared.paths;
-          notes = prepared.notes;
-        }
         code = generateVectorGCode(placed, cut, source.name);
       }
       setProgram({
-        name: source.name.replace(/\.[^.]+$/, "") + ".nc",
+        name: source.kind === "vector" && documentObjects.length > 1 ? "Composition laser.nc" : source.name.replace(/\.[^.]+$/, "") + ".nc",
         code,
         signature,
         notes,
@@ -558,6 +586,12 @@ export const LaserWorkshop: React.FC<Props> = ({
                   PNG · JPEG · WebP · BMP · NC · GCODE
                 </span>
               </button>
+              <input ref={projectUploadRef} type="file" accept=".smartlaser.json,.json" className="hidden" disabled={busy || working} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void openProject(file); }} />
+              <div className="flex gap-2 mt-2">
+                <button className={button} disabled={busy || working} onClick={() => projectUploadRef.current?.click()}>Ouvrir projet</button>
+                <button className={button} disabled={busy || working || source.kind !== "vector"} onClick={saveProject}>Sauver projet</button>
+              </div>
+              {source.kind !== "vector" && savedVector && <button className={`${button} mt-2`} disabled={busy || working} onClick={() => { loadObject(savedVector.objects, savedVector.selectedId); setProgram(null); }}>Revenir à la composition ({savedVector.objects.length} objets)</button>}
               <p className="text-xs font-semibold mt-3 break-all">
                 {source.name}
               </p>
@@ -995,6 +1029,29 @@ export const LaserWorkshop: React.FC<Props> = ({
             )}
           </div>
           <div className="min-w-0 space-y-4">
+            {source.kind === "vector" && <LaserDesignEditor
+              objects={documentObjects}
+              selectedId={source.selectedId}
+              bed={{ minX: -status.wco.x, minY: -status.wco.y, maxX: (preferences.useCustomBedDimensions ? preferences.customBedWidth : machineEnvelope.x || 300) - status.wco.x, maxY: (preferences.useCustomBedDimensions ? preferences.customBedLength : machineEnvelope.y || 300) - status.wco.y, width: preferences.useCustomBedDimensions ? preferences.customBedWidth : machineEnvelope.x || 300, height: preferences.useCustomBedDimensions ? preferences.customBedLength : machineEnvelope.y || 300 }}
+              disabled={busy || working}
+              lockedRatio={lockedRatio}
+              onSelect={id => loadObject(documentObjects, id)}
+              onPlacement={(id, next) => {
+                if (id === source.selectedId) setPlacement(next);
+                else loadObject(documentObjects.map(object => object.id === id ? { ...object, placement: next } : object), id);
+              }}
+              onDuplicate={() => {
+                if (documentObjects.length >= 200) { setError("Maximum 200 objets par projet."); return; }
+                const object = documentObjects.find(object => object.id === source.selectedId)!;
+                const copy = duplicateLaserObject(object, crypto.randomUUID());
+                loadObject([...documentObjects, copy], copy.id);
+              }}
+              onDelete={() => {
+                const remaining = documentObjects.filter(object => object.id !== source.selectedId);
+                if (remaining.length) loadObject(remaining, remaining[0].id);
+              }}
+              onToggle={id => loadObject(documentObjects.map(object => object.id === id ? { ...object, enabled: !object.enabled } : object), source.selectedId)}
+            />}
             <LaserPreview
               analysis={analysis}
               status={status}
@@ -1200,6 +1257,9 @@ export const LaserWorkshop: React.FC<Props> = ({
             )}
           </div>
           <div className="space-y-4 min-w-0">
+            <LaserCalibrationPanel cut={cut} x={placement.x} y={placement.y} disabled={busy || working}
+              onLoadProgram={(name, code, notes) => { setSource({ kind: "gcode", name }); setProgram({ name, code, signature: null, notes }); setConfirmed(false); setError(""); }}
+              onApplyInterval={mm => { setFill(current => ({ ...current, spacing: mm })); setRaster(current => ({ ...current, interval: mm })); }} />
             <section className={card}>
               <h2 className="text-sm font-bold mb-3">Machine et origine</h2>
               <div className="grid grid-cols-3 gap-1 text-center font-mono text-xs">

@@ -1028,6 +1028,7 @@ export const App: React.FC = () => {
       ===================================================================== */}
       {isSettingsModalOpen && (
         <GrblSettingsModal
+          status={status}
           isOpen={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
           connected={status.connected}

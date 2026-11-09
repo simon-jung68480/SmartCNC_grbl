@@ -15,7 +15,8 @@ import {
   Sliders,
   ArrowRight,
 } from 'lucide-react';
-import { GrblSettingItem } from '../types/cnc';
+import { GrblSettingItem, GrblStatus } from '../types/cnc';
+import { HomingDiagnostics } from './HomingDiagnostics';
 import { AppPreferencesTab } from './AppPreferencesTab';
 
 export const DEFAULT_GRBL_SETTINGS: GrblSettingItem[] = [
@@ -349,6 +350,7 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
 ];
 
 export interface GrblSettingsModalProps {
+  status?: GrblStatus;
   isOpen?: boolean;
   onClose: () => void;
   connected?: boolean;
@@ -361,6 +363,7 @@ export interface GrblSettingsModalProps {
 }
 
 export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
+  status,
   isOpen = true,
   onClose,
   connected = true,
@@ -886,6 +889,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
           {/* Colonne Droite (5/12) : Calculateur Pas/mm CNC Shield V3.0 & Assistant Calibration */}
           <div className="lg:col-span-5 overflow-y-auto p-4 space-y-4 bg-white">
+            <HomingDiagnostics status={status} />
             {/* 1. Calculateur matériel Pas/mm (Spécial CNC Shield V3.0) */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
               <div className="flex items-center gap-2.5">

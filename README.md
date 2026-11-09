@@ -221,3 +221,31 @@ Le traitement des dessins et des images s’effectue localement. Aucun programme
 
 Ce projet est sous licence MIT — vous êtes libre de l'utiliser, le modifier et le distribuer pour vos projets personnels ou d'atelier.
 Contributeur : **Simon Jung** (`simon-jung68480`)
+
+## Éditeur laser et projets
+
+Les imports SVG et DXF peuvent être ajoutés à une composition. Chaque dessin est un objet sélectionnable, déplaçable à la souris et réglable en millimètres : position, dimensions, proportions, rotation et miroirs. La liste permet de dupliquer, masquer ou supprimer les objets. Les paramètres de contour, remplissage, hachures croisées, vitesse, puissance et passes sont propres à chaque objet ; le mode M3/M4, la valeur S maximale et le focus restent communs à la machine.
+
+Enregistrer le projet produit un fichier `.smartlaser.json` contenant la géométrie et les réglages. Ouvrir ce fichier restaure la composition sans envoyer de commande à la machine. Les projets concernent les compositions vectorielles ; les images et programmes externes gardent leur import dédié. Le dessin doit être généré de nouveau après toute modification avant son lancement.
+
+## Diagnostic du homing
+
+Le logiciel transmet `$H` au contrôleur réel : la séquence et les contacts sont traités dans le firmware GRBL. Le comportement normal est Z, puis X et Y ensemble ; chaque axe s'arrête sur son propre contact pendant que l'autre poursuit sa recherche. Voir la [documentation officielle du cycle GRBL](https://github.com/gnea/grbl/wiki/Set-up-the-Homing-Cycle).
+
+Les paramètres GRBL affichent les contacts X/Y/Z en direct. Machine immobile, actionner chaque contact séparément : un contact X ne doit activer que X, un contact Y uniquement Y. Si un seul contact affiche X et Y, vérifier le câblage, les entrées du shield et les parasites avant un nouveau homing. Les entrées Uno standard sont D9 pour X, D10 pour Y et D12 pour Z. Le logiciel ne remplace pas cette vérification matérielle.
+
+Le simulateur modélise les déplacements indépendants des axes, les phases de recherche et de précision, puis le dégagement ; il tient compte de la direction `$23`, du dégagement `$27` et des courses `$130` à `$132`.
+
+## Banc de calibration laser
+
+Le panneau **Banc de calibration laser** prépare un programme dans l’atelier, avec aperçu, notes de lecture, cadrage, export et lancement habituels. Il ne lance aucun déplacement directement et ne modifie aucun paramètre GRBL. Les tests utilisent la position X/Y du placement, ainsi que la vitesse, la puissance, le mode M3/M4 et l’échelle S de l’atelier ; les réglages de hors focus sont ignorés pour ne pas ajouter de mouvement Z involontaire.
+
+- **Matrice vitesse / puissance** : 2 à 10 échantillons par axe. Les colonnes vont de la moitié au double de la vitesse d’atelier ; les lignes parcourent la plage de puissance choisie. Aplats au pas de 0,15 mm.
+- **Mise au point avec axe Z** : lignes à des hauteurs réparties entre les deux décalages, relativement au Z pièce de référence. La génération exige l’autorisation explicite des mouvements Z ; les repositionnements Z se font laser éteint et le programme revient à la référence en fin de test. Vérifier la course libre. Sans axe Z motorisé, régler le focus manuellement et utiliser des tests de lignes séparés.
+- **Pas de balayage / spot** : aplats avec des intervalles de 0,025 à 2 mm. Choisir le plus grand intervalle laissant un aplat régulier. Le calculateur peut reporter l’intervalle retenu dans le remplissage et le balayage d’image.
+- **Passes de coupe** : carrés avec un nombre de passes croissant, entre 1 et 50. Les passes d’un carré sont consécutives ; surveiller la chauffe et le matériau. Les autres tests utilisent une passe, sauf le test kerf qui conserve le nombre de passes de l’atelier.
+- **Dimensions et équerrage** : carré, cercle et diagonales. Mesurer entre centres des traits. Le calculateur propose `nouveaux pas/mm = pas/mm actuels × distance demandée / distance mesurée`, à reporter et vérifier dans les paramètres GRBL. Des diagonales différentes nécessitent un réglage mécanique.
+- **Largeur de coupe (kerf)** : découper le carré, puis mesurer l’ouverture et l’insert séparé. `kerf = (ouverture − insert) / 2`. Le décalage du centre d’outil nécessaire vaut la moitié du kerf ; cette version ne compense pas automatiquement les contours.
+- **Alignement aller / retour** : 20 lignes alternées au pas de 0,4 mm. Comparer leurs extrémités à la vitesse choisie ; la moitié du décalage relatif donne une correction indicative par sens. Répéter aux vitesses utilisées. Cette version mesure le défaut sans compensation automatique du balayage ni réglage des délais du firmware.
+
+Les numéros et valeurs des échantillons figurent dans les notes et commentaires du G-code ; ils ne sont pas gravés sur le matériau. Le logiciel ne déduit ni la puissance optique réelle, ni le spot, ni le focus à partir d’une mesure automatique. Les dimensions de test sont limitées à 2–200 mm par motif et les échantillons à 2–10 ; contrôler l’encombrement total de la matrice et le repère avant lancement.
