@@ -18,6 +18,10 @@ export interface LaserPath {
   /** Opaque SVG white knocks out earlier ink; it is never laser-on paint. */
   fillOperation?: "add" | "subtract";
   contourEnabled?: boolean;
+  /** A single straight hatch segment that can receive scan compensation. */
+  scanline?: true;
+  compensateScan?: false;
+  overscan?: number;
 }
 
 export function laserContourPaths(paths: LaserPath[]): LaserPath[] {
@@ -50,7 +54,16 @@ export interface LaserCutSettings {
   passes: number;
   mode: "M3" | "M4";
   focus?: LaserFocusSettings;
+  scanOffsets?: readonly LaserScanOffset[];
+  contourDirection?: "original" | "reverse" | "alternate";
 }
+export interface LaserScanOffset {
+  /** Engraving speed in mm/min. */
+  feed: number;
+  /** Shift in mm opposite the scan direction. */
+  offset: number;
+}
+export const MAX_LASER_SCAN_OFFSET = 50;
 export interface LaserFocusSettings {
   enabled: boolean;
   spotDiameter: number;
@@ -60,6 +73,10 @@ export interface LaserFocusSettings {
   zFeed: number;
   restoreZ: boolean;
 }
+
+export const defaultLaserFocusSettings: LaserFocusSettings = {
+  enabled: false, spotDiameter: 1, offset: 2, controlZ: false, referenceZ: 0, zFeed: 300, restoreZ: true,
+};
 
 export function laserSpotDiameter(cut: LaserCutSettings): number {
   return cut.focus?.enabled ? cut.focus.spotDiameter : 0.15;
@@ -93,6 +110,7 @@ export interface RasterSettings {
   grayscale: boolean;
   invert: boolean;
   overscan?: number;
+  bidirectional?: boolean;
 }
 export const MAX_LASER_LINES = 300_000;
 const fmt = (n: number) => Number(n.toFixed(3)).toString();
@@ -100,6 +118,36 @@ const positive = (n: number, name: string) => {
   if (!Number.isFinite(n) || n <= 0)
     throw new Error(`${name} doit être supérieur à zéro.`);
 };
+
+function makeScanOffsetLookup(entries: readonly LaserScanOffset[] = []) {
+  const sorted = [...entries].sort((a, b) => a.feed - b.feed);
+  for (const [index, entry] of sorted.entries()) {
+    positive(entry.feed, "La vitesse de compensation du balayage");
+    if (!Number.isFinite(entry.offset) || Math.abs(entry.offset) > MAX_LASER_SCAN_OFFSET)
+      throw new Error(`Le décalage du balayage doit être compris entre −${MAX_LASER_SCAN_OFFSET} et +${MAX_LASER_SCAN_OFFSET} mm.`);
+    if (index > 0 && sorted[index - 1].feed === entry.feed)
+      throw new Error("La table de compensation contient deux fois la même vitesse.");
+  }
+  return (feed: number) => {
+    if (!sorted.length) return 0;
+    if (feed <= sorted[0].feed) return sorted[0].offset;
+    const upperIndex = sorted.findIndex((entry) => entry.feed >= feed);
+    if (upperIndex < 0) return sorted[sorted.length - 1].offset;
+    const lower = sorted[upperIndex - 1], upper = sorted[upperIndex];
+    const ratio = (feed - lower.feed) / (upper.feed - lower.feed);
+    return lower.offset + ratio * (upper.offset - lower.offset);
+  };
+}
+
+function shiftScanline(points: Point2[], offset: number) {
+  if (!offset || points.length !== 2) return points;
+  const dx = points[1].x - points[0].x;
+  const dy = points[1].y - points[0].y;
+  const length = Math.hypot(dx, dy);
+  if (!length) return points;
+  const shift = offset / length;
+  return points.map(({ x, y }) => ({ x: x - dx * shift, y: y - dy * shift }));
+}
 
 export function boundsOfPaths(paths: LaserPath[]): Bounds2 {
   let minX = Infinity,
@@ -228,11 +276,17 @@ export function generateVectorGCode(
   name = "Contours",
 ): string {
   validateCut(cut);
-  boundsOfPaths(paths);
+  const scanOffsetAtFeed = makeScanOffsetLookup(cut.scanOffsets);
+  const compensated = cut.scanOffsets?.length
+    ? paths.map((path) => path.scanline && path.compensateScan !== false
+      ? { ...path, points: shiftScanline(path.points, scanOffsetAtFeed(path.feed ?? cut.feed)) }
+      : path)
+    : paths;
+  boundsOfPaths(compensated);
   const lines = [...header(name), ...focusStart(cut.focus)];
   for (let pass = 0; pass < cut.passes; pass++) {
     lines.push(`; Passe ${pass + 1}/${cut.passes}`);
-    for (const path of paths) {
+    for (const path of compensated) {
       if (path.points.length < 2) continue;
       const feed = path.feed ?? cut.feed,
         percent = path.power ?? cut.power;
@@ -247,16 +301,25 @@ export function generateVectorGCode(
         throw new Error(
           "La puissance choisie est trop faible pour cette échelle S.",
         );
-      const first = path.points[0];
+      const reverse = !path.scanline && (cut.contourDirection === "reverse" || (cut.contourDirection === "alternate" && pass % 2 === 1));
+      const points = reverse ? [...path.points].reverse() : path.points;
+      const first = points[0];
+      const overscan = path.scanline ? path.overscan ?? 0 : 0;
+      const last = points[points.length - 1];
+      const length = Math.hypot(last.x - first.x, last.y - first.y);
+      const extraX = overscan && length ? overscan * (last.x - first.x) / length : 0;
+      const extraY = overscan && length ? overscan * (last.y - first.y) / length : 0;
       if (path.label) lines.push(`; ${path.label.replace(/[\r\n]/g, " ")}`);
       lines.push(
         "M5",
-        `G0 X${fmt(first.x)} Y${fmt(first.y)}`,
+        `G0 X${fmt(first.x - extraX)} Y${fmt(first.y - extraY)}`,
         `${cut.mode} S0`,
         `G1 F${fmt(feed)}`,
       );
-      for (const p of path.points.slice(1))
+      if (overscan) lines.push(`G1 X${fmt(first.x)} Y${fmt(first.y)} S0`);
+      for (const p of points.slice(1))
         lines.push(`G1 X${fmt(p.x)} Y${fmt(p.y)} S${power}`);
+      if (overscan) lines.push(`G1 X${fmt(last.x + extraX)} Y${fmt(last.y + extraY)} S0`);
       lines.push("M5");
       if (lines.length > MAX_LASER_LINES)
         throw new Error(
@@ -370,6 +433,7 @@ export function generateRasterGCode(
   name: string,
 ): string {
   validateCut(cut);
+  const scanOffset = config.bidirectional === false ? 0 : makeScanOffsetLookup(cut.scanOffsets)(cut.feed);
   positive(config.width, "La largeur");
   positive(config.height, "La hauteur");
   positive(config.interval, "Le pas de balayage");
@@ -440,10 +504,11 @@ export function generateRasterGCode(
       hasBurn = true;
       let last = values.length - 1;
       while (values[last] === 0) last--;
-      const reverse = row % 2 === 1,
+      const reverse = config.bidirectional !== false && row % 2 === 1,
         start = reverse ? last + 1 : first;
       const y = config.y + config.height - (row + 0.5) * dy;
-      const startX = config.x + start * dx;
+      const rowX = config.x + (reverse ? scanOffset : -scanOffset);
+      const startX = rowX + start * dx;
       lines.push(
         "M5",
         `G0 X${fmt(startX + (reverse ? overscan : -overscan))} Y${fmt(y)}`,
@@ -462,12 +527,12 @@ export function generateRasterGCode(
         )
           end += reverse ? -1 : 1;
         const edge = reverse ? end : end + 1;
-        lines.push(`G1 X${fmt(config.x + edge * dx)} S${power}`);
+        lines.push(`G1 X${fmt(rowX + edge * dx)} S${power}`);
         col = end + (reverse ? -1 : 1);
       }
       if (overscan)
         lines.push(
-          `G1 X${fmt(config.x + (reverse ? first * dx - overscan : (last + 1) * dx + overscan))} S0`,
+          `G1 X${fmt(rowX + (reverse ? first * dx - overscan : (last + 1) * dx + overscan))} S0`,
         );
       lines.push("M5");
       if (lines.length > MAX_LASER_LINES)

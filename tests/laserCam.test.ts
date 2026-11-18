@@ -23,6 +23,31 @@ const cut: LaserCutSettings = {
 const codeWords = (code: string) =>
   code.split("\n").filter((line) => !line.startsWith(";"));
 
+test("offset de balayage: interpolation, sens opposés et overscan solidaire", () => {
+  const image = { width: 2, height: 2, gray: Uint8Array.of(0, 0, 0, 0) };
+  const config = {
+    width: 2, height: 2, x: 10, y: 20, interval: 1,
+    threshold: 128, grayscale: true, invert: false, overscan: 1,
+  };
+  const scanOffsets = [{ feed: 1500, offset: 0.4 }, { feed: 500, offset: 0.2 }];
+  const generate = (feed: number) =>
+    generateRasterGCode(image, config, { ...cut, feed, scanOffsets }, "image");
+  const words = codeWords(generate(1000));
+  assert.ok(words.includes("G0 X8.7 Y21.5"));
+  assert.ok(words.includes("G1 X9.7 S0"));
+  assert.ok(words.includes("G1 X11.7 S200"));
+  assert.ok(words.includes("G1 X12.7 S0"));
+  assert.ok(words.includes("G0 X13.3 Y20.5"));
+  assert.ok(words.includes("G1 X12.3 S0"));
+  assert.ok(words.includes("G1 X10.3 S200"));
+  assert.ok(words.includes("G1 X9.3 S0"));
+  assert.match(generate(100), /G0 X8\.8 Y21\.5/);
+  assert.match(generate(2000), /G0 X8\.6 Y21\.5/);
+  assert.throws(() => generateRasterGCode(image, config, {
+    ...cut, scanOffsets: [...scanOffsets, { feed: 500, offset: 0.3 }],
+  }, "image"), /même vitesse/);
+});
+
 test("contours: placement, passes et puissance, laser éteint à chaque transition", () => {
   const paths = placePaths(calibrationPaths("square-circle", 10), {
     width: 20,

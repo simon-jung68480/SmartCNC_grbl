@@ -171,11 +171,17 @@ Cliquez sur le bouton **« Paramètres ($$ & App) »** dans l'en-tête pour acc�
 
 L’onglet **Atelier laser** utilise la même connexion GRBL que l’atelier CNC, avec un programme indépendant. Le dessin et les réglages restent en mémoire lorsqu’on change d’atelier.
 
-1. **Importer ou choisir un test** : SVG, DXF ASCII, PNG, JPEG, WebP, BMP ou G-code. La bibliothèque propose une matrice vitesse/puissance à carrés remplis, un carré avec cercle de précision et des lignes de mise au point.
-2. **Préparer** : dimensions en mm, proportions, position et ancrage ; rotation et miroirs pour les contours. Régler vitesse, puissance en %, nombre de passes et commande M4 ou M3. La valeur S maximale doit correspondre à `$30` de la machine. La matrice utilise ses propres plages de vitesse et de puissance.
+La barre d’outils ouvre, importe et enregistre les dessins. Sur le plateau quadrillé, les outils Ligne, Rectangle et Ellipse créent un calque par forme. La palette change sa couleur. Dans le panneau **Calques**, l’œil règle l’affichage sur le plateau et la case **Sortie** décide si le calque est gravé. Les commandes de cadrage et de départ restent accessibles sous les panneaux latéraux.
+
+Sur le plateau, la touche **Suppr** ou la corbeille retire l’objet sélectionné. Les objets de même couleur partagent les paramètres de gravure au sein de leur type, vectoriel ou image. Ouvrez **Préréglages** dans la barre d’outils pour nommer, classer et modifier directement ces réglages. Sélectionnez un préréglage et enregistrez ses modifications avant de l’appliquer à un calque compatible. La bibliothèque est enregistrée localement.
+
+1. **Importer**. Sélectionnez des fichiers SVG, DXF ASCII, PNG, JPEG, WebP ou BMP pour les ajouter au même plateau. Un fichier G-code s’ouvre individuellement. La bibliothèque contient les motifs de test.
+2. **Préparer**. Ordonnez les calques et cochez ceux à graver. Le mode combiné permet de régler séparément l’avance, la puissance et les passes du remplissage et du contour. L’onglet **Machine** propose les déplacements manuels, le point de départ et les compensations. La valeur S maximale doit correspondre à `$30` de la machine.
 3. **Générer et contrôler** : la vue 3D utilise le même plateau, la même grille, les mêmes graduations et les mêmes décalages machine/pièce que l’atelier CNC. Le plan XY permet de voir la largeur estimée des traits, de cadrer toute la machine ou uniquement la gravure, et d’afficher les déplacements laser éteint. Les limites incluent le rayon du spot. Toute modification impose une nouvelle génération avant export ou lancement.
-4. **Cadrer** : le bouton parcourt le rectangle englobant avec une marge, laser éteint, à la hauteur Z actuelle. Il ne déplace jamais Z. Pour les images, la marge inclut le débordement d’accélération du balayage.
+4. **Cadrer**. Le bouton parcourt le rectangle englobant à la hauteur Z actuelle, laser éteint. Pour les images, la marge inclut le débordement d’accélération. En mode « Position actuelle », la tête revient au point de départ. Après un déplacement manuel, générez à nouveau pour utiliser la nouvelle position.
 5. **Exporter ou lancer** : exporter le programme `.nc`, ou démarrer après vérification du mode laser `$32=1`, de l’origine, du parcours et des protections. Les commandes de pause, reprise et arrêt restent disponibles.
+
+Les programmes générés peuvent conserver les coordonnées du dessin, utiliser le zéro pièce, s’ancrer sur la position actuelle ou sur une origine XY mémorisée. Les modes relatifs proposent neuf points d’ancrage sur le rectangle de gravure. L’atelier conserve localement l’offset XY général et la table de compensation aller-retour. Celle-ci s’applique aux images et aux hachures vectorielles, avec interpolation par avance. Le banc de calibration calcule la moitié de l’écart signé et peut l’ajouter à la table.
 
 ### Formats et limites
 
@@ -186,7 +192,7 @@ L’onglet **Atelier laser** utilise la même connexion GRBL que l’atelier CNC
 
 ### Surfaces et hachures
 
-Le remplissage propose un pas en mm, un angle et un second balayage croisé à 90°. Les contours DXF fermés imbriqués utilisent la règle paire/impaire pour les trous. Les hachures sont compensées vers l’intérieur d’un demi-spot afin de limiter les débordements. Les détails plus fins que le spot peuvent disparaître. Un pas supérieur à la largeur du spot laisse potentiellement des bandes non gravées ; un bouton propose un pas à 80 % de cette largeur. Le mode « remplissage + contours » ajoute les limites des surfaces visibles et les tracés non remplis, avec leur largeur réelle estimée.
+Ouvrez les paramètres d’un calque avec la roue dentée ou en cliquant sur une opération. Le remplissage propose le pas en mm, l’angle, le balayage uni ou bidirectionnel, le croisement à 90° et une distance de surbalayage à chaque extrémité, laser éteint. Le contour peut suivre le tracé, le parcourir en sens inverse ou alterner le sens à chaque passe. Les contours fermés imbriqués utilisent la règle paire/impaire pour les trous. Les hachures tiennent compte du rayon de spot mesuré du calque.
 
 Dans les SVG, le blanc opaque représente une zone non gravée. Un fond blanc placé derrière le motif n’est ni rempli ni tracé ; une forme blanche au-dessus du noir retire cette surface, et une forme noire peinte ensuite la rétablit. L’ordre des formes et les trous `evenodd` / `nonzero` sont conservés. Les dimensions et le placement du motif excluent les fonds blancs non gravés. Le blanc semi-transparent nécessite une conversion en image pour conserver les niveaux de gris.
 
@@ -198,9 +204,9 @@ Les vues 3D et XY dessinent progressivement les traits réellement parcourus, ju
 
 ### Réglage du hors focus
 
-Activer **Hors focus et traits larges**, puis renseigner le décalage et la largeur de spot mesurée sur le matériau. Le logiciel ne déduit pas cette largeur du décalage Z : elle dépend de la mise au point réelle. La largeur renseignée sert à l’aperçu, aux limites, au cadrage et à la compensation du remplissage. Sans hors focus, la largeur indicative est de 0,15 mm.
+Dans les paramètres du calque, activer **Hors focus et traits larges**, puis renseigner le décalage et la largeur du spot mesurée. Le remplissage utilise la largeur du calque. L’aperçu et le cadrage tiennent compte de la largeur maximale du travail. La largeur indicative d’un calque au focus est de 0,15 mm.
 
-Par défaut, le focus se règle manuellement et aucun mouvement Z n’est ajouté. L’option explicite **Appliquer ce décalage avec l’axe Z** utilise une référence Z pièce au focus et une avance Z : le programme rejoint `Z référence + décalage` avant le premier déplacement XY, laser éteint. Un retour à la référence en fin de programme est optionnel, toujours laser éteint. Un décalage positif monte la tête ; un décalage négatif la descend. Le G-code externe reste conservé et ne reçoit aucune commande Z supplémentaire. Le cadrage ne modifie jamais Z.
+L’option **Appliquer ce décalage avec l’axe Z** utilise une référence Z pièce et une avance Z. La tête rejoint `Z référence + décalage` avant le calque, laser éteint. Elle revient à la référence avant le calque suivant. Pour le dernier calque, ce retour est optionnel. En mode manuel, préparez un programme par hauteur de focus. Le cadrage se fait à la hauteur Z actuelle.
 
 Le traitement des dessins et des images s’effectue localement. Aucun programme généré n’active `$32` automatiquement. Les tests de conversion, de remplissage et de génération se lancent avec `npm test`.
 
@@ -224,9 +230,9 @@ Contributeur : **Simon Jung** (`simon-jung68480`)
 
 ## Éditeur laser et projets
 
-Les imports SVG et DXF peuvent être ajoutés à une composition. Chaque dessin est un objet sélectionnable, déplaçable à la souris et réglable en millimètres : position, dimensions, proportions, rotation et miroirs. La liste permet de dupliquer, masquer ou supprimer les objets. Les paramètres de contour, remplissage, hachures croisées, vitesse, puissance et passes sont propres à chaque objet ; le mode M3/M4, la valeur S maximale et le focus restent communs à la machine.
+Les dessins et les images peuvent être ajoutés à une composition. Chaque calque peut être sélectionné, déplacé, redimensionné, dupliqué ou masqué. Le contour, le remplissage, l’avance, la puissance, les passes et le focus se règlent par calque. Le mode M3/M4 et la valeur S maximale sont communs à la machine.
 
-Enregistrer le projet produit un fichier `.smartlaser.json` contenant la géométrie et les réglages. Ouvrir ce fichier restaure la composition sans envoyer de commande à la machine. Les projets concernent les compositions vectorielles ; les images et programmes externes gardent leur import dédié. Le dessin doit être généré de nouveau après toute modification avant son lancement.
+Enregistrer le projet produit un fichier `.smartlaser.json` contenant les tracés, les images et leurs réglages. Ouvrir ce fichier restaure la composition sans envoyer de commande à la machine. Les programmes G-code externes gardent leur import dédié. Après une modification du parcours, ouvrez de nouveau l’aperçu avant le lancement.
 
 ## Diagnostic du homing
 

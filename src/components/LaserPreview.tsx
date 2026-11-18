@@ -394,7 +394,7 @@ export function LaserPreview({
       )}
       <p className="text-[10px] text-slate-500 mt-2">
         Graduations en coordonnées machine ; parcours en coordonnées pièce (
-        {status.activeWCS}). Largeur de trait mesurée : {n(spotDiameter)} mm.
+        {status.activeWCS}). Largeur maximale du spot : {n(spotDiameter)} mm.
         L’empreinte affichée reste une estimation.
       </p>
       {outside && (

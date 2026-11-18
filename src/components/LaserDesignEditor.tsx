@@ -1,7 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { boundsOfPaths, placePaths, type Bounds2, type Placement } from '../utils/laserCam';
-import type { LaserDocumentObject } from '../utils/laserDocument';
+import React, { useId, useMemo, useRef, useState } from 'react';
+import { Circle, Minus, MousePointer2, Square, Trash2 } from 'lucide-react';
+import { boundsOfPaths, placePaths, type Bounds2, type LaserPath, type Placement, type Point2 } from '../utils/laserCam';
+import { laserRasterBounds, type LaserDocumentObject } from '../utils/laserDocument';
 import { laserFillRegions, prepareLaserFill } from '../utils/laserFill';
+import { laserShapeNames, laserShapePath, type LaserShape } from '../utils/laserShapes';
 
 interface Props {
   objects: LaserDocumentObject[];
@@ -11,27 +13,33 @@ interface Props {
   lockedRatio: boolean;
   onSelect: (id: string) => void;
   onPlacement: (id: string, placement: Placement) => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-  onToggle: (id: string) => void;
+  onDraw: (shape: LaserShape, path: LaserPath) => void;
+  onRemove: (id: string) => void;
 }
 const button = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-xs hover:bg-slate-100 disabled:opacity-40';
+const tools = [{ tool: 'select', label: 'Sélectionner', Icon: MousePointer2 }, { tool: 'line', label: 'Ligne', Icon: Minus },
+  { tool: 'rectangle', label: 'Rectangle', Icon: Square }, { tool: 'ellipse', label: 'Ellipse', Icon: Circle }] as const;
+const pathData = (path: LaserPath) => path.points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${-point.y}`).join(' ') + (path.fillClosed ? 'Z' : '');
 
-export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRatio, onSelect, onPlacement, onDuplicate, onDelete, onToggle }: Props) {
+export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRatio, onSelect, onPlacement, onDraw, onRemove }: Props) {
   const svg = useRef<SVGSVGElement>(null);
+  const gridId = useId();
+  const [tool, setTool] = useState<'select' | LaserShape>('select');
+  const drawing = useRef<{ shape: LaserShape; start: Point2 } | null>(null);
+  const [draft, setDraft] = useState<LaserPath | null>(null);
   const [fit, setFit] = useState<'bed' | 'drawing'>('bed');
   const [zoom, setZoom] = useState(1);
   const drag = useRef<{ id: string; mode: 'move' | 'resize'; start: { x: number; y: number }; placement: Placement; bounds: Bounds2 } | null>(null);
   const [dragFrame, setDragFrame] = useState<Bounds2 | null>(null);
-  const geometries = useMemo(() => objects.map(object => {
+  const geometries = useMemo(() => objects.filter(object => !object.hidden).map(object => {
     try {
+      if (object.raster) return { object, bounds: laserRasterBounds(object.placement), groups: [] };
       const paths = placePaths(object.paths, object.placement);
       const b = boundsOfPaths(paths.filter(path => path.fillOperation !== 'subtract'));
       const groups: { d: string; fill: string; rule: 'nonzero' | 'evenodd'; stroke: boolean }[] = [];
-      const pathData = (path: typeof paths[number]) => path.points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${-point.y}`).join(' ') + (path.fillClosed ? 'Z' : '');
       if (object.fill.mode !== 'contours') {
         const regions = laserFillRegions(paths, object.fill.respectSvgFill);
-        groups.push({ d: regions.map(pathData).join(' '), fill: '#334155', rule: 'evenodd', stroke: object.fill.mode === 'fill-and-contours' });
+        groups.push({ d: regions.map(pathData).join(' '), fill: object.color ?? '#334155', rule: 'evenodd', stroke: object.fill.mode === 'fill-and-contours' });
       }
       const strokes = object.fill.mode === 'contours' ? prepareLaserFill(paths, { ...object.fill, mode: 'contours' }, .15).paths : object.fill.mode === 'fill' ? [] : paths.filter(path => {
         const first = path.points[0], last = path.points[path.points.length - 1];
@@ -57,17 +65,40 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
     return { x: p.x, y: -p.y };
   };
   const begin = (event: React.PointerEvent, id: string, mode: 'move' | 'resize') => {
-    if (disabled || event.button !== 0) return;
+    if (disabled || tool !== 'select' || event.button !== 0) return;
     const start = point(event), geometry = geometries.find(value => value.object.id === id);
     if (!start || !geometry?.bounds) return;
     event.stopPropagation();
+    svg.current?.parentElement?.focus();
     onSelect(id);
     drag.current = { id, mode, start, placement: { ...geometry.object.placement }, bounds: geometry.bounds };
     setDragFrame(frame);
     svg.current?.setPointerCapture(event.pointerId);
   };
-  const selected = objects.find(object => object.id === selectedId);
+  const selected = objects.find(object => object.id === selectedId && !object.hidden);
+  const drawAt = (event: React.PointerEvent) => {
+    const state = drawing.current, end = point(event);
+    if (!state || !end || disabled) return null;
+    const { shape, start } = state;
+    if (event.shiftKey && shape !== 'line') {
+      const length = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y));
+      end.x = start.x + (end.x < start.x ? -length : length);
+      end.y = start.y + (end.y < start.y ? -length : length);
+    }
+    return laserShapePath(shape, start, end);
+  };
+  const finish = (event: React.PointerEvent<SVGSVGElement>, commit: boolean) => {
+    const state = drawing.current;
+    const path = state && commit ? drawAt(event) : null;
+    drawing.current = null;
+    drag.current = null;
+    setDraft(null);
+    setDragFrame(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (state && path) onDraw(state.shape, path);
+  };
   const move = (event: React.PointerEvent) => {
+    if (drawing.current) { setDraft(drawAt(event)); return; }
     const state = drag.current, p = point(event);
     if (!state || !p || disabled) return;
     if (state.mode === 'move') {
@@ -81,40 +112,69 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
       const next = { ...state.placement, width: state.placement.width * (lockedRatio ? scale : sx), height: state.placement.height * (lockedRatio ? scale : sy) };
       const object = objects.find(object => object.id === state.id)!;
       try {
-        const b = boundsOfPaths(placePaths(object.paths, next).filter(path => path.fillOperation !== 'subtract'));
+        const b = object.raster ? laserRasterBounds(next) : boundsOfPaths(placePaths(object.paths, next).filter(path => path.fillOperation !== 'subtract'));
         next.x += state.bounds.minX - b.minX; next.y += state.bounds.minY - b.minY;
         onPlacement(state.id, next);
       } catch { /* Keep the last valid dimensions while dragging. */ }
     }
   };
-  return <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+  const gridStep = Math.pow(10, Math.floor(Math.log10(Math.max(width, height) / 8)));
+  const rulerStep = gridStep * 5;
+  const rulerTicks = (min: number, max: number) => Array.from({ length: Math.max(0, Math.floor(max / rulerStep) - Math.ceil(min / rulerStep) + 1) }, (_, index) => (Math.ceil(min / rulerStep) + index) * rulerStep);
+  return <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
     <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-200">
-      <div><h2 className="text-sm font-bold">Composition SVG / DXF</h2><p className="text-[11px] text-slate-500">Glisser pour déplacer · poignée pour redimensionner · Maj : pas de 1 mm · flèches : 0,1 mm</p></div>
+      <div><h2 className="text-sm font-bold">Plateau de dessin</h2><p className="text-[11px] text-slate-500">{tool === 'select' ? 'Glisser pour déplacer · poignée pour redimensionner' : `${laserShapeNames[tool]} · glisser sur le plateau`}</p></div>
       <div className="flex gap-1"><button className={button} onClick={() => { setFit('bed'); setZoom(1); }}>Plateau</button><button className={button} onClick={() => { setFit('drawing'); setZoom(1); }}>Dessin</button><button className={button} aria-label="Zoom arrière du dessin" onClick={() => setZoom(value => Math.max(.25, value / 1.3))}>−</button><button className={button} aria-label="Zoom avant du dessin" onClick={() => setZoom(value => Math.min(20, value * 1.3))}>+</button></div>
     </div>
-    <div tabIndex={0} aria-label="Éditeur de composition laser" className="focus:outline-sky-500" onKeyDown={event => {
-      if (disabled || !selected || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    <div className="flex border-t border-slate-100">
+    <div role="group" aria-label="Outils de dessin" className="flex shrink-0 flex-col gap-1 border-r border-slate-200 bg-slate-50 p-2">
+      {tools.map(({ tool: value, label, Icon }) => <button key={value} type="button" title={label} aria-label={label} aria-pressed={tool === value} disabled={disabled}
+        className={`grid size-9 place-items-center rounded-md disabled:opacity-40 ${tool === value ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-300' : 'text-slate-600 hover:bg-slate-200'}`} onClick={() => setTool(value)}><Icon size={17} /></button>)}
+      <button type="button" title="Supprimer le tracé sélectionné (Suppr)" aria-label="Supprimer la sélection du dessin" disabled={disabled || !selected}
+        className="grid size-9 place-items-center rounded-md text-rose-700 hover:bg-rose-100 disabled:opacity-40" onClick={() => selected && onRemove(selected.id)}><Trash2 size={17} /></button>
+    </div>
+    <div tabIndex={0} aria-label="Éditeur de composition laser" className="min-w-0 flex-1 focus:outline-sky-500" onKeyDown={event => {
+      if (event.key === 'Escape') { setTool('select'); drawing.current = null; setDraft(null); return; }
+      if (disabled || !selected || drawing.current || drag.current) return;
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        if (!event.repeat) onRemove(selected.id);
+        return;
+      }
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
       event.preventDefault();
       const step = event.shiftKey ? 1 : .1;
       onPlacement(selected.id, { ...selected.placement, x: selected.placement.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0), y: selected.placement.y + (event.key === 'ArrowDown' ? -step : event.key === 'ArrowUp' ? step : 0) });
     }}>
-      <svg ref={svg} role="img" aria-label="Placement des objets dans le repère pièce en millimètres" viewBox={`${x} ${y} ${width} ${height}`} className="w-full h-[420px] bg-slate-50 touch-none" onPointerMove={move} onPointerUp={event => { drag.current = null; setDragFrame(null); if (svg.current?.hasPointerCapture(event.pointerId)) svg.current.releasePointerCapture(event.pointerId); }} onPointerCancel={() => { drag.current = null; setDragFrame(null); }}>
-        <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill="white" stroke="#94a3b8" strokeWidth={unit} />
+      <svg ref={svg} role="img" aria-label="Placement des objets dans le repère pièce en millimètres" viewBox={`${x} ${y} ${width} ${height}`} className={`h-[clamp(370px,64vh,850px)] w-full touch-none bg-slate-100 ${tool === 'select' ? '' : 'cursor-crosshair'}`}
+        onPointerDown={event => {
+          if (disabled || tool === 'select' || event.button !== 0) return;
+          const start = point(event);
+          if (!start) return;
+          event.currentTarget.parentElement?.focus();
+          drawing.current = { shape: tool, start };
+          setDragFrame(frame);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }} onPointerMove={move} onPointerUp={event => finish(event, true)} onPointerCancel={event => finish(event, false)}>
+        <defs><pattern id={gridId} width={gridStep} height={gridStep} patternUnits="userSpaceOnUse"><path d={`M0 0H${gridStep} M0 0V${gridStep}`} stroke="#d6e1ea" strokeWidth={unit * 0.85} /></pattern></defs>
+        <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill="white" />
+        <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill={`url(#${gridId})`} stroke="#94a3b8" strokeWidth={unit} />
         <path d={`M${bed.minX} 0H${bed.maxX} M0 ${-bed.minY}V${-bed.maxY}`} stroke="#cbd5e1" strokeWidth={unit} />
-        {geometries.map(({ object, bounds: b, groups }, i) => b && <g key={object.id} opacity={object.enabled ? 1 : .25} style={{ cursor: disabled ? 'default' : 'move' }} onPointerDown={event => begin(event, object.id, 'move')}>
-          <title>{object.name} — {object.enabled ? 'gravure active' : 'exclu de la gravure'}</title>
-          {groups.map((group, index) => <path key={index} d={group.d} fill={group.fill} fillRule={group.rule} stroke={group.stroke ? (object.id === selectedId ? '#0284c7' : '#475569') : 'none'} strokeWidth={unit * 1.2} />)}
+        <g fontSize={unit * 10} fill="#526477" pointerEvents="none" aria-hidden="true">
+          {rulerTicks(Math.max(bed.minX, x), Math.min(bed.maxX, x + width)).map(tick => <text key={tick} x={tick} y={-bed.maxY - unit * 4} textAnchor="middle">{Number(tick.toFixed(3))}</text>)}
+          {rulerTicks(Math.max(bed.minY, -y - height), Math.min(bed.maxY, -y)).map(tick => <text key={tick} x={bed.minX - unit * 5} y={-tick + unit * 3} textAnchor="end">{Number(tick.toFixed(3))}</text>)}
+        </g>
+        {geometries.map(({ object, bounds: b, groups }) => b && <g key={object.id} opacity={object.enabled ? 1 : .35} style={{ cursor: !disabled && tool === 'select' ? 'move' : undefined }} onPointerDown={event => begin(event, object.id, 'move')}>
+          <title>{`${object.name} — ${object.enabled ? 'gravure active' : 'exclu de la gravure'}`}</title>
+          {object.raster && <image href={object.raster.previewUrl} x={b.minX} y={-b.maxY} width={b.width} height={b.height} preserveAspectRatio="none" />}
+          {groups.map((group, index) => <path key={index} d={group.d} fill={group.fill} fillRule={group.rule} stroke={group.stroke ? object.color ?? '#475569' : 'none'} strokeWidth={unit * 1.5} />)}
           <rect x={b.minX} y={-b.maxY} width={Math.max(b.width, unit * 5)} height={Math.max(b.height, unit * 5)} fill="transparent" stroke={object.id === selectedId ? '#0284c7' : 'transparent'} strokeWidth={unit} strokeDasharray={`${unit * 5} ${unit * 3}`} />
-          <text x={b.minX} y={-b.maxY - unit * 5} fontSize={unit * 10} fill="#0369a1">{i + 1}</text>
-          {object.id === selectedId && !disabled && <rect x={b.maxX - unit * 4} y={-b.maxY - unit * 4} width={unit * 8} height={unit * 8} fill="white" stroke="#0284c7" strokeWidth={unit * 1.5} style={{ cursor: 'nesw-resize' }} onPointerDown={event => begin(event, object.id, 'resize')} />}
+          {object.id === selectedId && !disabled && tool === 'select' && <rect x={b.maxX - unit * 4} y={-b.maxY - unit * 4} width={unit * 8} height={unit * 8} fill="white" stroke="#0284c7" strokeWidth={unit * 1.5} style={{ cursor: 'nesw-resize' }} onPointerDown={event => begin(event, object.id, 'resize')} />}
         </g>)}
+        {draft && <path d={pathData(draft)} fill="none" stroke="#0369a1" strokeWidth={unit * 2} pointerEvents="none" />}
         <circle cx={0} cy={0} r={unit * 3} fill="#e11d48" pointerEvents="none" />
       </svg>
     </div>
-    <div className="p-3 border-t border-slate-200 space-y-2">
-      <div className="flex flex-wrap gap-2 items-center"><strong className="text-xs">Objets · ordre de gravure</strong><button className={button} disabled={disabled || !selected} onClick={onDuplicate}>Dupliquer</button><button className={button} disabled={disabled || objects.length < 2} onClick={onDelete}>Supprimer</button><span className="text-[10px] text-slate-500">Les réglages s’appliquent à l’objet sélectionné. Importer un SVG/DXF ajoute un objet.</span></div>
-      {objects.map((object, i) => <div key={object.id} className={`flex items-center gap-2 p-2 rounded border ${object.id === selectedId ? 'border-sky-400 bg-sky-50' : 'border-slate-200'}`}><input type="checkbox" checked={object.enabled} disabled={disabled} aria-label={`Graver ${object.name}`} onChange={() => onToggle(object.id)} /><button className="text-left text-xs flex-1 truncate disabled:opacity-50" disabled={disabled} onClick={() => onSelect(object.id)}>{i + 1}. {object.name}</button><span className="text-[10px] text-slate-500">{object.cut.feed} mm/min · {object.cut.power}% · {object.cut.passes} passe(s)</span></div>)}
-      <p className="text-[10px] text-slate-500">Aperçu de composition : le parcours réel des hachures et la largeur du spot sont affichés après génération ci-dessous.</p>
     </div>
   </section>;
 }

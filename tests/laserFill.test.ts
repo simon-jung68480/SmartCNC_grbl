@@ -6,6 +6,7 @@ import {
   type LaserFillSettings,
 } from "../src/utils/laserFill";
 import {
+  analyseLaserGCode,
   boundsOfPaths,
   expandLaserBounds,
   generateVectorGCode,
@@ -44,6 +45,35 @@ const cut: LaserCutSettings = {
   passes: 1,
   mode: "M4",
 };
+
+test("offset de remplissage: suit les hachures orientées et préserve les contours", () => {
+  const prepared = prepareLaserFill(
+    [rectangle(10, 10, 5, 5)],
+    { ...fill, mode: "fill-and-contours", angle: 45 },
+    0.15,
+  );
+  const analyse = (settings: LaserCutSettings) =>
+    analyseLaserGCode(generateVectorGCode(prepared.paths, settings), "hachures").engraving;
+  const original = analyse(cut);
+  const shifted = analyse({ ...cut, scanOffsets: [{ feed: 1000, offset: 1 }] });
+  assert.equal(shifted.length, original.length);
+  assert.ok(prepared.paths.filter((path) => path.scanline).length > 2);
+  for (const [index, segment] of original.entries()) {
+    const compensated = shifted[index];
+    if (index >= original.length - 4) {
+      assert.deepEqual(compensated, segment);
+      continue;
+    }
+    const dx = segment.end.x - segment.start.x;
+    const dy = segment.end.y - segment.start.y;
+    const length = Math.hypot(dx, dy);
+    assert.ok(length > 0);
+    for (const point of ["start", "end"] as const) {
+      assert.ok(Math.abs(compensated[point].x - segment[point].x + dx / length) < 0.002);
+      assert.ok(Math.abs(compensated[point].y - segment[point].y + dy / length) < 0.002);
+    }
+  }
+});
 
 test("surfaces: trous conservés et compensation du rayon du spot sur les bords", () => {
   const result = prepareLaserFill(

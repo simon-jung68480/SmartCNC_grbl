@@ -12,6 +12,8 @@ export interface LaserFillSettings {
   angle: number;
   crossHatch: boolean;
   respectSvgFill: boolean;
+  bidirectional?: boolean;
+  overscan?: number;
 }
 
 const SCALE = 10000;
@@ -210,6 +212,8 @@ function hatch(
   regions: LaserPath[],
   spacing: number,
   angle: number,
+  bidirectional: boolean,
+  overscan: number,
 ): LaserPath[] {
   if (!regions.length) return [];
   const radians = (angle * Math.PI) / 180,
@@ -237,6 +241,7 @@ function hatch(
     );
   const result: LaserPath[] = [];
   for (let row = 0; row < rows; row++) {
+    const reverse = bidirectional && row % 2 === 1;
     const epsilon = Math.min(1e-7, b.height / 1000);
     const y = b.minY + epsilon + (row * (b.height - 2 * epsilon)) / (rows - 1),
       intersections: number[] = [];
@@ -250,7 +255,7 @@ function hatch(
         x2 = intersections[i + 1];
       if (x2 - x1 < 0.001) continue;
       const points =
-        row % 2
+        reverse
           ? [
               { x: x2, y },
               { x: x1, y },
@@ -259,9 +264,10 @@ function hatch(
               { x: x1, y },
               { x: x2, y },
             ];
-      spans.push({ points: points.map(restore), label: "Remplissage" });
+      spans.push({ points: points.map(restore), label: "Remplissage", scanline: true, ...(overscan ? { overscan } : {}),
+        ...(!bidirectional ? { compensateScan: false as const } : {}) });
     }
-    if (row % 2) spans.reverse();
+    if (reverse) spans.reverse();
     result.push(...spans);
     if (result.length > 35000)
       throw new Error("Trop de lignes de remplissage. Augmentez le pas.");
@@ -306,6 +312,10 @@ export function prepareLaserFill(
     );
   if (!Number.isFinite(settings.angle))
     throw new Error("Angle de remplissage invalide.");
+  const overscan = settings.overscan ?? 0;
+  if (!Number.isFinite(overscan) || overscan < 0 || overscan > 50)
+    throw new Error("Le surbalayage doit être compris entre 0 et 50 mm.");
+  const bidirectional = settings.bidirectional !== false;
   if (!Number.isFinite(spotDiameter) || spotDiameter <= 0 || spotDiameter > 20)
     throw new Error("Largeur du spot invalide.");
   const regions = laserFillRegions(
@@ -314,9 +324,9 @@ export function prepareLaserFill(
     spotDiameter / 2,
   );
   const filled = [
-    ...hatch(regions, settings.spacing, settings.angle),
+    ...hatch(regions, settings.spacing, settings.angle, bidirectional, overscan),
     ...(settings.crossHatch
-      ? hatch(regions, settings.spacing, settings.angle + 90)
+      ? hatch(regions, settings.spacing, settings.angle + 90, bidirectional, overscan)
       : []),
   ];
   if (!filled.length && settings.mode === "fill")
