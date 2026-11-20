@@ -2,12 +2,22 @@
 
 @layer base {
   :root {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color-scheme: light;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
   }
 
   .font-mono {
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 }
 
@@ -18,9 +28,14 @@
 }
 
 .app-toolbar-wide,
+.app-nav-rail,
 .cnc-splitter,
 .cnc-column-group {
   display: none;
+}
+
+.app-nav-mobile-tools {
+  display: flex;
 }
 
 .cnc-column-tabs,
@@ -31,6 +46,19 @@
 
 .cnc-column-tabs {
   flex: none;
+}
+
+@container smartcnc (min-width: 48rem) {
+  .app-nav-mobile-tools {
+    display: none;
+  }
+
+  .app-nav-rail {
+    display: flex;
+    flex-direction: column;
+    width: 64px;
+    flex-shrink: 0;
+  }
 }
 
 @container smartcnc (min-width: 60rem) {
@@ -59,21 +87,273 @@
   }
 }
 
-/* Light mode clean scrollbars */
+/* Dark Obsidian Cockpit discrete scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #0b0f17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: #2a3447;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* === MODE JOUR (LIGHT THEME) === */
+html.light {
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Surfaces principales & conteneurs */
+html.light .bg-\[\#0b0f17\] { background-color: #f1f5f9; }
+html.light .bg-\[\#0d121b\] { background-color: #e8eff7; }
+html.light .bg-\[\#141b27\] {
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+html.light .bg-\[\#111622\],
+html.light .bg-\[\#111722\] { background-color: #ffffff; }
+html.light .bg-\[\#111622\]\/90 { background-color: rgba(255, 255, 255, 0.92); }
+html.light .bg-\[\#111622\]\/95 { background-color: rgba(255, 255, 255, 0.96); }
+html.light .bg-\[\#0f1520\] { background-color: #f8fafc; }
+html.light .bg-\[\#090d14\],
+html.light .bg-slate-950 { background-color: #f1f5f9; }
+html.light .bg-\[\#090d14\]\/40 { background-color: rgba(241, 245, 249, 0.72); }
+html.light .bg-\[\#1b2436\] { background-color: #e6edf5; }
+html.light .bg-\[\#1b2436\]\/70 { background-color: rgba(230, 237, 245, 0.85); }
+html.light .bg-slate-800 { background-color: #e2e8f0; }
+html.light .bg-slate-800\/90 { background-color: rgba(226, 232, 240, 0.94); }
+html.light .bg-slate-700 { background-color: #cbd5e1; }
+html.light .bg-slate-600 { background-color: #94a3b8; }
+html.light .bg-black\/75 { background-color: rgba(15, 23, 42, 0.45); }
+html.light .backdrop\:bg-black\/75::backdrop { background-color: rgba(15, 23, 42, 0.45); }
+
+/* États survol / actif / focus / disabled des surfaces */
+html.light .hover\:bg-\[\#141b27\]:hover { background-color: #f1f5f9; }
+html.light .hover\:bg-\[\#141b27\]\/80:hover { background-color: rgba(241, 245, 249, 0.88); }
+html.light .hover\:bg-\[\#1b2436\]:hover { background-color: #e2e8f0; }
+html.light .hover\:bg-\[\#1b2436\]\/60:hover { background-color: rgba(226, 232, 240, 0.78); }
+html.light .hover\:bg-\[\#243047\]:hover { background-color: #d6e0ec; }
+html.light .hover\:bg-slate-900:hover { background-color: #e2e8f0; }
+html.light .active\:bg-\[\#2d3b56\]:active { background-color: #cbd5e1; }
+html.light .active\:bg-black:active { background-color: #cbd5e1; }
+html.light .disabled\:bg-\[\#0f1520\]:disabled { background-color: #f1f5f9; }
+html.light .focus\:bg-\[\#0b1019\]:focus { background-color: #ffffff; }
+
+/* Pistes de curseurs (sliders range) */
+html.light input[type="range"].bg-\[\#090d14\] {
+  background-color: #cbd5e1;
+}
+
+/* Bordures */
+html.light .border-slate-800,
+html.light .border-slate-800\/90,
+html.light .border-slate-800\/70 { border-color: #d1dce8; }
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+html.light .border-slate-700\/70 { border-color: #bac8d8; }
+html.light .border-slate-600 { border-color: #94a3b8; }
+html.light .border-white\/25 { border-color: rgba(15, 23, 42, 0.2); }
+html.light .hover\:border-slate-600:hover { border-color: #64748b; }
+html.light .hover\:border-slate-700:hover { border-color: #94a3b8; }
+
+/* Typographie neutre & placeholders */
+html.light .text-slate-50,
+html.light .text-slate-100 { color: #0f172a; }
+html.light .text-slate-200 { color: #1e293b; }
+html.light .text-slate-300 { color: #334155; }
+html.light .text-slate-400 { color: #475569; }
+html.light .text-slate-500 { color: #64748b; }
+html.light .text-slate-600 { color: #475569; }
+html.light .text-white { color: #0f172a; }
+html.light .hover\:text-slate-50:hover,
+html.light .hover\:text-slate-100:hover,
+html.light .hover\:text-white:hover { color: #0f172a; }
+html.light .placeholder\:text-slate-500::placeholder,
+html.light .placeholder-slate-400::placeholder { color: #64748b; }
+
+/* Boutons d'action forts : texte blanc préservé */
+html.light .bg-red-500,
+html.light .bg-red-600,
+html.light .bg-rose-500,
+html.light .bg-rose-600,
+html.light .bg-orange-600,
+html.light .bg-red-500 .text-white,
+html.light .bg-red-600 .text-white,
+html.light .bg-rose-500 .text-white,
+html.light .bg-rose-600 .text-white,
+html.light .bg-orange-600 .text-white,
+html.light .bg-red-600.text-white,
+html.light .bg-rose-600.text-white,
+html.light .bg-orange-600.text-white,
+html.light .bg-red-600:hover,
+html.light .bg-rose-600:hover,
+html.light .bg-orange-600:hover {
+  color: #ffffff;
+}
+
+/* Textes sémantiques contrastés sur fond clair (WCAG AA/AAA) */
+html.light .text-sky-100,
+html.light .text-sky-200 { color: #075985; }
+html.light .text-sky-300,
+html.light .text-sky-400 { color: #0369a1; }
+html.light .hover\:text-sky-200:hover { color: #075985; }
+
+html.light .text-emerald-100,
+html.light .text-emerald-200 { color: #065f46; }
+html.light .text-emerald-300,
+html.light .text-emerald-400 { color: #047857; }
+html.light .hover\:text-emerald-400:hover { color: #047857; }
+
+html.light .text-amber-100,
+html.light .text-amber-200 { color: #78350f; }
+html.light .text-amber-300 { color: #92400e; }
+html.light .text-amber-400 { color: #b45309; }
+
+html.light .text-rose-100\/90,
+html.light .text-rose-200 { color: #9f1239; }
+html.light .text-rose-300,
+html.light .text-rose-400 { color: #be123c; }
+html.light .hover\:text-rose-300:hover,
+html.light .hover\:text-rose-400:hover { color: #9f1239; }
+
+html.light .text-red-100,
+html.light .text-red-200 { color: #991b1b; }
+html.light .text-red-400 { color: #dc2626; }
+
+html.light .text-orange-300 { color: #c2410c; }
+html.light .text-blue-300,
+html.light .text-blue-400 { color: #1d4ed8; }
+html.light .text-indigo-200,
+html.light .text-indigo-300 { color: #3730a3; }
+html.light .text-violet-300,
+html.light .text-violet-400 { color: #6d28d9; }
+html.light .text-fuchsia-400 { color: #a21caf; }
+
+/* Bouton actif texte sombre sur fond accent lumineux */
+html.light .bg-sky-400,
+html.light .bg-emerald-500,
+html.light .bg-amber-400 {
+  color: #020617;
+}
+html.light .bg-sky-400 .text-slate-950,
+html.light .bg-emerald-500 .text-slate-950,
+html.light .text-slate-950,
+html.light .hover\:text-slate-950:hover {
+  color: #020617;
+}
+
+/* Badges et zones teintées (Sky / Emerald / Amber / Rose / Red / Orange / Blue / Indigo / Violet) */
+html.light .bg-sky-500\/10,
+html.light .bg-sky-950\/30 { background-color: rgba(14, 165, 233, 0.09); }
+html.light .bg-sky-500\/15,
+html.light .bg-sky-950\/50 { background-color: rgba(14, 165, 233, 0.14); }
+html.light .bg-sky-500\/20,
+html.light .bg-sky-950\/60 { background-color: rgba(14, 165, 233, 0.18); }
+html.light .hover\:bg-sky-500\/15:hover { background-color: rgba(14, 165, 233, 0.18); }
+html.light .hover\:bg-sky-500\/25:hover,
+html.light .hover\:bg-sky-900\/60:hover,
+html.light .hover\:bg-sky-950\/60:hover { background-color: rgba(14, 165, 233, 0.24); }
+html.light .active\:bg-sky-800\/60:active { background-color: rgba(14, 165, 233, 0.3); }
+
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-950\/35 { background-color: rgba(16, 185, 129, 0.12); }
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-950\/50,
+html.light .bg-emerald-950\/60 { background-color: rgba(16, 185, 129, 0.17); }
+html.light .hover\:bg-emerald-500\/30:hover,
+html.light .hover\:bg-emerald-900\/60:hover,
+html.light .hover\:bg-emerald-950\/60:hover { background-color: rgba(16, 185, 129, 0.24); }
+html.light .active\:bg-emerald-800\/60:active { background-color: rgba(16, 185, 129, 0.3); }
+
+html.light .bg-amber-500\/10,
+html.light .bg-amber-950\/35,
+html.light .bg-amber-950\/40 { background-color: rgba(245, 158, 11, 0.12); }
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/20,
+html.light .bg-amber-950\/50,
+html.light .bg-amber-950\/60 { background-color: rgba(245, 158, 11, 0.18); }
+html.light .hover\:bg-amber-500\/25:hover { background-color: rgba(245, 158, 11, 0.26); }
+html.light .active\:bg-amber-500\/35:active { background-color: rgba(245, 158, 11, 0.34); }
+
+html.light .bg-rose-500\/15,
+html.light .bg-rose-500\/20,
+html.light .bg-rose-950\/50 { background-color: rgba(225, 29, 72, 0.10); }
+html.light .hover\:bg-rose-500\/30:hover,
+html.light .hover\:bg-rose-900\/60:hover,
+html.light .hover\:bg-rose-950\/60:hover { background-color: rgba(225, 29, 72, 0.18); }
+html.light .active\:bg-rose-800\/60:active { background-color: rgba(225, 29, 72, 0.25); }
+
+html.light .bg-red-500\/15,
+html.light .bg-red-500\/20,
+html.light .bg-red-600\/20,
+html.light .bg-red-600\/25,
+html.light .bg-red-950\/60,
+html.light .bg-red-950\/75 { background-color: rgba(220, 38, 38, 0.12); }
+html.light .hover\:bg-red-500\/25:hover,
+html.light .hover\:bg-red-600\/35:hover,
+html.light .hover\:bg-red-900\/70:hover { background-color: rgba(220, 38, 38, 0.20); }
+
+html.light .bg-orange-500\/20 { background-color: rgba(234, 88, 12, 0.14); }
+html.light .bg-blue-500\/15 { background-color: rgba(37, 99, 235, 0.12); }
+html.light .bg-indigo-500\/15,
+html.light .bg-indigo-950\/60 { background-color: rgba(79, 70, 229, 0.12); }
+html.light .bg-violet-500\/15 { background-color: rgba(124, 58, 237, 0.12); }
+
+/* Modificateurs !important Tailwind en Mode Jour */
+html.light .\!bg-sky-400 { background-color: #38bdf8 !important; }
+html.light .hover\:\!bg-sky-300:hover { background-color: #7dd3fc !important; }
+html.light .\!text-slate-950 { color: #020617 !important; }
+html.light .\!border-sky-300 { border-color: #0284c7 !important; }
+html.light .\!border-sky-400 { border-color: #0284c7 !important; }
+html.light .\!bg-sky-400\/20 { background-color: rgba(14, 165, 233, 0.18) !important; }
+html.light .\!text-sky-200 { color: #075985 !important; }
+html.light .\!bg-emerald-500 { background-color: #10b981 !important; }
+html.light .hover\:\!bg-emerald-400:hover { background-color: #34d399 !important; }
+html.light .\!border-emerald-400 { border-color: #059669 !important; }
+html.light .\!text-rose-300 { color: #be123c !important; }
+html.light .\!border-rose-500\/40 { border-color: rgba(225, 29, 72, 0.45) !important; }
+html.light .hover\:\!bg-rose-950\/60:hover { background-color: rgba(225, 29, 72, 0.16) !important; }
+
+/* Bordures accentuées */
+html.light .border-sky-400,
+html.light .border-sky-300,
+html.light .border-sky-500\/60,
+html.light .border-sky-400\/50 { border-color: #0284c7; }
+html.light .border-emerald-400,
+html.light .border-emerald-300,
+html.light .border-emerald-500\/60,
+html.light .border-emerald-400\/50 { border-color: #059669; }
+html.light .border-amber-400,
+html.light .border-amber-300 { border-color: #d97706; }
+html.light .border-rose-400,
+html.light .border-rose-500\/60 { border-color: #e11d48; }
+html.light .border-red-400,
+html.light .border-red-500\/60 { border-color: #dc2626; }
+
+/* Scrollbars Mode Jour */
+html.light ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+html.light ::-webkit-scrollbar-thumb {
   background: #94a3b8;
 }
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+html.light .active\:bg-slate-950:active { background-color: #cbd5e1; }
+html.light .divide-slate-800 > :not(:last-child) { border-color: #d1dce8; }
+html.light .divide-slate-700\/80 > :not(:last-child) { border-color: #bac8d8; }

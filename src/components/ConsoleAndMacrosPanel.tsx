@@ -88,40 +88,40 @@ const MACRO_COLORS: Record<
   { bg: string; border: string; text: string; badge: string }
 > = {
   cyan: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-sky-600',
-    badge: 'bg-sky-50 text-sky-700 border border-sky-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-sky-500/40',
+    text: 'text-sky-400',
+    badge: 'bg-sky-500/15 text-sky-300 border border-sky-500/40',
   },
   amber: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-amber-600',
-    badge: 'bg-amber-50 text-amber-700 border border-amber-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-amber-500/40',
+    text: 'text-amber-400',
+    badge: 'bg-amber-500/15 text-amber-300 border border-amber-500/40',
   },
   emerald: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-emerald-600',
-    badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-emerald-500/40',
+    text: 'text-emerald-400',
+    badge: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40',
   },
   purple: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-purple-600',
-    badge: 'bg-purple-50 text-purple-700 border border-purple-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-violet-500/40',
+    text: 'text-violet-400',
+    badge: 'bg-violet-500/15 text-violet-300 border border-violet-500/40',
   },
   blue: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-blue-600',
-    badge: 'bg-blue-50 text-blue-700 border border-blue-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-blue-500/40',
+    text: 'text-blue-400',
+    badge: 'bg-blue-500/15 text-blue-300 border border-blue-500/40',
   },
   rose: {
-    bg: 'bg-slate-50 hover:bg-slate-100/80',
-    border: 'border-slate-200 hover:border-slate-300',
-    text: 'text-red-600',
-    badge: 'bg-red-50 text-red-700 border border-red-200',
+    bg: 'bg-[#0f1520] hover:bg-[#1b2436]',
+    border: 'border-slate-800 hover:border-rose-500/40',
+    text: 'text-rose-400',
+    badge: 'bg-rose-500/15 text-rose-300 border border-rose-500/40',
   },
 };
 
@@ -338,38 +338,39 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
   const getBadgeStyle = (type: ConsoleEntry['type']) => {
     switch (type) {
       case 'tx':
-        return 'bg-sky-100 text-sky-800 border-sky-300';
+        return 'bg-sky-500/15 text-sky-300 border-sky-500/40';
       case 'ok':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40';
       case 'rx':
-        return 'bg-slate-200 text-slate-800 border-slate-300';
+        return 'bg-slate-800 text-slate-200 border-slate-700';
       case 'error':
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'bg-rose-500/15 text-rose-300 border-rose-500/40';
       case 'alarm':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
+        return 'bg-amber-500/15 text-amber-300 border-amber-500/40';
       case 'info':
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-300';
+        return 'bg-[#1b2436] text-slate-300 border-slate-700';
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-slate-300 text-slate-800 shadow-sm rounded-xl overflow-hidden">
-      {/* Barre d'onglets Console Série / Macros Personnalisées */}
-      <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+    <div className="flex flex-col h-full bg-[#141b27] border border-slate-800 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)] rounded-xl overflow-hidden">
+      {/* Barre d'onglets Console / Macros */}
+      <div className="px-3 py-2 bg-[#0f1520] border-b border-slate-800 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-[#090d14] p-1 rounded-xl border border-slate-800">
           <button
             type="button"
             onClick={() => setActiveTab('console')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+            aria-pressed={activeTab === 'console'}
+            className={`inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'console'
-                ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
+                : 'text-slate-300 hover:text-white border border-transparent'
             }`}
           >
-            <Terminal className="w-3.5 h-3.5 text-blue-600" />
-            <span>Console Série GRBL</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 border border-slate-200 text-slate-700">
+            <Terminal className="w-3.5 h-3.5 text-sky-400" />
+            <span>Console</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-[#090d14] text-slate-200 tabular-nums border border-slate-800">
               {filteredEntries.length}
             </span>
           </button>
@@ -377,15 +378,16 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('macros')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+            aria-pressed={activeTab === 'macros'}
+            className={`inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'macros'
-                ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
+                : 'text-slate-300 hover:text-white border border-transparent'
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-600" />
-            <span>Macros Rapides</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 border border-slate-200 text-slate-700">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>Macros</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-[#090d14] text-slate-200 tabular-nums border border-slate-800">
               {activeMacros.length}
             </span>
           </button>
@@ -397,17 +399,18 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
             <button
               type="button"
               onClick={() => setHideStatusReports((v) => !v)}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors cursor-pointer ${
+              aria-pressed={!hideStatusReports}
+              className={`inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
                 hideStatusReports
-                  ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                  : 'bg-blue-50 border-blue-300 text-blue-800'
+                  ? 'bg-[#1b2436] border-slate-700/80 text-slate-200 hover:bg-[#243047]'
+                  : 'bg-sky-500/15 border-sky-400/50 text-sky-200'
               }`}
               title="Masquer/Afficher les trames de statut périodiques (? / <Idle|...>)"
             >
               {hideStatusReports ? (
-                <EyeOff className="w-3 h-3 text-slate-500" />
+                <EyeOff className="w-3.5 h-3.5 text-slate-400" />
               ) : (
-                <Eye className="w-3 h-3 text-blue-600" />
+                <Eye className="w-3.5 h-3.5 text-sky-400" />
               )}
               <span className="hidden sm:inline">Masquer ?</span>
             </button>
@@ -416,8 +419,9 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               type="button"
               onClick={handleExportLogs}
               disabled={filteredEntries.length === 0}
-              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer disabled:opacity-40"
+              className="min-h-8 min-w-8 flex items-center justify-center rounded-lg bg-[#1b2436] hover:bg-[#243047] text-slate-200 hover:text-white border border-slate-700/80 transition-colors cursor-pointer disabled:opacity-40"
               title="Exporter l'historique de la console (.log)"
+              aria-label="Exporter l'historique de la console"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -426,8 +430,9 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               <button
                 type="button"
                 onClick={onClearConsole}
-                className="p-1.5 rounded bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 transition-colors cursor-pointer"
+                className="min-h-8 min-w-8 flex items-center justify-center rounded-lg bg-[#1b2436] hover:bg-rose-950/60 text-slate-200 hover:text-rose-300 border border-slate-700/80 hover:border-rose-500/50 transition-colors cursor-pointer"
                 title="Vider la console"
+                aria-label="Vider la console"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -449,18 +454,18 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                   confirmBeforeRun: false,
                 });
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 min-h-8 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Nouvelle Macro</span>
+              <span>Macro</span>
             </button>
             <button
               type="button"
               onClick={handleResetDefaultMacros}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition-colors cursor-pointer"
               title="Réinitialiser les macros d'usine"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Défaut</span>
             </button>
           </div>
@@ -470,34 +475,35 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
       {/* CONTENU ONGLET 1 : CONSOLE SERIE GRBL */}
       {activeTab === 'console' && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Boutons de commandes système rapides */}
-          <div className="px-3 py-1.5 bg-white border-b border-slate-200 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-              Système GRBL :
+          {/* Barre de commandes système GRBL sur 1 ligne */}
+          <div className="px-3 py-2 bg-[#141b27] border-b border-slate-800 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+              GRBL :
             </span>
             {[
-              { cmd: '$$', label: '$$ Paramètres' },
-              { cmd: '$#', label: '$# Décalages' },
-              { cmd: '$G', label: '$G État Parser' },
-              { cmd: '$I', label: '$I Infos Build' },
-              { cmd: '$C', label: '$C Mode Test' },
-              { cmd: '$X', label: '$X Déverrouiller' },
+              { cmd: '$$', title: '$$ — Afficher tous les paramètres EEPROM GRBL' },
+              { cmd: '$#', title: '$# — Afficher les décalages G54..G59, G28, G92' },
+              { cmd: '$G', title: '$G — Afficher l’état du parseur G-Code' },
+              { cmd: '$I', title: '$I — Afficher les informations de build GRBL' },
+              { cmd: '$C', title: '$C — Activer / désactiver le mode test sans mouvement' },
+              { cmd: '$X', title: '$X — Déverrouiller GRBL après alarme' },
             ].map((q) => (
               <button
                 key={q.cmd}
                 type="button"
                 disabled={!connected}
                 onClick={() => onSendCommand(q.cmd)}
-                className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer disabled:opacity-40"
+                title={q.title}
+                className="min-h-8 px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition-colors cursor-pointer disabled:opacity-40"
               >
-                {q.label}
+                {q.cmd}
               </button>
             ))}
           </div>
 
-          {/* Terminal temps réel sur fond clair */}
+          {/* Terminal temps réel */}
           <div
-            className="flex-1 min-h-[170px] overflow-y-auto p-3 bg-slate-50 border-b border-slate-200 text-slate-800 font-mono text-xs space-y-1.5 select-text"
+            className="flex-1 min-h-[150px] overflow-y-auto p-3 bg-[#090d14] border-b border-slate-800 text-slate-100 font-mono text-xs space-y-1 select-text"
             onScroll={(e) => {
               const el = e.currentTarget;
               const isNearBottom =
@@ -506,20 +512,20 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
             }}
           >
             {filteredEntries.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-slate-500 text-xs">
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs text-center px-4">
                 En attente de communication série avec l'Arduino Uno (115200 bauds)...
               </div>
             ) : (
               filteredEntries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-start gap-2 leading-relaxed hover:bg-slate-200/60 px-1.5 py-0.5 rounded"
+                  className="flex items-start gap-2 leading-relaxed hover:bg-[#141b27]/80 px-2 py-0.5 rounded-md"
                 >
-                  <span className="text-[10px] text-slate-500 shrink-0 select-none pt-0.5">
+                  <span className="text-[11px] text-slate-400 shrink-0 select-none pt-0.5 tabular-nums">
                     {entry.timestamp}
                   </span>
                   <span
-                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase border shrink-0 select-none ${getBadgeStyle(
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 select-none ${getBadgeStyle(
                       entry.type
                     )}`}
                   >
@@ -529,20 +535,20 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                     <span
                       className={
                         entry.type === 'error'
-                          ? 'text-red-700 font-semibold'
+                          ? 'text-rose-300 font-semibold'
                           : entry.type === 'alarm'
-                          ? 'text-amber-700 font-semibold'
+                          ? 'text-amber-300 font-semibold'
                           : entry.type === 'tx'
-                          ? 'text-blue-700 font-medium'
+                          ? 'text-sky-300 font-medium'
                           : entry.type === 'ok'
-                          ? 'text-emerald-700 font-medium'
-                          : 'text-slate-900'
+                          ? 'text-emerald-300 font-medium'
+                          : 'text-slate-100'
                       }
                     >
                       {entry.text}
                     </span>
                     {entry.detail && (
-                      <span className="ml-2 text-[11px] text-slate-600 italic">
+                      <span className="ml-2 text-[11px] text-slate-300 italic">
                         — {entry.detail}
                       </span>
                     )}
@@ -556,9 +562,12 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
           {/* Champ de commande manuelle MDI */}
           <form
             onSubmit={handleSendMdi}
-            className="p-2.5 bg-white flex items-center gap-2"
+            className="p-2.5 bg-[#0f1520] flex items-center gap-2"
           >
             <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs font-bold text-sky-400 pointer-events-none">
+                &gt;
+              </span>
               <input
                 type="text"
                 value={mdiInput}
@@ -567,19 +576,19 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                 disabled={!connected}
                 placeholder={
                   connected
-                    ? 'Commande MDI (ex: G0 X10 Y10, $$, $#, $G, M3 S10000) — ↑/↓ Historique'
+                    ? 'Commande MDI (G0 X10, $$, M3 S10000...)'
                     : 'Connectez la CNC pour envoyer des commandes MDI...'
                 }
-                className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg pl-3 pr-20 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none disabled:opacity-50"
+                className="w-full min-h-9 bg-[#090d14] focus:bg-[#0b1019] border border-slate-700 focus:border-sky-400 rounded-lg pl-7 pr-16 py-1.5 text-xs font-mono text-slate-100 placeholder-slate-400 focus:outline-none disabled:opacity-50"
               />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 pointer-events-none">
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-400 pointer-events-none">
                 ↑/↓ Hist.
               </span>
             </div>
             <button
               type="submit"
               disabled={!connected || !mdiInput.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-sky-400 hover:bg-sky-300 text-slate-950 transition-colors cursor-pointer disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Envoyer</span>
@@ -590,8 +599,8 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* CONTENU ONGLET 2 : MACROS PERSONNALISEES */}
       {activeTab === 'macros' && (
-        <div className="flex-1 p-3 overflow-y-auto bg-white">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="flex-1 p-3 overflow-y-auto bg-[#090d14]/40">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
             {activeMacros.map((macro) => {
               const style = MACRO_COLORS[macro.color] || MACRO_COLORS.cyan;
               const IconComponent = MACRO_ICONS[macro.icon] || Zap;
@@ -599,59 +608,64 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               return (
                 <div
                   key={macro.id}
-                  className={`group relative flex flex-col justify-between p-3 rounded-lg border transition-colors text-slate-800 ${style.bg} ${style.border}`}
+                  className={`group relative flex flex-col justify-between p-3 rounded-xl border ${style.border} bg-[#0f1520] transition-colors text-slate-100 shadow-sm`}
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded ${style.badge}`}>
-                          <IconComponent className="w-4 h-4" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`p-1.5 rounded-lg shrink-0 ${style.badge}`}>
+                          <IconComponent className="w-3.5 h-3.5" />
                         </div>
-                        <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                        <h4 className="text-xs font-bold text-slate-50 leading-snug truncate">
                           {macro.name}
                         </h4>
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={() => {
                             setIsCreatingMacro(false);
                             setEditingMacro({ ...macro });
                           }}
-                          className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer"
+                          className="min-h-7 min-w-7 flex items-center justify-center rounded-md hover:bg-[#1b2436] text-slate-300 hover:text-white cursor-pointer"
                           title="Modifier cette macro"
+                          aria-label={`Modifier ${macro.name}`}
                         >
-                          <Edit3 className="w-3 h-3" />
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteMacro(macro.id)}
-                          className="p-1 rounded bg-slate-100 hover:bg-red-50 border border-slate-300 hover:border-red-300 text-slate-600 hover:text-red-700 cursor-pointer"
+                          className="min-h-7 min-w-7 flex items-center justify-center rounded-md hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 cursor-pointer"
                           title="Supprimer cette macro"
+                          aria-label={`Supprimer ${macro.name}`}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-slate-600 mb-2 line-clamp-2">
+                    <p className="text-[11px] text-slate-300 mb-2 line-clamp-2 leading-snug">
                       {macro.description}
                     </p>
 
-                    <pre className="p-2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-800 overflow-x-auto max-h-16 mb-2.5">
+                    <div
+                      title={macro.gcode}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#090d14] border border-slate-800 text-[11px] font-mono text-slate-300 line-clamp-2 mb-2.5 whitespace-pre-wrap"
+                    >
                       {macro.gcode}
-                    </pre>
+                    </div>
                   </div>
 
                   <button
                     type="button"
                     disabled={!connected}
                     onClick={() => handleTriggerMacro(macro)}
-                    className="w-full py-1.5 px-3 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 border border-slate-300 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                    className="w-full min-h-9 py-1.5 px-3 rounded-lg bg-[#1b2436] hover:bg-[#243047] text-xs font-bold text-slate-100 border border-slate-700/80 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Play className={`w-3 h-3 ${style.text} fill-current`} />
-                    <span>Exécuter la macro</span>
+                    <Play className={`w-3.5 h-3.5 ${style.text} fill-current`} />
+                    <span>Exécuter</span>
                   </button>
                 </div>
               );
@@ -662,23 +676,23 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* Modale de confirmation avant exécution de macro sensible */}
       {confirmingMacro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="bg-white border border-slate-300 shadow-lg rounded-xl max-w-md w-full p-5 space-y-4 text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="bg-[#141b27] border border-slate-700 shadow-2xl rounded-2xl max-w-md w-full p-5 space-y-4 text-slate-100">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-300">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/40">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-slate-50">
                   Confirmer l'exécution de la macro
                 </h4>
-                <p className="text-xs text-slate-600">{confirmingMacro.name}</p>
+                <p className="text-xs text-slate-300">{confirmingMacro.name}</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-700">{confirmingMacro.description}</p>
+            <p className="text-xs text-slate-200">{confirmingMacro.description}</p>
 
-            <pre className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-blue-700 overflow-x-auto">
+            <pre className="p-3 rounded-xl bg-[#090d14] border border-slate-800 text-xs font-mono text-sky-300 overflow-x-auto">
               {confirmingMacro.gcode}
             </pre>
 
@@ -686,14 +700,14 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setConfirmingMacro(null)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 cursor-pointer"
+                className="min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] border border-slate-700/80 text-slate-100 cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => executeMacroLines(confirmingMacro)}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
+                className="inline-flex items-center gap-1.5 min-h-9 px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Confirmer et Exécuter</span>
@@ -705,19 +719,19 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* Modale de Création / Édition de Macro */}
       {editingMacro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
           <form
             onSubmit={handleSaveMacro}
-            className="bg-white border border-slate-300 shadow-lg rounded-xl max-w-lg w-full overflow-hidden text-slate-800"
+            className="bg-[#141b27] border border-slate-700 shadow-2xl rounded-2xl max-w-lg w-full overflow-hidden text-slate-100"
           >
-            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-900">
+            <div className="px-5 py-3.5 bg-[#0f1520] border-b border-slate-800 flex items-center justify-between">
+              <h4 className="text-sm font-bold text-slate-50">
                 {isCreatingMacro ? 'Créer une Macro CNC' : 'Modifier la Macro CNC'}
               </h4>
               <button
                 type="button"
                 onClick={() => setEditingMacro(null)}
-                className="p-1 text-slate-500 hover:text-slate-900 cursor-pointer"
+                className="min-h-8 min-w-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -725,7 +739,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
             <div className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-slate-200 font-semibold mb-1">
                   Nom de la macro
                 </label>
                 <input
@@ -735,13 +749,13 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                   onChange={(e) =>
                     setEditingMacro({ ...editingMacro, name: e.target.value })
                   }
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                  className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
+                  <label className="block text-slate-200 font-semibold mb-1">
                     Couleur du bouton
                   </label>
                   <select
@@ -749,7 +763,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                     onChange={(e) =>
                       setEditingMacro({ ...editingMacro, color: e.target.value })
                     }
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100"
                   >
                     <option value="cyan">Bleu Ciel</option>
                     <option value="amber">Ambre Attention</option>
@@ -761,7 +775,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
+                  <label className="block text-slate-200 font-semibold mb-1">
                     Icône
                   </label>
                   <select
@@ -769,7 +783,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                     onChange={(e) =>
                       setEditingMacro({ ...editingMacro, icon: e.target.value })
                     }
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100"
                   >
                     <option value="Maximize2">Cadre (Maximize2)</option>
                     <option value="Wrench">Clé Outil (Wrench)</option>
@@ -783,7 +797,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-slate-200 font-semibold mb-1">
                   Description courte
                 </label>
                 <input
@@ -792,12 +806,12 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                   onChange={(e) =>
                     setEditingMacro({ ...editingMacro, description: e.target.value })
                   }
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900"
+                  className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-slate-200 font-semibold mb-1">
                   Script G-Code multi-lignes
                 </label>
                 <textarea
@@ -807,7 +821,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                   onChange={(e) =>
                     setEditingMacro({ ...editingMacro, gcode: e.target.value })
                   }
-                  className="w-full bg-white border border-slate-300 rounded-lg p-3 font-mono text-xs text-slate-900"
+                  className="w-full bg-[#090d14] border border-slate-700 rounded-lg p-3 font-mono text-xs text-slate-100"
                 />
               </div>
 
@@ -821,25 +835,25 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                       confirmBeforeRun: e.target.checked,
                     })
                   }
-                  className="rounded border-slate-300 bg-white text-blue-600"
+                  className="rounded border-slate-600 bg-[#090d14] text-sky-400"
                 />
-                <span className="text-slate-700">
+                <span className="text-slate-200">
                   Demander une confirmation avant d'exécuter cette macro
                 </span>
               </label>
             </div>
 
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="px-5 py-3 bg-[#0f1520] border-t border-slate-800 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setEditingMacro(null)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 cursor-pointer"
+                className="min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] border border-slate-700/80 text-slate-100 cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                className="inline-flex items-center gap-1.5 min-h-9 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Enregistrer</span>

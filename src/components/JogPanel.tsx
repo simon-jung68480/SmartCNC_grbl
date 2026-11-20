@@ -11,15 +11,12 @@ import {
   OctagonX,
   Keyboard,
   Gamepad2,
-  Fan,
-  Droplets,
-  Wind,
-  PowerOff,
   Gauge,
   Move,
   Hand,
 } from 'lucide-react';
 import { GrblStatus } from '../types/cnc';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface JogPanelProps {
   status: GrblStatus;
@@ -27,6 +24,7 @@ export interface JogPanelProps {
   onSendRealtime?: (byte: number | string) => void;
   onJog?: (axes: { x?: number; y?: number; z?: number }, feedRate: number) => void;
   onCancelJog?: () => void;
+  active?: boolean;
 }
 
 const STEP_PRESETS = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100];
@@ -39,14 +37,18 @@ export const JogPanel: React.FC<JogPanelProps> = ({
   onSendRealtime,
   onJog,
   onCancelJog,
+  active = true,
 }) => {
+  const { preferences, updatePreferences } = useAppPreferences();
+  const prefsRef = useRef(preferences);
+  prefsRef.current = preferences;
+  const keyboardEnabled = preferences.keyboardShortcutsEnabled;
+
   const [jogMode, setJogMode] = useState<'step' | 'continuous'>('step');
   const [stepSize, setStepSize] = useState<number>(1);
   const [customStepInput, setCustomStepInput] = useState<string>('1');
   const [xyFeedRate, setXyFeedRate] = useState<number>(2000);
   const [zFeedRate, setZFeedRate] = useState<number>(500);
-  const [spindleRpm, setSpindleRpm] = useState<number>(status.spindleSpeed || 12000);
-  const [keyboardEnabled, setKeyboardEnabled] = useState<boolean>(true);
   const [gamepadConnected, setGamepadConnected] = useState<boolean>(false);
   const [gamepadName, setGamepadName] = useState<string>('');
   const [gamepadActiveAxis, setGamepadActiveAxis] = useState<string | null>(null);
@@ -136,9 +138,17 @@ export const JogPanel: React.FC<JogPanelProps> = ({
     setCustomStepInput(String(val));
   };
 
+  // Arrêt de sécurité si le panneau devient inactif (changement d'atelier ou d'onglet)
+  useEffect(() => {
+    if (!active && (continuousActiveRef.current || gamepadWasJoggingRef.current)) {
+      gamepadWasJoggingRef.current = false;
+      sendCancelJog();
+    }
+  }, [active, sendCancelJog]);
+
   // Raccourcis Clavier sécurisés
   useEffect(() => {
-    if (!keyboardEnabled) return;
+    if (!active || !keyboardEnabled) return;
 
     const isInputFocused = (el: EventTarget | null) => {
       if (!el || !(el instanceof HTMLElement)) return false;
@@ -279,10 +289,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [keyboardEnabled, jogMode, stepSize, executeJogMove, sendCancelJog, sendFeedHold]);
+  }, [active, keyboardEnabled, jogMode, stepSize, executeJogMove, sendCancelJog, sendFeedHold]);
 
   // Intégration native Web Gamepad API
   useEffect(() => {
+    if (!active) return;
     const onConnect = (e: GamepadEvent) => {
       setGamepadConnected(true);
       setGamepadName(e.gamepad.id.split('(')[0].trim() || 'Manette USB');
@@ -297,12 +308,13 @@ export const JogPanel: React.FC<JogPanelProps> = ({
     window.addEventListener('gamepaddisconnected', onDisconnect);
 
     let rafId: number;
-    const DEADZONE = 0.18;
 
     const pollGamepad = () => {
       if (typeof navigator.getGamepads === 'function') {
         const pads = navigator.getGamepads();
         const pad = pads ? pads[0] || pads[1] || pads[2] || pads[3] : null;
+        const deadzone = prefsRef.current.gamepadDeadzone;
+        const maxGamepadFeed = prefsRef.current.gamepadMaxSpeed;
 
         if (pad && pad.connected) {
           if (!gamepadConnected) {
@@ -339,11 +351,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
               const rawRightZ = -(pad.axes[3] || 0);
               const ltVal = pad.buttons[6]?.value || 0;
               const rtVal = pad.buttons[7]?.value || 0;
-              const rawZ = Math.abs(rawRightZ) > DEADZONE ? rawRightZ : rtVal - ltVal;
+              const rawZ = Math.abs(rawRightZ) > deadzone ? rawRightZ : rtVal - ltVal;
 
-              const ax = Math.abs(rawX) > DEADZONE ? rawX : 0;
-              const ay = Math.abs(rawY) > DEADZONE ? rawY : 0;
-              const az = Math.abs(rawZ) > DEADZONE ? rawZ : 0;
+              const ax = Math.abs(rawX) > deadzone ? rawX : 0;
+              const ay = Math.abs(rawY) > deadzone ? rawY : 0;
+              const az = Math.abs(rawZ) > deadzone ? rawZ : 0;
 
               if (ax !== 0 || ay !== 0 || az !== 0) {
                 gamepadWasJoggingRef.current = true;
@@ -356,7 +368,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
 
                 if (now - lastAnalogSendRef.current > 120) {
                   lastAnalogSendRef.current = now;
-                  const baseFeed = az !== 0 && ax === 0 && ay === 0 ? zFeedRate : xyFeedRate;
+                  const baseFeed =
+                    az !== 0 && ax === 0 && ay === 0
+                      ? Math.min(zFeedRate, maxGamepadFeed)
+                      : maxGamepadFeed;
                   const scaledFeed = Math.max(60, Math.round(baseFeed * mag));
                   const deltaSec = 0.14;
                   const distFactor = (scaledFeed / 60) * deltaSec;
@@ -380,484 +395,374 @@ export const JogPanel: React.FC<JogPanelProps> = ({
       window.removeEventListener('gamepadconnected', onConnect);
       window.removeEventListener('gamepaddisconnected', onDisconnect);
     };
-  }, [gamepadConnected, stepSize, xyFeedRate, zFeedRate, executeJogMove, sendCancelJog]);
+  }, [active, gamepadConnected, stepSize, xyFeedRate, zFeedRate, executeJogMove, sendCancelJog]);
 
   const padBtnClass =
-    'relative flex flex-col items-center justify-center rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed h-14 sm:h-15 select-none touch-none';
+    'relative flex flex-col items-center justify-center rounded-xl border border-slate-700/80 bg-[#1b2436] hover:bg-[#243047] active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed min-h-[50px] select-none touch-none';
 
   return (
-    <div className="bg-white border border-slate-300 text-slate-800 shadow-sm rounded-xl p-3.5 flex flex-col gap-3 select-none">
-      {/* En-tête : Sélecteur Mode Pas-à-Pas vs Continu + Badges Clavier / Manette */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200">
-        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setJogMode('step')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
-              jogMode === 'step'
-                ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Move className="w-3.5 h-3.5 text-blue-600" />
-            <span>Pas-à-pas</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setJogMode('continuous')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
-              jogMode === 'continuous'
-                ? 'bg-amber-500 text-white border border-amber-600'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Hand className="w-3.5 h-3.5" />
-            <span>Continu</span>
-          </button>
+    <div className="bg-[#141b27] border border-slate-800 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)] rounded-xl p-3.5 flex flex-col gap-2.5 select-none">
+      {/* Sous-en-tête : Titre, Pas / Continu + Clavier / Manette */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-100 inline-flex items-center gap-1.5">
+            <Move className="w-3.5 h-3.5 text-sky-400" />
+            Jogging XYZ
+          </span>
+          <div className="inline-flex items-center bg-[#090d14] p-0.5 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setJogMode('step')}
+              className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                jogMode === 'step'
+                  ? 'bg-sky-400 text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Move className="w-3 h-3" />
+              <span>Pas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setJogMode('continuous')}
+              className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                jogMode === 'continuous'
+                  ? 'bg-amber-400 text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Hand className="w-3 h-3" />
+              <span>Continu</span>
+            </button>
+          </div>
         </div>
 
-        {/* Interrupteur Clavier & Indicateur Gamepad */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setKeyboardEnabled((v) => !v)}
-            title="Activer/Désactiver le pilotage au clavier (Flèches, PageUp/Down, Pavé num, Espace = Pause)"
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+            onClick={() => updatePreferences({ keyboardShortcutsEnabled: !keyboardEnabled })}
+            title="Activer/Désactiver le pilotage au clavier (Flèches, PageUp/Down, Pavé num, [ / ], Espace = Pause)"
+            className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-colors cursor-pointer ${
               keyboardEnabled
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                : 'bg-slate-100 border-slate-300 text-slate-500'
+                ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                : 'bg-[#1b2436] border-slate-700 text-slate-400'
             }`}
           >
-            <Keyboard className="w-3.5 h-3.5" />
-            <span>Clavier {keyboardEnabled ? 'ON' : 'OFF'}</span>
-          </button>
+                <Keyboard className="w-3.5 h-3.5" />
+                <span>{keyboardEnabled ? 'Clavier' : 'Clavier OFF'}</span>
+              </button>
 
-          <div
-            title={
-              gamepadConnected
-                ? `Manette active : ${gamepadName}`
-                : 'Branchez une manette USB et appuyez sur un bouton'
-            }
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-              gamepadConnected
-                ? 'bg-slate-100 border-slate-300 text-slate-800'
-                : 'bg-slate-50 border-slate-200 text-slate-500'
-            }`}
-          >
-            <Gamepad2 className={`w-3.5 h-3.5 ${gamepadConnected ? 'text-emerald-600' : ''}`} />
-            <span className="truncate max-w-[110px]">
-              {gamepadConnected ? gamepadActiveAxis || 'Manette OK' : 'Manette'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Pavé directionnel XY 8 directions + Stop 0x85 + Colonne Z dédiée */}
-      <div className="grid grid-cols-4 gap-2 items-stretch">
-        {/* Grille 3x3 pour XY */}
-        <div className="col-span-3 grid grid-cols-3 gap-1.5">
-          {/* X- Y+ */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(-1, 1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={padBtnClass}
-            title="Diagonale Arrière-Gauche (X- Y+)"
-          >
-            <ArrowUpLeft className="w-5 h-5 text-slate-600" />
-            <span className="text-[10px] font-mono text-slate-600 mt-0.5">X- Y+</span>
-          </button>
-
-          {/* Y+ */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(0, 1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={`${padBtnClass} border-emerald-300 hover:border-emerald-500`}
-            title="Y+ (Arrière)"
-          >
-            <ArrowUp className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs font-mono font-bold text-emerald-700">Y+</span>
-          </button>
-
-          {/* X+ Y+ */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(1, 1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={padBtnClass}
-            title="Diagonale Arrière-Droite (X+ Y+)"
-          >
-            <ArrowUpRight className="w-5 h-5 text-slate-600" />
-            <span className="text-[10px] font-mono text-slate-600 mt-0.5">X+ Y+</span>
-          </button>
-
-          {/* X- */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(-1, 0, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={`${padBtnClass} border-red-300 hover:border-red-500`}
-            title="X- (Gauche)"
-          >
-            <ArrowLeft className="w-5 h-5 text-red-600" />
-            <span className="text-xs font-mono font-bold text-red-700">X-</span>
-          </button>
-
-          {/* STOP JOG (0x85) central */}
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={sendCancelJog}
-            title="Arrêt immédiat du Jog (Octet temps réel 0x85)"
-            className={`flex flex-col items-center justify-center rounded-lg border font-mono font-bold transition-colors cursor-pointer h-14 sm:h-15 ${
-              status.state === 'Jog' || isHoldingContinuous
-                ? 'bg-red-600 border-red-700 text-white'
-                : 'bg-red-50 border-red-300 hover:bg-red-600 text-red-700 hover:text-white'
-            }`}
-          >
-            <OctagonX className="w-5 h-5" />
-            <span className="text-[10px] tracking-wider mt-0.5">STOP</span>
-          </button>
-
-          {/* X+ */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(1, 0, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={`${padBtnClass} border-red-300 hover:border-red-500`}
-            title="X+ (Droite)"
-          >
-            <ArrowRight className="w-5 h-5 text-red-600" />
-            <span className="text-xs font-mono font-bold text-red-700">X+</span>
-          </button>
-
-          {/* X- Y- */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(-1, -1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={padBtnClass}
-            title="Diagonale Avant-Gauche (X- Y-)"
-          >
-            <ArrowDownLeft className="w-5 h-5 text-slate-600" />
-            <span className="text-[10px] font-mono text-slate-600 mt-0.5">X- Y-</span>
-          </button>
-
-          {/* Y- */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(0, -1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={`${padBtnClass} border-emerald-300 hover:border-emerald-500`}
-            title="Y- (Avant)"
-          >
-            <ArrowDown className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs font-mono font-bold text-emerald-700">Y-</span>
-          </button>
-
-          {/* X+ Y- */}
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(1, -1, 0)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            className={padBtnClass}
-            title="Diagonale Avant-Droite (X+ Y-)"
-          >
-            <ArrowDownRight className="w-5 h-5 text-slate-600" />
-            <span className="text-[10px] font-mono text-slate-600 mt-0.5">X+ Y-</span>
-          </button>
-        </div>
-
-        {/* Colonne dédiée Axe Z (Z+ Monter / Z- Descendre) */}
-        <div className="col-span-1 flex flex-col justify-between gap-1.5">
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(0, 0, 1)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            title="Monter la fraise (Z+)"
-            className="flex-1 flex flex-col items-center justify-center rounded-lg border border-blue-300 bg-slate-100 hover:bg-slate-200 hover:border-blue-500 active:bg-slate-300 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none touch-none"
-          >
-            <ArrowUp className="w-5 h-5 text-blue-600" />
-            <span className="font-mono text-sm font-bold text-blue-700 mt-0.5">Z+</span>
-            <span className="text-[10px] text-slate-600">Monter</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!canJog}
-            onPointerDown={() => handleDirectionPointerDown(0, 0, -1)}
-            onPointerUp={handleDirectionPointerUp}
-            onPointerLeave={handleDirectionPointerUp}
-            title="Descendre la fraise (Z-)"
-            className="flex-1 flex flex-col items-center justify-center rounded-lg border border-blue-300 bg-slate-100 hover:bg-slate-200 hover:border-blue-500 active:bg-slate-300 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none touch-none"
-          >
-            <span className="text-[10px] text-slate-600">Descendre</span>
-            <span className="font-mono text-sm font-bold text-blue-700 mb-0.5">Z-</span>
-            <ArrowDown className="w-5 h-5 text-blue-600" />
-          </button>
-        </div>
-      </div>
-
-      {/* Sélecteur de Pas (Step Size) : 0.01 à 100 mm + Champ personnalisé */}
-      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-            Pas d'incrément ({status.unit}) <span className="text-slate-500 font-normal">[ / ]</span>
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-600">Perso :</span>
-            <input
-              type="number"
-              step="0.01"
-              min="0.001"
-              max="500"
-              value={customStepInput}
-              onChange={(e) => {
-                setCustomStepInput(e.target.value);
-                const v = parseFloat(e.target.value);
-                if (!isNaN(v) && v > 0) setStepSize(v);
-              }}
-              className="w-20 bg-white border border-slate-300 focus:border-blue-500 rounded px-2 py-0.5 font-mono text-xs font-bold text-slate-900 text-right focus:outline-none"
-            />
-            <span className="text-[11px] font-mono text-slate-500">{status.unit}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-5 sm:grid-cols-9 gap-1">
-          {STEP_PRESETS.map((preset) => {
-            const active = Math.abs(stepSize - preset) < 0.0001;
-            return (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => selectStep(preset)}
-                className={`py-1.5 rounded font-mono text-xs font-bold border transition-colors cursor-pointer ${
-                  active
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+              <div
+                title={
+                  gamepadConnected
+                    ? `Manette active : ${gamepadName}`
+                    : 'Branchez une manette USB et appuyez sur un bouton'
+                }
+                className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${
+                  gamepadConnected
+                    ? 'bg-sky-500/15 border-sky-400/40 text-sky-300'
+                    : 'bg-[#0f1520] border-slate-800 text-slate-400'
                 }`}
               >
-                {preset}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Réglages rapides de Vitesse de Jog XY et Vitesse de Jog Z (mm/min) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {/* Vitesse XY */}
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
-              <Gauge className="w-3.5 h-3.5 text-emerald-600" />
-              Vitesse XY
-            </span>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min={10}
-                max={20000}
-                step={100}
-                value={xyFeedRate}
-                onChange={(e) => setXyFeedRate(Math.max(10, Number(e.target.value) || 100))}
-                className="w-20 bg-white border border-slate-300 rounded px-1.5 py-0.5 font-mono text-xs font-bold text-slate-900 text-right focus:outline-none focus:border-emerald-500"
-              />
-              <span className="text-[10px] font-mono text-slate-500">mm/min</span>
+                <Gamepad2 className={`w-3.5 h-3.5 ${gamepadConnected ? 'text-sky-400' : ''}`} />
+                <span className="truncate max-w-[85px]">
+                  {gamepadConnected ? gamepadActiveAxis || 'Manette' : 'Manette'}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            {XY_FEED_PRESETS.map((f) => (
+
+          {/* Pavé directionnel XY 8 directions + Stop 0x85 + Colonne Z dédiée */}
+          <div className="grid grid-cols-4 gap-1.5 items-stretch">
+            {/* Grille 3x3 pour XY */}
+            <div className="col-span-3 grid grid-cols-3 gap-1.5">
+              {/* X- Y+ */}
               <button
-                key={f}
                 type="button"
-                onClick={() => setXyFeedRate(f)}
-                className={`flex-1 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                  xyFeedRate === f
-                    ? 'bg-emerald-600 border-emerald-600 text-white font-bold'
-                    : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(-1, 1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={padBtnClass}
+                title="Diagonale Arrière-Gauche (X- Y+)"
+                aria-label="Diagonale X- Y+"
+              >
+                <ArrowUpLeft className="w-4 h-4 text-slate-300" />
+              </button>
+
+              {/* Y+ */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(0, 1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={`${padBtnClass} border-emerald-400/35 hover:border-emerald-400/70`}
+                title="Y+ (Arrière)"
+              >
+                <ArrowUp className="w-4 h-4 text-emerald-400" />
+                <span className="text-[11px] font-mono font-bold text-emerald-300 leading-none">Y+</span>
+              </button>
+
+              {/* X+ Y+ */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(1, 1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={padBtnClass}
+                title="Diagonale Arrière-Droite (X+ Y+)"
+                aria-label="Diagonale X+ Y+"
+              >
+                <ArrowUpRight className="w-4 h-4 text-slate-300" />
+              </button>
+
+              {/* X- */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(-1, 0, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={`${padBtnClass} border-rose-400/35 hover:border-rose-400/70`}
+                title="X- (Gauche)"
+              >
+                <ArrowLeft className="w-4 h-4 text-rose-400" />
+                <span className="text-[11px] font-mono font-bold text-rose-300 leading-none">X-</span>
+              </button>
+
+              {/* STOP JOG (0x85) central */}
+              <button
+                type="button"
+                disabled={!status.connected}
+                onClick={sendCancelJog}
+                title="Arrêt immédiat du Jog (Octet temps réel 0x85)"
+                className={`flex flex-col items-center justify-center rounded-xl border font-mono font-bold transition-colors cursor-pointer min-h-[50px] ${
+                  status.state === 'Jog' || isHoldingContinuous
+                    ? 'bg-red-600 border-red-400 text-white'
+                    : 'bg-red-600/20 border-red-500/50 hover:bg-red-600 text-rose-200 hover:text-white'
                 }`}
               >
-                {f}
+                <OctagonX className="w-4 h-4" />
+                <span className="text-[11px] tracking-wider leading-none mt-0.5">STOP</span>
               </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Vitesse Z */}
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
-              <Gauge className="w-3.5 h-3.5 text-blue-600" />
-              Vitesse Z
-            </span>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min={10}
-                max={5000}
-                step={50}
-                value={zFeedRate}
-                onChange={(e) => setZFeedRate(Math.max(10, Number(e.target.value) || 50))}
-                className="w-20 bg-white border border-slate-300 rounded px-1.5 py-0.5 font-mono text-xs font-bold text-slate-900 text-right focus:outline-none focus:border-blue-500"
-              />
-              <span className="text-[10px] font-mono text-slate-500">mm/min</span>
+              {/* X+ */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(1, 0, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={`${padBtnClass} border-rose-400/35 hover:border-rose-400/70`}
+                title="X+ (Droite)"
+              >
+                <ArrowRight className="w-4 h-4 text-rose-400" />
+                <span className="text-[11px] font-mono font-bold text-rose-300 leading-none">X+</span>
+              </button>
+
+              {/* X- Y- */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(-1, -1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={padBtnClass}
+                title="Diagonale Avant-Gauche (X- Y-)"
+                aria-label="Diagonale X- Y-"
+              >
+                <ArrowDownLeft className="w-4 h-4 text-slate-300" />
+              </button>
+
+              {/* Y- */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(0, -1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={`${padBtnClass} border-emerald-400/35 hover:border-emerald-400/70`}
+                title="Y- (Avant)"
+              >
+                <ArrowDown className="w-4 h-4 text-emerald-400" />
+                <span className="text-[11px] font-mono font-bold text-emerald-300 leading-none">Y-</span>
+              </button>
+
+              {/* X+ Y- */}
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(1, -1, 0)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                className={padBtnClass}
+                title="Diagonale Avant-Droite (X+ Y-)"
+                aria-label="Diagonale X+ Y-"
+              >
+                <ArrowDownRight className="w-4 h-4 text-slate-300" />
+              </button>
+            </div>
+
+            {/* Colonne dédiée Axe Z (Z+ Monter / Z- Descendre) */}
+            <div className="col-span-1 flex flex-col justify-between gap-1.5">
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(0, 0, 1)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                title="Monter la fraise (Z+)"
+                className="flex-1 min-h-[50px] flex flex-col items-center justify-center rounded-xl border border-sky-400/35 bg-[#1b2436] hover:bg-[#243047] hover:border-sky-400/70 active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed select-none touch-none"
+              >
+                <ArrowUp className="w-4 h-4 text-sky-400" />
+                <span className="font-mono text-xs font-bold text-sky-300 leading-none mt-0.5">Z+</span>
+                <span className="text-[11px] text-slate-300 mt-0.5">Monter</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={!canJog}
+                onPointerDown={() => handleDirectionPointerDown(0, 0, -1)}
+                onPointerUp={handleDirectionPointerUp}
+                onPointerLeave={handleDirectionPointerUp}
+                title="Descendre la fraise (Z-)"
+                className="flex-1 min-h-[50px] flex flex-col items-center justify-center rounded-xl border border-sky-400/35 bg-[#1b2436] hover:bg-[#243047] hover:border-sky-400/70 active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed select-none touch-none"
+              >
+                <span className="text-[11px] text-slate-300 mb-0.5">Desc.</span>
+                <span className="font-mono text-xs font-bold text-sky-300 leading-none">Z-</span>
+                <ArrowDown className="w-4 h-4 text-sky-400 mt-0.5" />
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            {Z_FEED_PRESETS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setZFeedRate(f)}
-                className={`flex-1 py-1 rounded text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                  zFeedRate === f
-                    ? 'bg-blue-600 border-blue-600 text-white font-bold'
-                    : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
+
+          {/* Sélecteur de Pas (Step Size) : 0.01 à 100 mm + Champ personnalisé */}
+          <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                Pas ({status.unit}) <span className="text-slate-400 font-normal">[ / ]</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  aria-label="Pas d'incrément personnalisé"
+                  step="0.01"
+                  min="0.001"
+                  max="500"
+                  value={customStepInput}
+                  onChange={(e) => {
+                    setCustomStepInput(e.target.value);
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v) && v > 0) setStepSize(v);
+                  }}
+                  className="w-18 min-h-8 bg-[#090d14] border border-slate-700 focus:border-sky-400 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none"
+                />
+                <span className="text-[11px] font-mono text-slate-400">{status.unit}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 sm:grid-cols-9 gap-1">
+              {STEP_PRESETS.map((preset) => {
+                const active = Math.abs(stepSize - preset) < 0.0001;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => selectStep(preset)}
+                    className={`min-h-8 py-1 rounded-lg font-mono text-[11px] font-bold border transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-sky-400 border-sky-300 text-slate-950'
+                        : 'bg-[#1b2436] border-slate-700 text-slate-200 hover:bg-[#243047]'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Contrôle Broche (Spindle PWM) & Arrosage / Aspiration */}
-      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Fan
-              className={`w-4 h-4 ${
-                status.accessories.spindleCw || status.accessories.spindleCcw
-                  ? 'text-amber-600 animate-spin'
-                  : 'text-slate-500'
-              }`}
-            />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Broche & Arrosage
-            </span>
+          {/* Réglages rapides de Vitesse XY et Vitesse Z (mm/min) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Vitesse XY */}
+            <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                  XY
+                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    aria-label="Vitesse de jog XY"
+                    min={10}
+                    max={20000}
+                    step={100}
+                    value={xyFeedRate}
+                    onChange={(e) => setXyFeedRate(Math.max(10, Number(e.target.value) || 100))}
+                    className="w-16 min-h-8 bg-[#090d14] border border-slate-700 rounded-lg px-1.5 py-0.5 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none focus:border-emerald-400"
+                  />
+                  <span className="text-[11px] font-mono text-slate-400">mm/m</span>
+                </div>
+              </div>
+              <div className="flex items-center divide-x divide-slate-700/80 rounded-lg border border-slate-700 bg-[#1b2436] overflow-hidden">
+                {XY_FEED_PRESETS.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setXyFeedRate(f)}
+                    className={`min-h-8 flex-1 py-1 text-[11px] font-mono font-bold transition-colors cursor-pointer ${
+                      xyFeedRate === f
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'text-slate-200 hover:bg-[#243047]'
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Vitesse Z */}
+            <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-sky-400" />
+                  Z
+                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    aria-label="Vitesse de jog Z"
+                    min={10}
+                    max={5000}
+                    step={50}
+                    value={zFeedRate}
+                    onChange={(e) => setZFeedRate(Math.max(10, Number(e.target.value) || 50))}
+                    className="w-16 min-h-8 bg-[#090d14] border border-slate-700 rounded-lg px-1.5 py-0.5 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none focus:border-sky-400"
+                  />
+                  <span className="text-[11px] font-mono text-slate-400">mm/m</span>
+                </div>
+              </div>
+              <div className="flex items-center divide-x divide-slate-700/80 rounded-lg border border-slate-700 bg-[#1b2436] overflow-hidden">
+                {Z_FEED_PRESETS.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setZFeedRate(f)}
+                    className={`min-h-8 flex-1 py-1 text-[11px] font-mono font-bold transition-colors cursor-pointer ${
+                      zFeedRate === f
+                        ? 'bg-sky-400 text-slate-950'
+                        : 'text-slate-200 hover:bg-[#243047]'
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="font-mono text-xs text-amber-700 font-bold">
-            Cible : {spindleRpm} RPM | Actuel : {status.spindleSpeed} RPM
-          </div>
-        </div>
-
-        {/* Slider RPM 0 à 24000 */}
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-slate-500">0</span>
-          <input
-            type="range"
-            min={0}
-            max={24000}
-            step={500}
-            value={spindleRpm}
-            onChange={(e) => setSpindleRpm(Number(e.target.value))}
-            className="flex-1 accent-amber-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-          />
-          <span className="font-mono text-[11px] text-slate-500">24k</span>
-        </div>
-
-        {/* Boutons Broche M3 / M4 / M5 */}
-        <div className="grid grid-cols-3 gap-1.5">
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand(`M3 S${spindleRpm}`)}
-            className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded border text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
-              status.accessories.spindleCw
-                ? 'bg-amber-500 border-amber-600 text-white'
-                : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
-            }`}
-          >
-            <Fan className="w-3.5 h-3.5" />
-            <span>ON Horaire (M3)</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand(`M4 S${spindleRpm}`)}
-            className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded border text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
-              status.accessories.spindleCcw
-                ? 'bg-orange-500 border-orange-600 text-white'
-                : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
-            }`}
-          >
-            <Fan className="w-3.5 h-3.5" />
-            <span>Anti-horaire (M4)</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand('M5')}
-            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded bg-red-50 border border-red-300 hover:bg-red-600 text-red-700 hover:text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-40"
-          >
-            <PowerOff className="w-3.5 h-3.5" />
-            <span>STOP (M5)</span>
-          </button>
-        </div>
-
-        {/* Boutons Arrosage / Aspiration Flood (M8) / Mist (M7) / Off (M9) */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-200">
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand('M8')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded border text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 ${
-              status.accessories.floodCoolant
-                ? 'bg-blue-600 border-blue-600 text-white font-bold'
-                : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
-            }`}
-          >
-            <Droplets className="w-3.5 h-3.5 text-blue-600" />
-            <span>Flood / Aspi (M8)</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand('M7')}
-            className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded border text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 ${
-              status.accessories.mistCoolant
-                ? 'bg-blue-600 border-blue-600 text-white font-bold'
-                : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
-            }`}
-          >
-            <Wind className="w-3.5 h-3.5 text-blue-600" />
-            <span>Mist (M7)</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!status.connected}
-            onClick={() => onSendCommand('M9')}
-            className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
-          >
-            <span>Arrêt Arrosage (M9)</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

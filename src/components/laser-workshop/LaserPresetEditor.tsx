@@ -21,27 +21,27 @@ export function LaserPresetEditor({ settings, disabled, onChange }: {
   settings: LaserLayerSettings; disabled: boolean; onChange: (settings: LaserLayerSettings) => void;
 }) {
   const focus = settings.cut.focus ?? defaultLaserFocusSettings;
-  return <fieldset disabled={disabled} className="space-y-4 rounded-lg border border-slate-200 p-3">
-    <legend className="px-1 text-sm font-semibold">Paramètres de gravure</legend>
-    {settings.kind === 'vector' && <label className="block space-y-1 text-xs"><span>Type de gravure</span>
+  return <fieldset disabled={disabled} className="space-y-4 rounded-xl border border-slate-800 bg-[#0f1520] p-3.5 text-slate-100">
+    <legend className="px-1.5 text-sm font-bold text-slate-100">Paramètres de gravure</legend>
+    {settings.kind === 'vector' && <label className="block space-y-1 text-xs text-slate-200"><span>Type de gravure</span>
       <select className={input} value={settings.fill.mode} onChange={event => onChange({ ...settings, fill: { ...settings.fill, mode: event.target.value as typeof settings.fill.mode } })}>
         <option value="contours">Contour</option><option value="fill">Remplissage</option><option value="fill-and-contours">Remplissage et contour</option>
       </select>
     </label>}
     <OperationFields cut={settings.cut} contour={settings.kind === 'vector' && settings.fill.mode === 'contours'} onChange={cut => onChange({ ...settings, cut })} />
-    {settings.kind === 'vector' && settings.fill.mode !== 'contours' && <div className="space-y-2 border-t border-slate-200 pt-2">
-      <h3 className="text-xs font-semibold">Remplissage</h3>
+    {settings.kind === 'vector' && settings.fill.mode !== 'contours' && <div className="space-y-2 border-t border-slate-800 pt-2.5 text-slate-200">
+      <h3 className="text-xs font-bold text-slate-100">Remplissage</h3>
       <div className="grid grid-cols-2 gap-2">
         <NumberField label="Pas des hachures (mm)" value={settings.fill.spacing} min={0.025} max={10} onChange={spacing => onChange({ ...settings, fill: { ...settings.fill, spacing } })} />
         <NumberField label="Angle (°)" value={settings.fill.angle} onChange={angle => onChange({ ...settings, fill: { ...settings.fill, angle } })} />
         <NumberField label="Surbalayage (mm)" value={settings.fill.overscan ?? 0} min={0} max={50} onChange={overscan => onChange({ ...settings, fill: { ...settings.fill, overscan } })} />
       </div>
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.fill.bidirectional !== false} onChange={event => onChange({ ...settings, fill: { ...settings.fill, bidirectional: event.target.checked } })} />Balayage bidirectionnel</label>
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.fill.crossHatch} onChange={event => onChange({ ...settings, fill: { ...settings.fill, crossHatch: event.target.checked } })} />Hachures croisées</label>
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.fill.respectSvgFill} onChange={event => onChange({ ...settings, fill: { ...settings.fill, respectSvgFill: event.target.checked } })} />Respecter les aplats SVG</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.fill.bidirectional !== false} onChange={event => onChange({ ...settings, fill: { ...settings.fill, bidirectional: event.target.checked } })} />Balayage bidirectionnel</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.fill.crossHatch} onChange={event => onChange({ ...settings, fill: { ...settings.fill, crossHatch: event.target.checked } })} />Hachures croisées</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.fill.respectSvgFill} onChange={event => onChange({ ...settings, fill: { ...settings.fill, respectSvgFill: event.target.checked } })} />Respecter les aplats SVG</label>
     </div>}
-    {settings.kind === 'vector' && settings.fill.mode === 'fill-and-contours' && <div className="space-y-2 border-t border-slate-200 pt-2">
-      <label className="flex gap-2 text-xs font-semibold"><input type="checkbox" checked={!!settings.contourCut} onChange={event => {
+    {settings.kind === 'vector' && settings.fill.mode === 'fill-and-contours' && <div className="space-y-2 border-t border-slate-800 pt-2.5 text-slate-200">
+      <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={!!settings.contourCut} onChange={event => {
         const { feed, power, passes, contourDirection } = settings.cut;
         onChange({ ...settings, contourCut: event.target.checked ? { feed, power, passes, contourDirection } : undefined });
       }} />Réglages distincts pour le contour</label>
@@ -50,16 +50,16 @@ export function LaserPresetEditor({ settings, disabled, onChange }: {
         onChange({ ...settings, contourCut: { feed, power, passes, contourDirection } });
       }} />}
     </div>}
-    {settings.kind === 'raster' && <div className="space-y-2 border-t border-slate-200 pt-2">
-      <h3 className="text-xs font-semibold">Balayage de l’image</h3>
+    {settings.kind === 'raster' && <div className="space-y-2 border-t border-slate-800 pt-2.5 text-slate-200">
+      <h3 className="text-xs font-bold text-slate-100">Balayage de l’image</h3>
       <div className="grid grid-cols-2 gap-2">
         <NumberField label="Pas de balayage (mm)" value={settings.raster.interval} min={0.025} onChange={interval => onChange({ ...settings, raster: { ...settings.raster, interval } })} />
         <NumberField label="Surbalayage (mm)" value={settings.raster.overscan ?? 0} min={0} max={50} onChange={overscan => onChange({ ...settings, raster: { ...settings.raster, overscan } })} />
       </div>
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.raster.bidirectional !== false} onChange={event => onChange({ ...settings, raster: { ...settings.raster, bidirectional: event.target.checked } })} />Balayage bidirectionnel</label>
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.raster.grayscale} onChange={event => onChange({ ...settings, raster: { ...settings.raster, grayscale: event.target.checked } })} />Niveaux de gris</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.raster.bidirectional !== false} onChange={event => onChange({ ...settings, raster: { ...settings.raster, bidirectional: event.target.checked } })} />Balayage bidirectionnel</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.raster.grayscale} onChange={event => onChange({ ...settings, raster: { ...settings.raster, grayscale: event.target.checked } })} />Niveaux de gris</label>
       {!settings.raster.grayscale && <NumberField label="Seuil (0–255)" value={settings.raster.threshold} min={0} max={255} onChange={threshold => onChange({ ...settings, raster: { ...settings.raster, threshold } })} />}
-      <label className="flex gap-2 text-xs"><input type="checkbox" checked={settings.raster.invert} onChange={event => onChange({ ...settings, raster: { ...settings.raster, invert: event.target.checked } })} />Inverser le noir et le blanc</label>
+      <label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" className="accent-sky-400" checked={settings.raster.invert} onChange={event => onChange({ ...settings, raster: { ...settings.raster, invert: event.target.checked } })} />Inverser le noir et le blanc</label>
     </div>}
     <LaserFocusSettings focus={focus} disabled={disabled} external={false} changeFocus={patch => onChange({ ...settings, cut: { ...settings.cut, focus: { ...focus, ...patch } } })} />
   </fieldset>;

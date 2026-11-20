@@ -22,6 +22,7 @@ import {
   ParsedGCodeStats,
 } from '../types/cnc';
 import { sampleHeightmapZ } from '../utils/gcodeParser';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface Viewport3DProps {
   status: GrblStatus;
@@ -154,6 +155,8 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   laserBeamWidth,
   laserTrace,
 }) => {
+  const { preferences } = useAppPreferences();
+  const isLight = preferences.theme === 'light';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const updateLaserTraceRef = useRef<((trace: GCodeSegment[] | undefined) => void) | null>(null);
 
@@ -205,7 +208,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const height = container.clientHeight || 500;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#eef2f6');
+    scene.background = new THREE.Color(isLight ? '#e8eff7' : '#0d121b');
     sceneRef.current = scene;
 
     // Caméra Z-Up (standard CNC : X droite, Y profondeur, Z hauteur)
@@ -234,15 +237,15 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     controls.update();
     controlsRef.current = controls;
 
-    // Éclairages CAO/FAO clairs
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    // Éclairages CAO/FAO studio sombre
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.05);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
     dirLight1.position.set(200, -180, 260);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xcbd5e1, 0.55);
+    const dirLight2 = new THREE.DirectionalLight(0x94a3b8, 0.65);
     dirLight2.position.set(-150, 220, 180);
     scene.add(dirLight2);
 
@@ -280,7 +283,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(0, 0, 0.1),
       axisLen,
-      0xdc2626,
+      0xfb7185,
       4.5,
       2.5
     );
@@ -288,7 +291,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       new THREE.Vector3(0, 1, 0),
       new THREE.Vector3(0, 0, 0.1),
       axisLen,
-      0x16a34a,
+      0x34d399,
       4.5,
       2.5
     );
@@ -296,30 +299,30 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, 0.1),
       axisLen,
-      0x2563eb,
+      0x38bdf8,
       4.5,
       2.5
     );
     workOriginGroup.add(xArrow, yArrow, zArrow);
 
     const xTag = createTextSprite('X0', {
-      color: '#dc2626',
-      bgColor: 'rgba(255, 255, 255, 0.92)',
-      borderColor: 'rgba(220, 38, 38, 0.55)',
+      color: '#fda4af',
+      bgColor: 'rgba(15, 23, 42, 0.90)',
+      borderColor: 'rgba(251, 113, 133, 0.65)',
       scale: 6.5,
     });
     xTag.position.set(axisLen + 5, 0, 1);
     const yTag = createTextSprite('Y0', {
-      color: '#16a34a',
-      bgColor: 'rgba(255, 255, 255, 0.92)',
-      borderColor: 'rgba(22, 163, 74, 0.55)',
+      color: '#6ee7b7',
+      bgColor: 'rgba(15, 23, 42, 0.90)',
+      borderColor: 'rgba(52, 211, 153, 0.65)',
       scale: 6.5,
     });
     yTag.position.set(0, axisLen + 5, 1);
     const zTag = createTextSprite('Z0', {
-      color: '#2563eb',
-      bgColor: 'rgba(255, 255, 255, 0.92)',
-      borderColor: 'rgba(37, 99, 235, 0.55)',
+      color: '#7dd3fc',
+      bgColor: 'rgba(15, 23, 42, 0.90)',
+      borderColor: 'rgba(56, 189, 248, 0.65)',
       scale: 6.5,
     });
     zTag.position.set(0, 0, axisLen + 5);
@@ -328,7 +331,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     if (laserBeamWidth !== undefined) {
       const body = new THREE.Mesh(
         new THREE.BoxGeometry(15, 15, 27),
-        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.4 })
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.5, roughness: 0.35 })
       );
       body.position.z = 22;
       toolHeadGroup.add(body);
@@ -337,25 +340,24 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       nozzleGeometry.translate(0, 0, 6);
       toolHeadGroup.add(new THREE.Mesh(
         nozzleGeometry,
-        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 })
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.55, roughness: 0.3 })
       ));
       const spot = new THREE.Mesh(
         new THREE.CircleGeometry(Math.max(laserBeamWidth / 2, 0.1), 24),
-        new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide })
       );
       spot.name = 'laser-spot';
       spot.position.z = 0.04;
       toolHeadGroup.add(spot);
     } else {
-    // Construction sobre de la broche + fraise 3D (Mode Clair CAO/FAO)
-    // 1. Cône de fraise carbure (pointe en (0,0,0), hauteur 14mm vers +Z)
+    // Broche + fraise 3D haute visibilité pour studio sombre
     const tipGeo = new THREE.ConeGeometry(2.0, 14, 16);
     tipGeo.rotateX(-Math.PI / 2);
     tipGeo.translate(0, 0, 7);
     const tipMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      metalness: 0.4,
-      roughness: 0.35,
+      color: 0x38bdf8,
+      metalness: 0.35,
+      roughness: 0.3,
     });
     const tipMesh = new THREE.Mesh(tipGeo, tipMat);
 
@@ -364,7 +366,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     fluteGeo.translate(0, 0, 7);
     const fluteLines = new THREE.LineSegments(
       fluteGeo,
-      new THREE.LineBasicMaterial({ color: 0x0369a1, transparent: true, opacity: 0.7 })
+      new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.8 })
     );
     tipMesh.add(fluteLines);
     toolHeadGroup.add(tipMesh);
@@ -375,7 +377,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     colletGeo.rotateX(Math.PI / 2);
     colletGeo.translate(0, 0, 18);
     const colletMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
+      color: 0x94a3b8,
       metalness: 0.5,
       roughness: 0.35,
     });
@@ -386,19 +388,19 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     bodyGeo.rotateX(Math.PI / 2);
     bodyGeo.translate(0, 0, 36);
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x64748b,
+      color: 0xcbd5e1,
       metalness: 0.45,
-      roughness: 0.4,
+      roughness: 0.35,
     });
     toolHeadGroup.add(new THREE.Mesh(bodyGeo, bodyMat));
 
     // 4. Repère circulaire discret à la pointe de l'outil
     const crosshairGeo = new THREE.RingGeometry(2.4, 3.0, 24);
     const crosshairMat = new THREE.MeshBasicMaterial({
-      color: 0x0284c7,
+      color: 0x38bdf8,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.85,
     });
     const crosshairMesh = new THREE.Mesh(crosshairGeo, crosshairMat);
     crosshairMesh.position.set(0, 0, 0.05);
@@ -499,13 +501,13 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const zOffset = gridZOffset || 0;
     const majorStep = gridMajorStep || 50;
 
-    // Plateau machine en blanc cassé (Mode Clair CAO/FAO)
+    // Plateau machine en studio sombre (#151d2b) ou clair (#f8fafc)
     const bedGeo = new THREE.PlaneGeometry(maxX, maxY);
     bedGeo.translate(maxX / 2, maxY / 2, zOffset - 0.15);
     const bedMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+      color: isLight ? 0xf8fafc : 0x151d2b,
       transparent: true,
-      opacity: 0.9,
+      opacity: isLight ? 0.98 : 0.94,
       side: THREE.DoubleSide,
     });
     group.add(new THREE.Mesh(bedGeo, bedMat));
@@ -528,7 +530,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     group.add(
       new THREE.LineSegments(
         minorGeo,
-        new THREE.LineBasicMaterial({ color: 0xdbe2ea, transparent: true, opacity: 0.85 })
+        new THREE.LineBasicMaterial({ color: isLight ? 0xcbd5e1 : 0x223047, transparent: true, opacity: 0.85 })
       )
     );
 
@@ -537,16 +539,16 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     group.add(
       new THREE.LineSegments(
         majorGeo,
-        new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.95 })
+        new THREE.LineBasicMaterial({ color: isLight ? 0x64748b : 0x3b4f70, transparent: true, opacity: 0.95 })
       )
     );
 
     // Graduations tous les majorStep sur X et Y
     for (let x = 0; x <= maxX; x += majorStep) {
       const lbl = createTextSprite(`${x}`, {
-        color: '#1e293b',
-        bgColor: 'rgba(255, 255, 255, 0.92)',
-        borderColor: 'rgba(148, 163, 184, 0.8)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 6.5,
       });
@@ -555,9 +557,9 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     }
     for (let y = majorStep; y <= maxY; y += majorStep) {
       const lbl = createTextSprite(`${y}`, {
-        color: '#1e293b',
-        bgColor: 'rgba(255, 255, 255, 0.92)',
-        borderColor: 'rgba(148, 163, 184, 0.8)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 6.5,
       });
@@ -565,20 +567,20 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       group.add(lbl);
     }
 
-    // Volume enveloppe machine en lignes continues fines (pas de pointillés pour ne pas confondre avec G0)
+    // Volume enveloppe machine en lignes continues fines
     const envBoxGeo = new THREE.BoxGeometry(maxX, maxY, maxZ);
     envBoxGeo.translate(maxX / 2, maxY / 2, zOffset + maxZ / 2);
     const envEdges = new THREE.EdgesGeometry(envBoxGeo);
     const envLines = new THREE.LineSegments(
       envEdges,
       new THREE.LineBasicMaterial({
-        color: 0x64748b,
+        color: isLight ? 0x64748b : 0x475569,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.6,
       })
     );
     group.add(envLines);
-  }, [machineEnvelope.x, machineEnvelope.y, machineEnvelope.z, gridZOffset, gridMajorStep, customBedDimensions]);
+  }, [machineEnvelope.x, machineEnvelope.y, machineEnvelope.z, gridZOffset, gridMajorStep, customBedDimensions, isLight]);
 
   // Visibilité de la grille machine
   useEffect(() => {
@@ -586,6 +588,13 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       machineGroupRef.current.visible = showMachineGrid;
     }
   }, [showMachineGrid]);
+
+  // Synchronisation dynamique du fond de scène lors du changement Mode Nuit / Mode Jour
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.background = new THREE.Color(isLight ? '#e8eff7' : '#0d121b');
+    }
+  }, [isLight]);
 
   // Construction du parcours d'outil 3D haute performance (Float32Array pré-alloués)
   useEffect(() => {
@@ -638,7 +647,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const cutColors = new Float32Array(cutCount * 6);
     const cutLineIndices = new Int32Array(cutCount);
 
-    const pendingColor = new THREE.Color('#0284c7');
+    const pendingColor = new THREE.Color(isLight ? '#0284c7' : '#38bdf8');
     let rPtr = 0;
     let cPtr = 0;
     let cIdxPtr = 0;
@@ -697,16 +706,16 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       }
     }
 
-    // 1. Segments Rapides G0 : SEULS traits en pointillés de la scène 3D (orange vif #ea580c)
+    // 1. Segments Rapides G0 : SEULS traits en pointillés de la scène 3D (orange lumineux #fb923c)
     if (rapidCount > 0) {
       const rapidGeo = new THREE.BufferGeometry();
       rapidGeo.setAttribute('position', new THREE.BufferAttribute(rapidPositions, 3));
       const rapidMat = new THREE.LineDashedMaterial({
-        color: 0xea580c,
+        color: isLight ? 0xea580c : 0xfb923c,
         dashSize: 2.0,
         gapSize: 1.5,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.88,
       });
       const rapidLines = new THREE.LineSegments(rapidGeo, rapidMat);
       rapidLines.computeLineDistances();
@@ -734,7 +743,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       cutColorAttrRef.current = colorAttr;
       cutSegLineIndicesRef.current = cutLineIndices;
     }
-  }, [segments]);
+  }, [segments, isLight]);
 
   // Measured laser footprint. Kept separate from the CNC line geometry.
   useEffect(() => {
@@ -838,8 +847,8 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const len = lineIndices.length;
     if (!colorAttr || len === 0) return;
 
-    const doneColor = new THREE.Color('#16a34a');
-    const pendingColor = new THREE.Color('#0284c7');
+    const doneColor = new THREE.Color(isLight ? '#059669' : '#34d399');
+    const pendingColor = new THREE.Color(isLight ? '#0284c7' : '#38bdf8');
     const array = colorAttr.array as Float32Array;
 
     // Si retour à zéro ou recul de ligne, on réinitialise la plage précédemment colorée
@@ -883,7 +892,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     if (updated) {
       colorAttr.needsUpdate = true;
     }
-  }, [currentLineIndex, segments]);
+  }, [currentLineIndex, segments, isLight]);
 
   // Construction de la Boîte Englobante (Bounding Box) en lignes continues fines (#0369a1)
   useEffect(() => {
@@ -907,9 +916,9 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const boxLines = new THREE.LineSegments(
       edges,
       new THREE.LineBasicMaterial({
-        color: 0x0369a1,
+        color: isLight ? 0x0284c7 : 0x38bdf8,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.72,
       })
     );
     group.add(boxLines);
@@ -918,16 +927,16 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const dimLabel = createTextSprite(
       `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`,
       {
-        color: '#1e293b',
-        bgColor: 'rgba(255, 255, 255, 0.92)',
-        borderColor: 'rgba(148, 163, 184, 0.8)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 9,
       }
     );
     dimLabel.position.set(cx, max.y + 8, max.z + 6);
     group.add(dimLabel);
-  }, [stats]);
+  }, [stats, isLight]);
 
   // Visibilité de la boîte englobante
   useEffect(() => {
@@ -1084,170 +1093,171 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   }, [stats?.fileName, stats?.totalLines]);
 
   return (
-    <div className="relative w-full h-full min-h-0 bg-[#eef2f6] rounded-lg overflow-hidden border border-slate-300 shadow-sm select-none flex flex-col">
+    <div className="relative w-full h-full min-h-0 bg-[#0d121b] rounded-xl overflow-hidden border border-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.28)] select-none flex flex-col">
       {/* Canvas 3D Three.js */}
       <div ref={containerRef} className="w-full h-full flex-1 cursor-grab active:cursor-grabbing" />
 
-      {/* Barre d'outils et légende flottantes supérieures en Mode Clair */}
-      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 pointer-events-none z-10">
-        <div className="flex flex-wrap items-center justify-between gap-1.5">
-          {/* Vues caméra */}
-          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setViewPreset('iso')}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue 3D Isométrique"
-            >
-              <Compass className="w-3.5 h-3.5 text-slate-600" />
-              <span>3D Iso</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('xy')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Dessus (Plan XY)"
-            >
-              XY
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('xz')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Face (Plan XZ)"
-            >
-              XZ
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('yz')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Côté (Plan YZ)"
-            >
-              YZ
-            </button>
-            <div className="h-4 w-px bg-slate-300 mx-0.5" />
-            <button
-              type="button"
-              onClick={() => setViewPreset('center')}
-              className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Centrer la caméra sur la pièce"
-            >
-              <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
-              <span>Centrer</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFollowTool((v) => !v)}
-              className={`flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                followTool
-                  ? 'bg-sky-600 border-sky-700 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Verrouiller la caméra sur la fraise en temps réel"
-            >
-              <Crosshair className="w-3.5 h-3.5" />
-              <span>{laserBeamWidth === undefined ? 'Suivre Fraise' : 'Suivre la tête laser'}</span>
-            </button>
-          </div>
+      {/* Barre d'outils flottante studio sombre */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+        {/* Vues caméra */}
+        <div className="flex flex-wrap items-center gap-0.5 bg-[#111622]/90 backdrop-blur-md border border-slate-700/80 text-slate-100 shadow-lg rounded-xl p-1 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setViewPreset('iso')}
+            className="min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold hover:bg-[#1b2436] text-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Vue 3D Isométrique"
+          >
+            <Compass className="w-3.5 h-3.5 text-sky-400" />
+            <span>Iso</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('xy')}
+            className="min-h-8 px-2.5 py-1 text-xs font-semibold hover:bg-[#1b2436] text-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Dessus (Plan XY)"
+          >
+            XY
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('xz')}
+            className="min-h-8 px-2.5 py-1 text-xs font-semibold hover:bg-[#1b2436] text-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Face (Plan XZ)"
+          >
+            XZ
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('yz')}
+            className="min-h-8 px-2.5 py-1 text-xs font-semibold hover:bg-[#1b2436] text-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Côté (Plan YZ)"
+          >
+            YZ
+          </button>
+          <div className="h-4 w-px bg-slate-700 mx-0.5" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => setViewPreset('center')}
+            className="min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold hover:bg-[#1b2436] text-slate-200 rounded-lg transition-colors cursor-pointer"
+            title="Centrer la caméra sur la pièce"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
+            <span>Centrer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFollowTool((v) => !v)}
+            className={`min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+              followTool
+                ? 'bg-sky-400 text-slate-950'
+                : 'hover:bg-[#1b2436] text-slate-200'
+            }`}
+            title={laserBeamWidth === undefined ? 'Verrouiller la caméra sur la fraise en temps réel' : 'Verrouiller la caméra sur la tête laser en temps réel'}
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+            <span>Suivre</span>
+          </button>
+        </div>
 
-          {/* Toggles d'affichage */}
-          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setShowRapids((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showRapids
-                  ? 'bg-orange-50 text-orange-700 border-orange-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer les déplacements rapides G0 (pointillés)"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>G0 Rapides</span>
-            </button>
+        {/* Toggles de couches & cadrage */}
+        <div className="flex flex-wrap items-center gap-1 bg-[#111622]/90 backdrop-blur-md border border-slate-700/80 text-slate-100 shadow-lg rounded-xl p-1 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setShowRapids((v) => !v)}
+            className={`min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showRapids
+                ? 'bg-orange-500/20 text-orange-300 border border-orange-400/40'
+                : 'hover:bg-[#1b2436] text-slate-400 border border-transparent'
+            }`}
+            title="Afficher / Masquer les déplacements rapides G0 (pointillés)"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>G0</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setShowBoundingBox((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showBoundingBox
-                  ? 'bg-sky-50 text-sky-800 border-sky-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer la boîte englobante cotée"
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>Dimensions</span>
-            </button>
+          <button
+            type="button"
+            onClick={() => setShowBoundingBox((v) => !v)}
+            className={`min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showBoundingBox
+                ? 'bg-sky-500/20 text-sky-300 border border-sky-400/40'
+                : 'hover:bg-[#1b2436] text-slate-400 border border-transparent'
+            }`}
+            title="Afficher / Masquer la boîte englobante cotée"
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Cotes</span>
+          </button>
 
-            {onOpenFraming && (
+          <button
+            type="button"
+            onClick={() => setShowHeightmap((v) => !v)}
+            className={`min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showHeightmap
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                : 'hover:bg-[#1b2436] text-slate-400 border border-transparent'
+            }`}
+            title="Afficher / Masquer le maillage 3D Heightmap"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Heightmap</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowMachineGrid((v) => !v)}
+            className={`min-h-8 flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showMachineGrid
+                ? 'bg-[#1b2436] text-slate-100 border border-slate-600'
+                : 'hover:bg-[#1b2436] text-slate-400 border border-transparent'
+            }`}
+            title="Afficher / Masquer le plateau et la grille machine"
+          >
+            <Grid className="w-3.5 h-3.5" />
+            <span>Grille</span>
+          </button>
+
+          {onOpenFraming && (
+            <>
+              <div className="h-4 w-px bg-slate-700 mx-0.5" aria-hidden="true" />
               <button
                 type="button"
                 onClick={onOpenFraming}
                 disabled={!status.connected || status.state === 'Run'}
-                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300 disabled:opacity-40"
+                className="min-h-8 flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg transition-colors bg-sky-400 hover:bg-sky-300 text-slate-950 disabled:opacity-35 cursor-pointer"
                 title="Ouvrir l'assistant de traçage de cadre (Framing)"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+                <Maximize2 className="w-3.5 h-3.5" />
                 <span>Cadrer</span>
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setShowHeightmap((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showHeightmap
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer le maillage 3D Heightmap"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Heightmap</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowMachineGrid((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showMachineGrid
-                  ? 'bg-slate-200 text-slate-900 border-slate-400'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer le plateau et la grille machine"
-            >
-              <Grid className="w-3.5 h-3.5" />
-              <span>Grille</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Légende compacte des couleurs en flux naturel sous les barres d'outils (anti-superposition) */}
-        <div className="self-start flex flex-wrap items-center gap-3 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded px-2.5 py-1 text-[11px] pointer-events-auto">
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 border-b-2 border-dashed border-orange-600 inline-block" />
-            G0 Rapide (Pointillés)
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 h-0.5 bg-sky-600 inline-block" />
-            {laserBeamWidth === undefined ? 'Coupe G1/G2/G3' : 'Parcours laser'}
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 h-0.5 bg-green-600 inline-block" />
-            {laserBeamWidth === undefined ? 'Exécuté' : 'Gravure effectuée'}
-          </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Bandeau télémétrique compact en bas du viewport */}
-      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md px-3 py-1.5 text-xs pointer-events-none">
-        <div className="flex flex-wrap items-center gap-4">
+      {/* Bandeau télémétrique & légende intégrée en bas du viewport */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-[#111622]/90 backdrop-blur-md border border-slate-700/80 text-slate-100 shadow-lg rounded-xl px-3 py-2 text-xs pointer-events-none">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Légende compacte intégrée */}
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-300 pr-2.5 border-r border-slate-700">
+            <span className="flex items-center gap-1 font-semibold" title="Déplacements rapides G0">
+              <span className="w-3 border-b-2 border-dashed border-orange-400 inline-block" />
+              G0
+            </span>
+            <span className="flex items-center gap-1 font-semibold">
+              <span className="w-3 h-0.5 bg-sky-400 inline-block rounded-full" />
+              {laserBeamWidth === undefined ? 'Coupe' : 'Laser'}
+            </span>
+            <span className="flex items-center gap-1 font-semibold">
+              <span className="w-3 h-0.5 bg-emerald-400 inline-block rounded-full" />
+              {laserBeamWidth === undefined ? 'Exécuté' : 'Gravé'}
+            </span>
+          </div>
+
           <div className="flex items-center gap-1.5">
-            <Ruler className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-500">Pièce :</span>
-            <span className="font-mono font-semibold text-slate-900">
+            <Ruler className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400">Pièce :</span>
+            <span className="font-mono font-semibold text-slate-100">
               {stats
                 ? `${stats.bounds.size.x.toFixed(1)} × ${stats.bounds.size.y.toFixed(1)} × ${stats.bounds.size.z.toFixed(1)} mm`
                 : '—'}
@@ -1255,46 +1265,40 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-500">Parcours :</span>
-            <span className="font-mono font-semibold text-slate-900">
+            <Activity className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400">Parcours :</span>
+            <span className="font-mono font-semibold text-slate-100">
               {stats ? `${stats.totalDistanceMm.toFixed(0)} mm` : '0 mm'}
             </span>
             {stats && stats.cuttingDistanceMm > 0 && (
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400">
                 (Coupe {stats.cuttingDistanceMm.toFixed(0)} mm)
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
-            <span className="text-slate-500">Durée :</span>
-            <span className="font-mono font-semibold text-slate-900">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400">Durée :</span>
+            <span className="font-mono font-semibold text-slate-100">
               {stats ? formatDuration(stats.estimatedTimeSec) : '0s'}
             </span>
           </div>
 
           {heightmap?.enabled && (
-            <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
-              <Layers className="w-3 h-3 text-emerald-600" />
+            <div className="flex items-center gap-1 text-emerald-300 bg-emerald-500/15 border border-emerald-400/40 px-2 py-0.5 rounded-md">
+              <Layers className="w-3 h-3 text-emerald-400" />
               <span className="text-[11px] font-semibold">Heightmap Active</span>
             </div>
           )}
         </div>
 
         {/* Position actuelle de l'outil (WPos) */}
-        <div className="flex items-center gap-2 font-mono text-xs bg-slate-100 border border-slate-300 px-2.5 py-1 rounded">
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-red-600 font-bold">
-            X:{status.wpos.x.toFixed(2)}
-          </span>
-          <span className="text-emerald-700 font-bold">
-            Y:{status.wpos.y.toFixed(2)}
-          </span>
-          <span className="text-blue-700 font-bold">
-            Z:{status.wpos.z.toFixed(2)}
-          </span>
+        <div className="flex items-center gap-2 font-mono text-xs bg-[#090d14] border border-slate-800 px-2.5 py-1 rounded-lg tabular-nums">
+          <Eye className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-rose-400 font-bold">X:{status.wpos.x.toFixed(2)}</span>
+          <span className="text-emerald-400 font-bold">Y:{status.wpos.y.toFixed(2)}</span>
+          <span className="text-sky-400 font-bold">Z:{status.wpos.z.toFixed(2)}</span>
         </div>
       </div>
     </div>

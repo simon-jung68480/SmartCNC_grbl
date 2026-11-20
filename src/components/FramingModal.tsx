@@ -23,6 +23,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Coordinates, GrblStatus } from '../types/cnc';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface FramingSettings {
   safeZ: number;
@@ -71,6 +72,8 @@ export const FramingModal: React.FC<FramingModalProps> = ({
   onSendRealtime,
   onZeroWorkAxis,
 }) => {
+  const { preferences } = useAppPreferences();
+  const isLight = preferences.theme === 'light';
   // --- Persistent Settings in localStorage ---
   const [settings, setSettings] = useState<FramingSettings>(() => {
     try {
@@ -347,29 +350,29 @@ export const FramingModal: React.FC<FramingModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4">
-      <div className="bg-white border border-slate-300 text-slate-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4">
+      <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* =====================================================================
             EN-TÊTE MODALE
         ===================================================================== */}
-        <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div className="px-5 py-3.5 bg-[#0f1520] border-b border-slate-800 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-600">
+            <div className="p-2.5 rounded-xl bg-sky-500/15 border border-sky-500/40 text-sky-400">
               <Maximize2 className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-bold text-slate-50">
                   Assistant de Cadrage & Bounding Box (Framing)
                 </h2>
                 {fileName && (
-                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-200 text-slate-700">
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[11px] font-mono bg-[#1b2436] border border-slate-700 text-slate-200">
                     {fileName}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-300">
                 Vérification du positionnement de la pièce et contrôle anti-collision avec les brides de serrage (clamps)
               </p>
             </div>
@@ -378,8 +381,9 @@ export const FramingModal: React.FC<FramingModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition"
+            className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436] transition cursor-pointer"
             title="Fermer la fenêtre (Échap)"
+            aria-label="Fermer la fenêtre"
           >
             <X className="w-5 h-5" />
           </button>
@@ -388,42 +392,42 @@ export const FramingModal: React.FC<FramingModalProps> = ({
         {/* =====================================================================
             BANNIÈRE DE STATUT MACHINE & SÉCURITÉ
         ===================================================================== */}
-        <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-100/70 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
+        <div className="px-5 py-2.5 border-b border-slate-800 bg-[#111622] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
             {!isMachineConnected ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-rose-50 text-rose-700 border border-rose-300">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-rose-500/15 text-rose-200 border border-rose-500/40">
                 <ShieldAlert className="w-3.5 h-3.5" />
                 CNC Déconnectée — Mouvements désactivés
               </span>
             ) : isAlarm ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-rose-50 text-rose-700 border border-rose-300">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-rose-500/15 text-rose-200 border border-rose-500/40">
                 <ShieldAlert className="w-3.5 h-3.5" />
                 Machine en ALARME ($X requis) — Déplacement interdit
               </span>
             ) : isBusyJob ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-amber-500/15 text-amber-200 border border-amber-500/40">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 Usinage en cours ({status.state}) — Cadrage suspendu
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-500/40">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 Machine Prête ({status.state})
               </span>
             )}
 
             {isMachineConnected && (
-              <span className="font-mono text-slate-600">
-                WPos : X <b className="text-slate-800">{status.wpos.x.toFixed(2)}</b>, Y{' '}
-                <b className="text-slate-800">{status.wpos.y.toFixed(2)}</b>, Z{' '}
-                <b className="text-slate-800">{status.wpos.z.toFixed(2)}</b>
+              <span className="font-mono text-slate-300">
+                WPos : X <b className="text-slate-50">{status.wpos.x.toFixed(2)}</b>, Y{' '}
+                <b className="text-slate-50">{status.wpos.y.toFixed(2)}</b>, Z{' '}
+                <b className="text-slate-50">{status.wpos.z.toFixed(2)}</b>
               </span>
             )}
           </div>
 
           {/* Règle d'or de sécurité */}
-          <div className="flex items-center gap-1.5 text-slate-600 text-[11px] font-medium">
-            <Shield className="w-3.5 h-3.5 text-sky-600" />
+          <div className="flex items-center gap-1.5 text-slate-200 text-xs font-medium">
+            <Shield className="w-3.5 h-3.5 text-sky-400" />
             <span>Sécurité active : levée Z à +{settings.safeZ.toFixed(1)} mm avant tout mouvement XY</span>
           </div>
         </div>
@@ -437,14 +441,14 @@ export const FramingModal: React.FC<FramingModalProps> = ({
           <div className="lg:col-span-7 space-y-4 flex flex-col">
             
             {/* Boîte des Dimensions Cotées */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            <div className="bg-[#0f1520] border border-slate-800 rounded-xl p-3.5 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                     Dimensions Boîte Englobante (Bounding Box)
                   </h3>
                   {settings.margin > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/15 text-amber-200 border border-amber-500/40">
                       Marge brides: +{settings.margin} mm
                     </span>
                   )}
@@ -454,7 +458,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setCustomStock((s) => ({ ...s, enabled: !s.enabled }))}
-                  className="text-[11px] font-medium text-sky-600 hover:text-sky-700 underline"
+                  className="text-xs font-semibold text-sky-300 hover:text-sky-200 underline cursor-pointer"
                 >
                   {customStock.enabled ? 'Utiliser G-Code' : 'Dimensions manuelles'}
                 </button>
@@ -462,38 +466,38 @@ export const FramingModal: React.FC<FramingModalProps> = ({
 
               {/* Si mode manuel activé */}
               {customStock.enabled && (
-                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 grid grid-cols-3 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Largeur X (mm)</label>
+                    <label className="block text-[11px] font-bold text-amber-200 mb-1">Largeur X (mm)</label>
                     <input
                       type="number"
                       min="1"
                       step="5"
                       value={customStock.width}
                       onChange={(e) => setCustomStock((s) => ({ ...s, width: Math.max(1, parseFloat(e.target.value) || 1) }))}
-                      className="w-full px-2 py-1 bg-white border border-amber-300 rounded text-xs font-mono"
+                      className="w-full min-h-8 px-2 py-1 bg-[#090d14] border border-amber-500/50 rounded-lg text-xs font-mono text-slate-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Longueur Y (mm)</label>
+                    <label className="block text-[11px] font-bold text-amber-200 mb-1">Longueur Y (mm)</label>
                     <input
                       type="number"
                       min="1"
                       step="5"
                       value={customStock.height}
                       onChange={(e) => setCustomStock((s) => ({ ...s, height: Math.max(1, parseFloat(e.target.value) || 1) }))}
-                      className="w-full px-2 py-1 bg-white border border-amber-300 rounded text-xs font-mono"
+                      className="w-full min-h-8 px-2 py-1 bg-[#090d14] border border-amber-500/50 rounded-lg text-xs font-mono text-slate-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Épaisseur Z (mm)</label>
+                    <label className="block text-[11px] font-bold text-amber-200 mb-1">Épaisseur Z (mm)</label>
                     <input
                       type="number"
                       min="0.1"
                       step="1"
                       value={customStock.depth}
                       onChange={(e) => setCustomStock((s) => ({ ...s, depth: Math.max(0.1, parseFloat(e.target.value) || 0.1) }))}
-                      className="w-full px-2 py-1 bg-white border border-amber-300 rounded text-xs font-mono"
+                      className="w-full min-h-8 px-2 py-1 bg-[#090d14] border border-amber-500/50 rounded-lg text-xs font-mono text-slate-100"
                     />
                   </div>
                 </div>
@@ -501,51 +505,51 @@ export const FramingModal: React.FC<FramingModalProps> = ({
 
               {/* Cartouches d'axes X, Y, Z */}
               <div className="grid grid-cols-3 gap-2 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-rose-600 mb-0.5">
+                <div className="p-2.5 rounded-lg bg-[#090d14] border border-slate-800">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-rose-400 mb-0.5">
                     Axe X (Largeur)
                   </span>
-                  <div className="text-sm font-bold text-slate-800">
-                    {baseBounds.width.toFixed(1)} <span className="text-[11px] font-normal text-slate-500">mm</span>
+                  <div className="text-sm font-bold text-slate-50">
+                    {baseBounds.width.toFixed(1)} <span className="text-[11px] font-normal text-slate-300">mm</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-300 mt-0.5">
                     {baseBounds.minX.toFixed(1)} ➔ {baseBounds.maxX.toFixed(1)}
                   </div>
                   {settings.margin > 0 && (
-                    <div className="text-[10px] font-bold text-amber-700 mt-1 border-t border-slate-100 pt-1">
+                    <div className="text-[11px] font-bold text-amber-300 mt-1 border-t border-slate-800 pt-1">
                       Cadre: {framedBounds.width.toFixed(1)} mm
                     </div>
                   )}
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-0.5">
+                <div className="p-2.5 rounded-lg bg-[#090d14] border border-slate-800">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-0.5">
                     Axe Y (Longueur)
                   </span>
-                  <div className="text-sm font-bold text-slate-800">
-                    {baseBounds.length.toFixed(1)} <span className="text-[11px] font-normal text-slate-500">mm</span>
+                  <div className="text-sm font-bold text-slate-50">
+                    {baseBounds.length.toFixed(1)} <span className="text-[11px] font-normal text-slate-300">mm</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-300 mt-0.5">
                     {baseBounds.minY.toFixed(1)} ➔ {baseBounds.maxY.toFixed(1)}
                   </div>
                   {settings.margin > 0 && (
-                    <div className="text-[10px] font-bold text-amber-700 mt-1 border-t border-slate-100 pt-1">
+                    <div className="text-[11px] font-bold text-amber-300 mt-1 border-t border-slate-800 pt-1">
                       Cadre: {framedBounds.length.toFixed(1)} mm
                     </div>
                   )}
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-sky-600 mb-0.5">
+                <div className="p-2.5 rounded-lg bg-[#090d14] border border-slate-800">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-sky-400 mb-0.5">
                     Axe Z (Course / Prof.)
                   </span>
-                  <div className="text-sm font-bold text-slate-800">
-                    {baseBounds.height.toFixed(1)} <span className="text-[11px] font-normal text-slate-500">mm</span>
+                  <div className="text-sm font-bold text-slate-50">
+                    {baseBounds.height.toFixed(1)} <span className="text-[11px] font-normal text-slate-300">mm</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-300 mt-0.5">
                     {baseBounds.minZ.toFixed(1)} ➔ {baseBounds.maxZ.toFixed(1)}
                   </div>
-                  <div className="text-[10px] font-medium text-sky-700 mt-1 border-t border-slate-100 pt-1">
+                  <div className="text-[11px] font-semibold text-sky-300 mt-1 border-t border-slate-800 pt-1">
                     Safe: +{settings.safeZ.toFixed(1)} mm
                   </div>
                 </div>
@@ -553,19 +557,19 @@ export const FramingModal: React.FC<FramingModalProps> = ({
             </div>
 
             {/* Visualiseur 2D SVG Interactif du Brut et des Coins */}
-            <div className="border border-slate-200 rounded-xl bg-slate-900 text-white p-3 space-y-2 flex-1 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-slate-300">
-                <span className="flex items-center gap-1.5 font-medium">
+            <div className="border border-slate-800 rounded-xl bg-[#0d121b] text-slate-100 p-3 space-y-2.5 flex-1 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-slate-200">
+                <span className="flex items-center gap-1.5 font-semibold">
                   <Target className="w-3.5 h-3.5 text-sky-400" />
                   Vue 2D du Plateau (Cliquez sur un point pour y déplacer l'outil)
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-slate-300">
                   Centre: X{framedBounds.centerX.toFixed(1)} Y{framedBounds.centerY.toFixed(1)}
                 </span>
               </div>
 
               {/* Rendu Schématique SVG Interactif */}
-              <div className="w-full h-56 relative flex items-center justify-center select-none overflow-hidden rounded-lg bg-slate-950 border border-slate-800">
+              <div className="w-full h-56 relative flex items-center justify-center select-none overflow-hidden rounded-lg bg-[#090d14] border border-slate-800">
                 <svg
                   viewBox="0 0 460 250"
                   className="w-full h-full max-h-56"
@@ -573,7 +577,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                 >
                   <defs>
                     <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.8" />
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke={isLight ? '#cbd5e1' : '#1e293b'} strokeWidth="0.8" />
                     </pattern>
                     <marker
                       id="arrow"
@@ -584,7 +588,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       markerHeight="6"
                       orient="auto-start-reverse"
                     >
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill={isLight ? '#0284c7' : '#38bdf8'} />
                     </marker>
                   </defs>
 
@@ -639,9 +643,9 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                             y={fTop}
                             width={fW}
                             height={fH}
-                            fill="#f59e0b"
-                            fillOpacity="0.08"
-                            stroke="#f59e0b"
+                            fill={isLight ? '#d97706' : '#f59e0b'}
+                            fillOpacity={isLight ? '0.12' : '0.08'}
+                            stroke={isLight ? '#d97706' : '#f59e0b'}
                             strokeWidth="1.5"
                             strokeDasharray="4 3"
                             rx="4"
@@ -655,8 +659,8 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                           width={rectW}
                           height={rectH}
                           fill="#0284c7"
-                          fillOpacity="0.18"
-                          stroke="#38bdf8"
+                          fillOpacity={isLight ? '0.14' : '0.18'}
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="2"
                           rx="3"
                         />
@@ -667,47 +671,47 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                           y1={fyMin}
                           x2={fxMax - 15}
                           y2={fyMin}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMax}
                           y1={fyMin - 15}
                           x2={fxMax}
                           y2={fyMax + 15}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMax - 15}
                           y1={fyMax}
                           x2={fxMin + 15}
                           y2={fyMax}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMin}
                           y1={fyMax + 15}
                           x2={fxMin}
                           y2={fyMin - 15}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
 
                         {/* Cotes de dimensions sur le brut */}
                         <text
                           x={230}
                           y={rectTop - 8}
-                          fill="#94a3b8"
+                          fill={isLight ? '#334155' : '#cbd5e1'}
                           fontSize="10"
                           textAnchor="middle"
                           fontFamily="monospace"
@@ -717,7 +721,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                         <text
                           x={rectLeft - 8}
                           y={125}
-                          fill="#94a3b8"
+                          fill={isLight ? '#334155' : '#cbd5e1'}
                           fontSize="10"
                           textAnchor="middle"
                           fontFamily="monospace"
@@ -743,13 +747,13 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                               cx={target.x}
                               cy={target.y}
                               r="10"
-                              fill="#0ea5e9"
+                              fill={isLight ? '#0284c7' : '#0ea5e9'}
                               fillOpacity="0.25"
-                              stroke="#38bdf8"
+                              stroke={isLight ? '#0369a1' : '#38bdf8'}
                               strokeWidth="1.5"
                               className="transition duration-150 hover:r-12 hover:fill-sky-400 hover:fill-opacity-50"
                             />
-                            <circle cx={target.x} cy={target.y} r="2.5" fill="#f8fafc" />
+                            <circle cx={target.x} cy={target.y} r="2.5" fill={isLight ? '#0f172a' : '#f8fafc'} />
                             <title>Cliquez pour aller à : {target.title}</title>
                           </g>
                         ))}
@@ -762,7 +766,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                               cy={toolSvgY}
                               r="6"
                               fill="#ef4444"
-                              stroke="#ffffff"
+                              stroke={isLight ? '#0f172a' : '#ffffff'}
                               strokeWidth="1.5"
                             >
                               <animate
@@ -775,7 +779,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                             <text
                               x={toolSvgX + 8}
                               y={toolSvgY - 4}
-                              fill="#f87171"
+                              fill={isLight ? '#dc2626' : '#f87171'}
                               fontSize="9"
                               fontFamily="monospace"
                               fontWeight="bold"
@@ -800,7 +804,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       type="button"
                       onClick={() => handleMoveToPoint(pid)}
                       disabled={!canSendMove}
-                      className="flex flex-col items-center justify-center p-1.5 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700 transition disabled:opacity-40 disabled:pointer-events-none"
+                      className="flex flex-col items-center justify-center min-h-10 p-1.5 rounded-lg text-[11px] font-semibold bg-[#1b2436] hover:bg-[#243047] active:bg-[#2d3b56] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                       title={`Aller à ${pt.label} (Z levé à +${settings.safeZ} mm d'abord)`}
                     >
                       <span className="text-sky-400 mb-0.5">{pt.icon}</span>
@@ -823,17 +827,17 @@ export const FramingModal: React.FC<FramingModalProps> = ({
 
             {/* Message de notification d'action */}
             {lastActionFeedback && (
-              <div className="p-2 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 text-xs flex items-center justify-between">
+              <div className="p-2.5 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-200 text-xs flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  <Info className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                   {lastActionFeedback}
                 </span>
                 <button
                   type="button"
                   onClick={() => setLastActionFeedback(null)}
-                  className="text-sky-600 hover:text-sky-900"
+                  className="text-sky-300 hover:text-white cursor-pointer"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
@@ -842,25 +846,25 @@ export const FramingModal: React.FC<FramingModalProps> = ({
           {/* COLONNE DROITE (5/12) : Paramètres Réglables & Actions d'Exécution */}
           <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
             
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Sliders className="w-4 h-4 text-sky-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            <div className="space-y-3.5">
+              <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                <Sliders className="w-4 h-4 text-sky-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                   Paramètres de Sécurité Cadrage
                 </h3>
               </div>
 
               {/* 1. Z DE SÉCURITÉ PENDANT LE CADRAGE */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-sky-600" />
+              <div className="p-3 rounded-xl bg-[#0f1520] border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-sky-400" />
                     Z de Sécurité (au-dessus de Z0)
                   </label>
                   <button
                     type="button"
                     onClick={handleUseCurrentZ}
-                    className="text-[10px] font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded transition"
+                    className="min-h-8 text-[11px] font-semibold text-sky-200 hover:text-white bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 px-2.5 py-1 rounded-lg transition cursor-pointer"
                     title="Prendre la hauteur actuelle de la fraise"
                   >
                     Utiliser Z actuel ({status.wpos.z > 0 ? `+${status.wpos.z.toFixed(1)}` : status.wpos.z.toFixed(1)})
@@ -875,9 +879,9 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                     step="1"
                     value={settings.safeZ}
                     onChange={(e) => updateSettings({ safeZ: Math.max(0.5, parseFloat(e.target.value) || 5) })}
-                    className="w-24 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-bold font-mono text-slate-800"
+                    className="w-24 min-h-9 px-2.5 py-1.5 bg-[#090d14] border border-slate-700 rounded-lg text-sm font-bold font-mono text-slate-100"
                   />
-                  <span className="text-xs font-medium text-slate-500">mm au-dessus de Z0</span>
+                  <span className="text-xs font-medium text-slate-300">mm au-dessus de Z0</span>
                 </div>
 
                 {/* Presets rapides de Z */}
@@ -887,10 +891,10 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       key={val}
                       type="button"
                       onClick={() => updateSettings({ safeZ: val })}
-                      className={`px-2 py-1 rounded text-xs font-semibold border transition ${
+                      className={`min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                         settings.safeZ === val
-                          ? 'bg-sky-600 text-white border-sky-600'
-                          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                          ? 'bg-sky-400 text-slate-950 border-sky-300 font-bold'
+                          : 'bg-[#1b2436] hover:bg-[#243047] text-slate-100 border-slate-700/80'
                       }`}
                     >
                       +{val} mm
@@ -899,21 +903,21 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                 </div>
 
                 {settings.safeZ <= 2 && (
-                  <p className="text-[11px] text-amber-700 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                  <p className="text-xs text-amber-300 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     Attention : Z ≤ 2 mm très proche de la pièce !
                   </p>
                 )}
               </div>
 
               {/* 2. VITESSE D'AVANCE (FEED RATE) */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="p-3 rounded-xl bg-[#0f1520] border border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-600" />
+                  <label className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-sky-400" />
                     Vitesse d'avance du cadrage
                   </label>
-                  <span className="text-xs font-bold font-mono text-sky-700">
+                  <span className="text-xs font-bold font-mono text-sky-300">
                     {settings.feedRate} mm/min
                   </span>
                 </div>
@@ -925,7 +929,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                   step="100"
                   value={settings.feedRate}
                   onChange={(e) => updateSettings({ feedRate: parseInt(e.target.value, 10) || 1200 })}
-                  className="w-full accent-sky-600 cursor-pointer"
+                  className="w-full h-2 bg-[#090d14] rounded-lg appearance-none accent-sky-400 cursor-pointer"
                 />
 
                 <div className="flex flex-wrap gap-1.5">
@@ -934,10 +938,10 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       key={f}
                       type="button"
                       onClick={() => updateSettings({ feedRate: f })}
-                      className={`px-2 py-1 rounded text-xs font-semibold border transition ${
+                      className={`min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                         settings.feedRate === f
-                          ? 'bg-sky-600 text-white border-sky-600'
-                          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                          ? 'bg-sky-400 text-slate-950 border-sky-300 font-bold'
+                          : 'bg-[#1b2436] hover:bg-[#243047] text-slate-100 border-slate-700/80'
                       }`}
                     >
                       {f}
@@ -947,18 +951,18 @@ export const FramingModal: React.FC<FramingModalProps> = ({
               </div>
 
               {/* 3. MARGE SUPPLÉMENTAIRE BRIDES (OFFSET SÉCURITÉ) */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="p-3 rounded-xl bg-[#0f1520] border border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Move className="w-3.5 h-3.5 text-amber-600" />
+                  <label className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Move className="w-3.5 h-3.5 text-amber-400" />
                     Marge Brides (Offset de dégagement)
                   </label>
-                  <span className="text-xs font-bold font-mono text-amber-700">
+                  <span className="text-xs font-bold font-mono text-amber-300">
                     +{settings.margin} mm
                   </span>
                 </div>
 
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-300">
                   Élargit le périmètre pour vérifier que les vis et brides ne coupent pas la trajectoire.
                 </p>
 
@@ -968,10 +972,10 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       key={m}
                       type="button"
                       onClick={() => updateSettings({ margin: m })}
-                      className={`px-2 py-1 rounded text-xs font-semibold border transition ${
+                      className={`min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                         settings.margin === m
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
+                          : 'bg-[#1b2436] hover:bg-[#243047] text-slate-100 border-slate-700/80'
                       }`}
                     >
                       {m === 0 ? '0 mm (Exact)' : `+${m} mm`}
@@ -981,44 +985,44 @@ export const FramingModal: React.FC<FramingModalProps> = ({
               </div>
 
               {/* 4. MODE CONTINU / RÉPÉTITION & OPTION POINTEUR LASER */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-800">Mode de Tracé</label>
-                  <div className="flex flex-col gap-1">
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-[#0f1520] border border-slate-800 space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-100">Mode de Tracé</label>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-200">
                       <input
                         type="radio"
                         name="framing_mode"
                         checked={settings.mode === 'once'}
                         onChange={() => updateSettings({ mode: 'once' })}
-                        className="accent-sky-600"
+                        className="accent-sky-400"
                       />
                       1 tour (Arrêt auto)
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-200">
                       <input
                         type="radio"
                         name="framing_mode"
                         checked={settings.mode === 'continuous'}
                         onChange={() => updateSettings({ mode: 'continuous' })}
-                        className="accent-sky-600"
+                        className="accent-sky-400"
                       />
                       En boucle (Continu)
                     </label>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <div className="p-3 rounded-xl bg-[#0f1520] border border-slate-800 space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
                     Pointeur Diode / Laser
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+                  <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-200">
                     <input
                       type="checkbox"
                       checked={settings.useLaserPointer}
                       onChange={(e) => updateSettings({ useLaserPointer: e.target.checked })}
-                      className="accent-sky-600"
+                      className="accent-sky-400"
                     />
                     Activer M3 S{settings.laserPowerS} (Basse intensité)
                   </label>
@@ -1029,14 +1033,14 @@ export const FramingModal: React.FC<FramingModalProps> = ({
             {/* =====================================================================
                 ACTIONS D'EXÉCUTION PRINCIPALES (BAS DE COLONNE DROITE)
             ===================================================================== */}
-            <div className="pt-2 border-t border-slate-200 space-y-2">
+            <div className="pt-3 border-t border-slate-800 space-y-2.5">
               
               {/* État de cadrage continu actif avec bouton d'arrêt */}
               {isFramingActive ? (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+                <div className="p-3 rounded-xl bg-amber-950/50 border border-amber-500/50 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-200">
                     <span className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
                       Cadrage en cours — Tour #{cycleCounter}
                     </span>
                     <span className="font-mono">{settings.mode === 'continuous' ? 'Mode Continu' : '1 Tour'}</span>
@@ -1046,7 +1050,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStopFraming(false)}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition shadow-sm"
+                      className="flex items-center justify-center gap-1.5 min-h-10 px-3 py-2 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition shadow-sm cursor-pointer"
                     >
                       <Square className="w-3.5 h-3.5 fill-current" />
                       <span>Terminer et Arrêter</span>
@@ -1055,7 +1059,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStopFraming(true)}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition shadow-sm"
+                      className="flex items-center justify-center gap-1.5 min-h-10 px-3 py-2 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition shadow-sm cursor-pointer"
                     >
                       <ShieldAlert className="w-3.5 h-3.5" />
                       <span>Arrêt Immédiat (!)</span>
@@ -1068,7 +1072,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                   type="button"
                   onClick={handleStartFraming}
                   disabled={!canSendMove}
-                  className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl text-sm font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md hover:shadow-lg transition disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full min-h-11 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl text-sm font-extrabold bg-sky-400 hover:bg-sky-300 text-slate-950 shadow-md transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Play className="w-4 h-4 fill-current" />
                   <span>
@@ -1082,17 +1086,17 @@ export const FramingModal: React.FC<FramingModalProps> = ({
               {/* Raccourci pour mettre à zéro XY au point actuel */}
               {onZeroWorkAxis && (
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-xs text-slate-300">
                     Calibré au bon coin ?
                   </span>
                   <button
                     type="button"
                     onClick={() => onZeroWorkAxis('XY')}
                     disabled={!canSendMove}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded transition disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 min-h-8 text-xs font-bold text-slate-100 hover:text-white bg-[#1b2436] hover:bg-[#243047] border border-slate-700/80 px-2.5 py-1 rounded-lg transition cursor-pointer disabled:opacity-40"
                     title="Définir l'origine pièce X0 Y0 à la position actuelle"
                   >
-                    <Crosshair className="w-3 h-3 text-sky-600" />
+                    <Crosshair className="w-3.5 h-3.5 text-sky-400" />
                     <span>Mettre à Zéro X/Y (G92 X0 Y0)</span>
                   </button>
                 </div>
