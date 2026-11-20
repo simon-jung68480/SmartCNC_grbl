@@ -14,10 +14,30 @@ import {
   AlertCircle,
   Sliders,
   ArrowRight,
+  Monitor,
+  Volume2,
+  Gamepad2,
+  Wrench,
+  RotateCcw,
 } from 'lucide-react';
 import { GrblSettingItem, GrblStatus } from '../types/cnc';
 import { HomingDiagnostics } from './HomingDiagnostics';
 import { AppPreferencesTab } from './AppPreferencesTab';
+import { LaserMachineSettings } from './laser-workshop/LaserMachineSettings';
+import { MAX_LASER_SCAN_OFFSET, type LaserScanOffset } from '../utils/laserCam';
+import { defaultLaserJobPlacement, type LaserJobPlacement } from '../utils/laserJobPlacement';
+import {
+  isValidLaserMachineProfile,
+  saveLaserMachineProfile,
+  useLaserMachineProfile,
+} from '../utils/laserMachineProfile';
+
+export type GrblSettingsTab = 'interface' | 'operation' | 'sound' | 'control' | 'machine' | 'grbl';
+
+function normalizeInitialSettingsTab(tab?: GrblSettingsTab | 'app'): GrblSettingsTab {
+  if (!tab || tab === 'app') return 'interface';
+  return tab;
+}
 
 export const DEFAULT_GRBL_SETTINGS: GrblSettingItem[] = [
   {
@@ -358,7 +378,7 @@ export interface GrblSettingsModalProps {
   onSendCommand: (cmd: string) => void;
   onReadSettings?: () => void;
   onSaveSettings?: (changes: { id: number; code: string; value: number }[]) => void;
-  initialTab?: 'grbl' | 'app';
+  initialTab?: GrblSettingsTab | 'app';
   onResetLayout?: () => void;
 }
 
@@ -374,8 +394,54 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
   initialTab = 'grbl',
   onResetLayout,
 }) => {
-  const [mainTab, setMainTab] = useState<'grbl' | 'app'>(initialTab);
+  const [mainTab, setMainTab] = useState<GrblSettingsTab>(() => normalizeInitialSettingsTab(initialTab));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { profile: laserProfile, resetProfile: resetLaserProfile } = useLaserMachineProfile();
+  const [laserDraftPlacement, setLaserDraftPlacement] = useState<LaserJobPlacement>(() => ({
+    ...defaultLaserJobPlacement,
+    offset: laserProfile.offset,
+  }));
+  const [laserDraftScanOffsets, setLaserDraftScanOffsets] = useState<LaserScanOffset[]>(
+    () => laserProfile.scanOffsets
+  );
+
+  useEffect(() => {
+    setMainTab(normalizeInitialSettingsTab(initialTab));
+  }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (mainTab === 'machine' || isOpen) {
+      setLaserDraftPlacement((prev) => ({ ...prev, offset: laserProfile.offset }));
+      setLaserDraftScanOffsets(laserProfile.scanOffsets);
+    }
+  }, [isOpen, mainTab, laserProfile.offset, laserProfile.scanOffsets]);
+
+  const isLaserDraftValid = isValidLaserMachineProfile({
+    offset: laserDraftPlacement.offset,
+    scanOffsets: laserDraftScanOffsets,
+  });
+
+  const handleLaserPlacementChange = (nextPlacement: LaserJobPlacement) => {
+    setLaserDraftPlacement(nextPlacement);
+    const candidate = { offset: nextPlacement.offset, scanOffsets: laserDraftScanOffsets };
+    if (isValidLaserMachineProfile(candidate)) {
+      saveLaserMachineProfile(candidate);
+    }
+  };
+
+  const handleLaserScanOffsetsChange = (nextScanOffsets: LaserScanOffset[]) => {
+    setLaserDraftScanOffsets(nextScanOffsets);
+    const candidate = { offset: laserDraftPlacement.offset, scanOffsets: nextScanOffsets };
+    if (isValidLaserMachineProfile(candidate)) {
+      saveLaserMachineProfile(candidate);
+    }
+  };
+
+  const handleResetLaserMachine = () => {
+    resetLaserProfile();
+    setLaserDraftPlacement({ ...defaultLaserJobPlacement, offset: { x: 0, y: 0 } });
+    setLaserDraftScanOffsets([]);
+  };
 
   // Merge external settings with full GRBL 1.1 catalog
   const baseSettings = useMemo(() => {
@@ -600,47 +666,49 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-5">
       <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl shadow-2xl w-full max-w-7xl h-full flex flex-col overflow-hidden">
-        {/* Barre de navigation principale supérieure : GRBL ($$) vs Préférences App */}
-        <div className="px-5 py-2.5 bg-[#0f1520] border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMainTab('grbl')}
-              aria-pressed={mainTab === 'grbl'}
-              className={`flex items-center gap-2 min-h-9 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                mainTab === 'grbl'
-                  ? 'bg-[#1b2436] text-sky-300 shadow-xs border border-slate-700'
-                  : 'text-slate-300 hover:text-white hover:bg-[#1b2436]/60 border border-transparent'
-              }`}
-            >
-              <Cpu className="w-4 h-4 text-sky-400" />
-              <span>Paramètres GRBL ($$) & Matériel</span>
-              {modifiedSettings.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200 border border-amber-400/50">
-                  {modifiedSettings.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMainTab('app')}
-              aria-pressed={mainTab === 'app'}
-              className={`flex items-center gap-2 min-h-9 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                mainTab === 'app'
-                  ? 'bg-[#1b2436] text-sky-300 shadow-xs border border-slate-700'
-                  : 'text-slate-300 hover:text-white hover:bg-[#1b2436]/60 border border-transparent'
-              }`}
-            >
-              <Sliders className="w-4 h-4 text-sky-400" />
-              <span>Préférences de l'Application</span>
-            </button>
+        {/* Barre de navigation principale supérieure : Préférences App, Réglages machine & GRBL ($$) */}
+        <div className="px-4 sm:px-5 py-2.5 bg-[#0f1520] border-b border-slate-800 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Sections des réglages">
+            {(
+              [
+                { id: 'interface', label: 'Interface', Icon: Monitor },
+                { id: 'operation', label: 'Fonctionnement', Icon: Sliders },
+                { id: 'sound', label: 'Son', Icon: Volume2 },
+                { id: 'control', label: 'Contrôle', Icon: Gamepad2 },
+                { id: 'machine', label: 'Réglages machine', Icon: Wrench },
+                { id: 'grbl', label: 'GRBL ($$)', Icon: Cpu },
+              ] as const
+            ).map(({ id, label, Icon }) => {
+              const active = mainTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setMainTab(id)}
+                  className={`flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[#1b2436] text-sky-300 shadow-xs border border-slate-700'
+                      : 'text-slate-300 hover:text-white hover:bg-[#1b2436]/60 border border-transparent'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>{label}</span>
+                  {id === 'grbl' && modifiedSettings.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200 border border-amber-400/50">
+                      {modifiedSettings.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436] transition cursor-pointer"
+            className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436] transition cursor-pointer shrink-0"
             title="Fermer (Échap)"
             aria-label="Fermer"
           >
@@ -649,8 +717,54 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
         </div>
 
         {/* CONTENU SELON L'ONGLET ACTIF */}
-        {mainTab === 'app' ? (
-          <AppPreferencesTab onResetLayout={onResetLayout} />
+        {mainTab === 'interface' ||
+        mainTab === 'operation' ||
+        mainTab === 'sound' ||
+        mainTab === 'control' ? (
+          <AppPreferencesTab section={mainTab} onResetLayout={onResetLayout} />
+        ) : mainTab === 'machine' ? (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[#0b0f17] text-slate-100">
+            <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-50 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-sky-400" />
+                  Réglages machine — Atelier Laser
+                </h3>
+                <p className="text-xs text-slate-300 mt-1">
+                  Configurez les compensations mécaniques de votre tête laser (Offset X, Offset Y et correction aller-retour). Ces valeurs sont appliquées automatiquement lors de la génération G-code dans l’Atelier Laser.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLaserDraftValid ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">
+                    <Check className="w-3.5 h-3.5" />
+                    Enregistré automatiquement
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-400/50 text-amber-200 text-xs font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Valeurs incomplètes ou hors plage (±{MAX_LASER_SCAN_OFFSET} mm)
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetLaserMachine}
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Réinitialiser (0 mm)</span>
+                </button>
+              </div>
+            </section>
+
+            <LaserMachineSettings
+              placement={laserDraftPlacement}
+              onPlacement={handleLaserPlacementChange}
+              scanOffsets={laserDraftScanOffsets}
+              onScanOffsets={handleLaserScanOffsetsChange}
+              disabled={false}
+            />
+          </div>
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* En-tête de l'onglet GRBL */}

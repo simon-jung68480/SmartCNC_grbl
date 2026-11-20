@@ -790,7 +790,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 type="button"
                 onClick={handleStopJog}
                 title="Arrêter immédiatement le déplacement Jog"
-                className="h-16 rounded-xl bg-[#090d14] hover:bg-slate-900 active:bg-black border-2 border-red-500/60 text-white flex flex-col items-center justify-center shadow-md transition-transform active:scale-92 cursor-pointer"
+                className="h-16 rounded-xl bg-[#090d14] hover:bg-[#1b2436] active:bg-slate-950 border-2 border-red-500/60 text-slate-100 flex flex-col items-center justify-center shadow-md transition-transform active:scale-92 cursor-pointer"
               >
                 <OctagonX className="w-6 h-6 text-red-400" />
                 <span className="text-[11px] font-black uppercase tracking-tight mt-0.5">

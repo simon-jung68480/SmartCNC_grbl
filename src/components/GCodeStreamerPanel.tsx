@@ -15,214 +15,12 @@ import {
   Trash2,
   Clock,
   Layers,
-  ChevronDown,
   RotateCcw,
   Download,
 } from 'lucide-react';
 import { JobStatus, MachineState, ParsedGCodeStats } from '../types/cnc';
 
-export interface SampleGCodeFile {
-  id: string;
-  name: string;
-  description: string;
-  gcode: string;
-}
-
 const ROW_HEIGHT = 22;
-
-export const BUILTIN_SAMPLE_FILES: SampleGCodeFile[] = [
-  {
-    id: 'calibration-target',
-    name: '1. Cible de Calibrage 60x60mm (Carré + Cercle)',
-    description: 'Vérifie l’équerrage X/Y, les pas/mm ($100/$101) et l’interpolation circulaire G2/G3',
-    gcode: `; ==========================================
-; SMARTCNC - CIBLE DE CALIBRAGE 60x60mm
-; Outil: Fraise 3.175mm (1/8") | Profondeur: -1.0mm
-; Origine: Coin Avant-Gauche (X0 Y0), Z0 sur surface
-; ==========================================
-G21 ; Unités en millimètres
-G90 ; Coordonnées absolues
-G17 ; Plan XY
-G0 Z5.000 ; Hauteur de sécurité
-M3 S10000 ; Démarrage broche 10000 RPM
-G4 P1.0 ; Pause accélération broche
-
-; --- Passe 1 : Carré extérieur 60x60mm ---
-G0 X0.000 Y0.000
-G1 Z-0.500 F250
-G1 X60.000 Y0.000 F800
-G1 X60.000 Y60.000
-G1 X0.000 Y60.000
-G1 X0.000 Y0.000
-G1 Z-1.000 F250
-G1 X60.000 Y0.000 F800
-G1 X60.000 Y60.000
-G1 X0.000 Y60.000
-G1 X0.000 Y0.000
-G0 Z5.000
-
-; --- Passe 2 : Cercle inscrit Ø40mm (Centre X30 Y30) ---
-G0 X30.000 Y10.000
-G1 Z-0.800 F250
-G2 X30.000 Y50.000 I0.000 J20.000 F700
-G2 X30.000 Y10.000 I0.000 J-20.000 F700
-G0 Z5.000
-
-; --- Passe 3 : Croix centrale de mesure ---
-G0 X15.000 Y30.000
-G1 Z-0.500 F250
-G1 X45.000 Y30.000 F600
-G0 Z5.000
-G0 X30.000 Y15.000
-G1 Z-0.500 F250
-G1 X30.000 Y45.000 F600
-G0 Z10.000
-
-M5 ; Arrêt broche
-G0 X0.000 Y0.000 ; Retour origine
-M30 ; Fin de programme`,
-  },
-  {
-    id: 'smartcnc-badge',
-    name: '2. Plaque Frontale Boîtier CNC (100x60mm)',
-    description: 'Découpe de plaque avec 4 perçages M4 de fixation et rainure de ventilation',
-    gcode: `; ==========================================
-; SMARTCNC - PLAQUE BOITIER ELECTRONIQUE 100x60mm
-; Matériau: Acrylique / Contreplaqué 3mm
-; ==========================================
-G21 G90 G17
-G0 Z5.000
-M3 S12000
-
-; --- 4 Perçages d'angle (X8/Y8, X92/Y8, X92/Y52, X8/Y52) ---
-G0 X8.000 Y8.000
-G1 Z-1.500 F200
-G0 Z2.000
-G1 Z-3.200 F200
-G0 Z5.000
-
-G0 X92.000 Y8.000
-G1 Z-1.500 F200
-G0 Z2.000
-G1 Z-3.200 F200
-G0 Z5.000
-
-G0 X92.000 Y52.000
-G1 Z-1.500 F200
-G0 Z2.000
-G1 Z-3.200 F200
-G0 Z5.000
-
-G0 X8.000 Y52.000
-G1 Z-1.500 F200
-G0 Z2.000
-G1 Z-3.200 F200
-G0 Z5.000
-
-; --- Ouverture centrale écran LCD (60x24mm) ---
-G0 X20.000 Y18.000
-G1 Z-1.500 F300
-G1 X80.000 Y18.000 F900
-G1 X80.000 Y42.000
-G1 X20.000 Y42.000
-G1 X20.000 Y18.000
-G1 Z-3.100 F300
-G1 X80.000 Y18.000 F900
-G1 X80.000 Y42.000
-G1 X20.000 Y42.000
-G1 X20.000 Y18.000
-G0 Z5.000
-
-; --- Découpe périmètre 100x60mm ---
-G0 X0.000 Y0.000
-G1 Z-1.500 F300
-G1 X100.000 Y0.000 F1000
-G1 X100.000 Y60.000
-G1 X0.000 Y60.000
-G1 X0.000 Y0.000
-G1 Z-3.100 F300
-G1 X100.000 Y0.000 F1000
-G1 X100.000 Y60.000
-G1 X0.000 Y60.000
-G1 X0.000 Y0.000
-G0 Z10.000
-M5
-G0 X0.000 Y0.000
-M30`,
-  },
-  {
-    id: 'spoilboard-80x80',
-    name: '3. Surfaçage Martyr Rapide 80x80mm (Z -0.5mm)',
-    description: 'Balayage en zig-zag horizontal pour aplanir le plateau martyr MDF',
-    gcode: `; ==========================================
-; SMARTCNC - SURFACAGE MARTYR 80x80mm
-; Fraise à surfacer Ø20mm | Pas latéral: 13mm | Z: -0.5mm
-; ==========================================
-G21 G90 G17
-G0 Z5.000
-M3 S10000
-G0 X0.000 Y0.000
-G1 Z-0.500 F300
-G1 X80.000 Y0.000 F1200
-G1 X80.000 Y13.000
-G1 X0.000 Y13.000
-G1 X0.000 Y26.000
-G1 X80.000 Y26.000
-G1 X80.000 Y39.000
-G1 X0.000 Y39.000
-G1 X0.000 Y52.000
-G1 X80.000 Y52.000
-G1 X80.000 Y65.000
-G1 X0.000 Y65.000
-G1 X0.000 Y80.000
-G1 X80.000 Y80.000
-; Passe de finition périmètre
-G1 X80.000 Y0.000 F1000
-G1 X0.000 Y0.000
-G1 X0.000 Y80.000
-G0 Z10.000
-M5
-G0 X0.000 Y0.000
-M30`,
-  },
-  {
-    id: 'pcb-isolation-test',
-    name: '4. Gravure Piste PCB Test (50x35mm)',
-    description: 'Pistes d’isolation fines à Z -0.1mm pour tester la compensation Heightmap Z',
-    gcode: `; ==========================================
-; SMARTCNC - GRAVURE ISOLATION PCB 50x35mm
-; Outil: Pointe Javelot V-Bit 30° 0.1mm | Z: -0.10mm
-; Idéal avec le palpage de surface Heightmap activé
-; ==========================================
-G21 G90 G17
-G0 Z3.000
-M3 S12000
-; Contour pastille DIP-8 et pistes
-G0 X5.000 Y5.000
-G1 Z-0.100 F120
-G1 X45.000 Y5.000 F450
-G1 X45.000 Y30.000
-G1 X5.000 Y30.000
-G1 X5.000 Y5.000
-G0 Z2.000
-; Pistes internes
-G0 X10.000 Y10.000
-G1 Z-0.100 F120
-G1 X25.000 Y10.000 F400
-G1 X30.000 Y15.000
-G1 X40.000 Y15.000
-G0 Z2.000
-G0 X10.000 Y20.000
-G1 Z-0.100 F120
-G1 X22.000 Y20.000 F400
-G1 X27.000 Y25.000
-G1 X40.000 Y25.000
-G0 Z5.000
-M5
-G0 X0.000 Y0.000
-M30`,
-  },
-];
 
 export interface GCodeStreamerPanelProps {
   connected: boolean;
@@ -230,7 +28,6 @@ export interface GCodeStreamerPanelProps {
   job: JobStatus;
   gcodeText: string;
   stats?: ParsedGCodeStats | null;
-  sampleFiles?: SampleGCodeFile[];
   onLoadGCode: (fileName: string, content: string) => void;
   onUpdateGCode?: (newContent: string) => void;
   onStartJob: () => void;
@@ -390,7 +187,6 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
   job,
   gcodeText,
   stats,
-  sampleFiles = BUILTIN_SAMPLE_FILES,
   onLoadGCode,
   onUpdateGCode,
   onStartJob,
@@ -406,7 +202,6 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
-  const [showSampleDropdown, setShowSampleDropdown] = useState(false);
   const [showSpoilboardModal, setShowSpoilboardModal] = useState(false);
 
   // Virtual scroll state
@@ -830,52 +625,6 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             <span>Ouvrir</span>
           </button>
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowSampleDropdown((v) => !v)}
-              disabled={isRunning}
-              className="inline-flex items-center gap-1 min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40"
-              title="Charger un programme G-Code d'exemple"
-            >
-              <span>Exemples</span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
-            </button>
-
-            {showSampleDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setShowSampleDropdown(false)}
-                />
-                <div className="absolute right-0 mt-1.5 w-80 bg-[#141b27] border border-slate-700 rounded-xl shadow-2xl z-40 py-1.5 divide-y divide-slate-800">
-                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-[#0f1520]">
-                    Programmes G-Code prêts à l'emploi
-                  </div>
-                  {sampleFiles.map((sample) => (
-                    <button
-                      key={sample.id}
-                      type="button"
-                      onClick={() => {
-                        onLoadGCode(`${sample.id}.nc`, sample.gcode);
-                        setShowSampleDropdown(false);
-                        setIsEditing(false);
-                      }}
-                      className="w-full text-left px-3 py-2.5 hover:bg-[#1b2436] transition flex flex-col gap-0.5 cursor-pointer"
-                    >
-                      <span className="text-xs font-semibold text-slate-100">
-                        {sample.name}
-                      </span>
-                      <span className="text-[11px] text-slate-300 leading-tight">
-                        {sample.description}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
           <button
             type="button"
             onClick={() => setShowSpoilboardModal(true)}
@@ -1113,8 +862,8 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm">
               Glissez un fichier <code className="text-sky-300 bg-[#141b27] px-1 py-0.5 rounded font-semibold">.nc</code> ou{' '}
-              <code className="text-sky-300 bg-[#141b27] px-1 py-0.5 rounded font-semibold">.gcode</code> ici, utilisez le menu{' '}
-              <strong className="text-slate-100">Exemples</strong> ou lancez le{' '}
+              <code className="text-sky-300 bg-[#141b27] px-1 py-0.5 rounded font-semibold">.gcode</code> ici, cliquez sur{' '}
+              <strong className="text-slate-100">Ouvrir</strong> ou lancez le{' '}
               <strong className="text-slate-100">Surfaçage Martyr</strong>.
             </p>
           </div>

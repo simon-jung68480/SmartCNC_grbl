@@ -21,6 +21,8 @@ import {
   Sliders,
   Volume2,
   VolumeX,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import {
   GrblStatus,
@@ -36,7 +38,7 @@ import { Viewport3D } from './components/Viewport3D';
 import { DROPanel } from './components/DROPanel';
 import { JogPanel } from './components/JogPanel';
 import { OverridesAndToolsTabs } from './components/OverridesAndToolsTabs';
-import { GCodeStreamerPanel, BUILTIN_SAMPLE_FILES } from './components/GCodeStreamerPanel';
+import { GCodeStreamerPanel } from './components/GCodeStreamerPanel';
 import { ConsoleAndMacrosPanel } from './components/ConsoleAndMacrosPanel';
 import { GrblSettingsModal } from './components/GrblSettingsModal';
 import { MobilePendantView } from './components/MobilePendantView';
@@ -94,7 +96,7 @@ const INITIAL_STATUS: GrblStatus = {
 
 const INITIAL_JOB: JobStatus = {
   state: 'idle',
-  fileName: BUILTIN_SAMPLE_FILES[0].name,
+  fileName: '',
   totalLines: 0,
   sentLines: 0,
   acknowledgedLines: 0,
@@ -137,8 +139,8 @@ export const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
 
   const [job, setJob] = useState<JobStatus>(INITIAL_JOB);
-  const [fileName, setFileName] = useState<string>(BUILTIN_SAMPLE_FILES[0].name);
-  const [rawGCode, setRawGCode] = useState<string>(BUILTIN_SAMPLE_FILES[0].gcode);
+  const [fileName, setFileName] = useState<string>('');
+  const [rawGCode, setRawGCode] = useState<string>('');
 
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [grblSettings, setGrblSettings] = useState<GrblSettingItem[]>([]);
@@ -203,8 +205,8 @@ export const App: React.FC = () => {
   const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
   const resetLayout = () => { layoutSizes.resetAll(); resetPanels(); };
 
-  // Préférences utilisateur (Zoom, Hauteur grille 3D, Sécurité, Sons, etc.)
-  const { preferences } = useAppPreferences();
+  // Préférences utilisateur (Thème, Zoom, Hauteur grille 3D, Sécurité, Sons, etc.)
+  const { preferences, updatePreferences } = useAppPreferences();
 
   // If heightmap compensation is enabled and has probed points, compute compensated G-code
   const effectiveGCode = useMemo(() => {
@@ -567,6 +569,48 @@ export const App: React.FC = () => {
   const isRunning = (job.state === 'running' || status.state === 'Run') && !isPaused;
   const isAudioActive = audioSettings.enabled && audioSettings.masterVolume > 0;
 
+  const laserModeSetting = grblSettings.find((s) => s.id === 32)?.value;
+  const isLaserModeKnown = laserModeSetting === 0 || laserModeSetting === 1;
+  const isLaserModeEnabled = laserModeSetting === 1;
+  const canToggleLaserMode =
+    status.connected &&
+    !isRunning &&
+    !isPaused &&
+    status.state !== 'Jog' &&
+    status.state !== 'Home';
+
+  const handleToggleLaserMode = useCallback(() => {
+    if (!socket || !canToggleLaserMode) return;
+    if (!isLaserModeKnown) {
+      socket.emit('cnc:settings:get');
+      return;
+    }
+
+    const nextValue = isLaserModeEnabled ? 0 : 1;
+    socket.emit('cnc:settings:set', { id: 32, value: nextValue });
+    setGrblSettings((prev) => {
+      const idx = prev.findIndex((s) => s.id === 32);
+      if (idx >= 0) {
+        return prev.map((s) => (s.id === 32 ? { ...s, value: nextValue } : s));
+      }
+      return [
+        ...prev,
+        {
+          id: 32,
+          code: '$32',
+          value: nextValue,
+          unit: 'bool',
+          name: 'Mode Laser',
+          category: 'Spindle & Laser',
+          description: 'Active le mode laser GRBL ($32=1) ou le mode broche CNC ($32=0).',
+        },
+      ];
+    });
+    window.setTimeout(() => {
+      socket.emit('cnc:settings:get');
+    }, 180);
+  }, [socket, canToggleLaserMode, isLaserModeKnown, isLaserModeEnabled]);
+
   const connectionStateDisplay = useMemo(() => {
     if (!status.connected || status.state === 'Disconnected') {
       return { dot: 'bg-slate-500', label: 'Déconnecté', text: 'text-slate-400' };
@@ -644,7 +688,10 @@ export const App: React.FC = () => {
 
           <div className="w-8 h-px bg-slate-800" aria-hidden="true" />
 
-          <nav aria-label="Ateliers" className="flex flex-col items-center gap-1.5 w-full">
+          <nav
+            aria-label="Basculer entre Atelier CNC et Atelier Laser"
+            className="flex flex-col items-center gap-1 w-full p-1 rounded-xl bg-[#090d14] border border-slate-800"
+          >
             {(['cnc', 'laser'] as const).map((mode) => {
               const activeMode = workshop === mode;
               const isLaser = mode === 'laser';
@@ -661,30 +708,72 @@ export const App: React.FC = () => {
                     }
                   }}
                   aria-current={activeMode ? 'page' : undefined}
-                  aria-label={isLaser ? 'Atelier laser' : 'Atelier CNC'}
-                  title={isLaser ? 'Atelier laser' : 'Atelier CNC'}
-                  className={`relative w-12 min-h-12 rounded-xl border flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-all cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${
+                  aria-label={isLaser ? 'Passer en mode Laser' : 'Passer en mode CNC'}
+                  title={isLaser ? 'Basculer vers l’Atelier Laser' : 'Basculer vers l’Atelier CNC'}
+                  className={`relative w-full min-h-11 rounded-lg border flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-all cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${
                     activeMode
                       ? isLaser
-                        ? 'bg-amber-500/15 border-amber-400/45 text-amber-200'
-                        : 'bg-sky-500/15 border-sky-400/45 text-sky-200'
-                      : 'bg-transparent border-transparent text-slate-400 hover:bg-[#1b2436] hover:text-slate-100'
+                        ? 'bg-amber-400 border-amber-300 text-slate-950 shadow-xs'
+                        : 'bg-sky-400 border-sky-300 text-slate-950 shadow-xs'
+                      : 'bg-transparent border-transparent text-slate-300 hover:bg-[#1b2436] hover:text-slate-50'
                   }`}
                 >
-                  {activeMode && (
-                    <span
-                      aria-hidden="true"
-                      className={`absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full ${
-                        isLaser ? 'bg-amber-400' : 'bg-sky-400'
-                      }`}
-                    />
-                  )}
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{isLaser ? 'Laser' : 'CNC'}</span>
                 </button>
               );
             })}
           </nav>
+
+          <button
+            type="button"
+            onClick={handleToggleLaserMode}
+            disabled={!canToggleLaserMode}
+            aria-pressed={isLaserModeEnabled}
+            aria-label={
+              !status.connected
+                ? 'Paramètre GRBL $32 (machine déconnectée)'
+                : !isLaserModeKnown
+                  ? 'Lire le paramètre GRBL $32'
+                  : isLaserModeEnabled
+                    ? 'Désactiver le mode laser GRBL ($32=0)'
+                    : 'Activer le mode laser GRBL ($32=1)'
+            }
+            title={
+              !status.connected
+                ? 'Connectez la machine pour basculer GRBL $32 (Mode Laser)'
+                : !isLaserModeKnown
+                  ? 'Lire la valeur actuelle de GRBL $32 ($$)'
+                  : isLaserModeEnabled
+                    ? 'GRBL $32=1 (Mode Laser actif) — Cliquer pour désactiver ($32=0)'
+                    : 'GRBL $32=0 (Mode Laser désactivé) — Cliquer pour activer ($32=1)'
+            }
+            className={`w-full min-h-11 rounded-xl border flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              status.connected && isLaserModeEnabled
+                ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
+                : status.connected && isLaserModeKnown
+                  ? 'bg-[#1b2436] border-slate-700/80 text-slate-300 hover:bg-[#243047] hover:text-slate-100'
+                  : 'bg-[#0f1520] border-slate-800 text-slate-400 hover:bg-[#1b2436]'
+            }`}
+          >
+            <span className="inline-flex items-center gap-1 font-mono leading-none">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  !status.connected
+                    ? 'bg-slate-600'
+                    : !isLaserModeKnown
+                      ? 'bg-amber-400'
+                      : isLaserModeEnabled
+                        ? 'bg-emerald-400'
+                        : 'bg-slate-500'
+                }`}
+              />
+              <span>$32</span>
+            </span>
+            <span className="text-[9px] uppercase tracking-wider leading-none">
+              {!status.connected ? '—' : !isLaserModeKnown ? 'Lire' : isLaserModeEnabled ? 'ON' : 'OFF'}
+            </span>
+          </button>
         </div>
 
         {/* Milieu : Outils rapides */}
@@ -751,8 +840,40 @@ export const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Bas : Paramètres */}
+        {/* Bas : Thème & Paramètres */}
         <div className="flex flex-col items-center gap-1.5 w-full pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() =>
+              updatePreferences({
+                theme: preferences.theme === 'light' ? 'dark' : 'light',
+              })
+            }
+            aria-pressed={preferences.theme === 'light'}
+            title={
+              preferences.theme === 'light'
+                ? 'Passer en Mode Nuit (atelier sombre)'
+                : 'Passer en Mode Jour (atelier lumineux)'
+            }
+            aria-label={
+              preferences.theme === 'light'
+                ? 'Passer en Mode Nuit'
+                : 'Passer en Mode Jour'
+            }
+            className={`${railBtnClass} ${
+              preferences.theme === 'light'
+                ? 'bg-amber-500/15 border-amber-400/50 text-amber-200 hover:bg-amber-500/25'
+                : 'text-slate-300 hover:bg-[#1b2436] hover:text-slate-50'
+            }`}
+          >
+            {preferences.theme === 'light' ? (
+              <Moon className="w-4 h-4 text-sky-400" />
+            ) : (
+              <Sun className="w-4 h-4 text-amber-400" />
+            )}
+            <span>{preferences.theme === 'light' ? 'Nuit' : 'Jour'}</span>
+          </button>
+
           <button
             type="button"
             onClick={openSettingsModal}
@@ -813,12 +934,91 @@ export const App: React.FC = () => {
 
               <button
                 type="button"
+                onClick={handleToggleLaserMode}
+                disabled={!canToggleLaserMode}
+                aria-pressed={isLaserModeEnabled}
+                aria-label={
+                  !status.connected
+                    ? 'Paramètre GRBL $32 (machine déconnectée)'
+                    : !isLaserModeKnown
+                      ? 'Lire le paramètre GRBL $32'
+                      : isLaserModeEnabled
+                        ? 'Désactiver le mode laser GRBL ($32=0)'
+                        : 'Activer le mode laser GRBL ($32=1)'
+                }
+                title={
+                  !status.connected
+                    ? 'Connectez la machine pour basculer GRBL $32 (Mode Laser)'
+                    : !isLaserModeKnown
+                      ? 'Lire la valeur actuelle de GRBL $32 ($$)'
+                      : isLaserModeEnabled
+                        ? 'GRBL $32=1 (Mode Laser actif) — Cliquer pour désactiver ($32=0)'
+                        : 'GRBL $32=0 (Mode Laser désactivé) — Cliquer pour activer ($32=1)'
+                }
+                className={`min-h-9 px-2.5 rounded-lg border text-[11px] font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  status.connected && isLaserModeEnabled
+                    ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300 hover:bg-emerald-500/30'
+                    : status.connected && isLaserModeKnown
+                      ? 'bg-[#1b2436] border-slate-700 text-slate-200 hover:bg-[#243047]'
+                      : 'bg-[#0f1520] border-slate-800 text-slate-400 hover:bg-[#1b2436]'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    !status.connected
+                      ? 'bg-slate-600'
+                      : !isLaserModeKnown
+                        ? 'bg-amber-400'
+                        : isLaserModeEnabled
+                          ? 'bg-emerald-400'
+                          : 'bg-slate-500'
+                  }`}
+                />
+                <span>
+                  {!status.connected
+                    ? '$32'
+                    : !isLaserModeKnown
+                      ? '$32 ?'
+                      : isLaserModeEnabled
+                        ? '$32 ON'
+                        : '$32 OFF'}
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setPendantModeWithUrl(true)}
                 className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-sky-300 hover:bg-[#243047] cursor-pointer"
                 title="Télécommande mobile"
                 aria-label="Télécommande mobile"
               >
                 <Smartphone className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  updatePreferences({
+                    theme: preferences.theme === 'light' ? 'dark' : 'light',
+                  })
+                }
+                aria-pressed={preferences.theme === 'light'}
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-amber-300 hover:bg-[#243047] cursor-pointer"
+                title={
+                  preferences.theme === 'light'
+                    ? 'Passer en Mode Nuit'
+                    : 'Passer en Mode Jour'
+                }
+                aria-label={
+                  preferences.theme === 'light'
+                    ? 'Passer en Mode Nuit'
+                    : 'Passer en Mode Jour'
+                }
+              >
+                {preferences.theme === 'light' ? (
+                  <Moon className="w-4 h-4 text-sky-400" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                )}
               </button>
               <button
                 type="button"
@@ -1035,7 +1235,9 @@ export const App: React.FC = () => {
               });
           })}
           onPause={handlePauseJob} onResume={handleResumeJob} onStop={handleStopJob}
-          onJog={handleJog} onZero={handleZeroWorkAxis} onLaserOff={() => handleSendCommand('M5')}
+          onSendCommand={handleSendCommand} onSendRealtime={handleSendRealtime}
+          onJog={handleJog} onCancelJog={handleCancelJog}
+          onZero={handleZeroWorkAxis} onLaserOff={() => handleSendCommand('M5')}
         />
       </div>
       {workshop === 'cnc' && <CncWorkspace
@@ -1147,7 +1349,7 @@ export const App: React.FC = () => {
           onSendCommand={handleSendCommand}
           onReadSettings={() => socket?.emit('cnc:settings:get')}
           onSaveSettings={handleSaveGrblSettings}
-          initialTab="app"
+          initialTab="interface"
           onResetLayout={resetLayout}
         />
       )}

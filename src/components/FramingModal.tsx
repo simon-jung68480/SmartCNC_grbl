@@ -23,6 +23,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Coordinates, GrblStatus } from '../types/cnc';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface FramingSettings {
   safeZ: number;
@@ -71,6 +72,8 @@ export const FramingModal: React.FC<FramingModalProps> = ({
   onSendRealtime,
   onZeroWorkAxis,
 }) => {
+  const { preferences } = useAppPreferences();
+  const isLight = preferences.theme === 'light';
   // --- Persistent Settings in localStorage ---
   const [settings, setSettings] = useState<FramingSettings>(() => {
     try {
@@ -574,7 +577,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                 >
                   <defs>
                     <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
-                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.8" />
+                      <path d="M 20 0 L 0 0 0 20" fill="none" stroke={isLight ? '#cbd5e1' : '#1e293b'} strokeWidth="0.8" />
                     </pattern>
                     <marker
                       id="arrow"
@@ -585,7 +588,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                       markerHeight="6"
                       orient="auto-start-reverse"
                     >
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill={isLight ? '#0284c7' : '#38bdf8'} />
                     </marker>
                   </defs>
 
@@ -640,9 +643,9 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                             y={fTop}
                             width={fW}
                             height={fH}
-                            fill="#f59e0b"
-                            fillOpacity="0.08"
-                            stroke="#f59e0b"
+                            fill={isLight ? '#d97706' : '#f59e0b'}
+                            fillOpacity={isLight ? '0.12' : '0.08'}
+                            stroke={isLight ? '#d97706' : '#f59e0b'}
                             strokeWidth="1.5"
                             strokeDasharray="4 3"
                             rx="4"
@@ -656,8 +659,8 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                           width={rectW}
                           height={rectH}
                           fill="#0284c7"
-                          fillOpacity="0.18"
-                          stroke="#38bdf8"
+                          fillOpacity={isLight ? '0.14' : '0.18'}
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="2"
                           rx="3"
                         />
@@ -668,47 +671,47 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                           y1={fyMin}
                           x2={fxMax - 15}
                           y2={fyMin}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMax}
                           y1={fyMin - 15}
                           x2={fxMax}
                           y2={fyMax + 15}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMax - 15}
                           y1={fyMax}
                           x2={fxMin + 15}
                           y2={fyMax}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
                         <line
                           x1={fxMin}
                           y1={fyMax + 15}
                           x2={fxMin}
                           y2={fyMin - 15}
-                          stroke="#38bdf8"
+                          stroke={isLight ? '#0284c7' : '#38bdf8'}
                           strokeWidth="1.2"
                           markerEnd="url(#arrow)"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.85"
                         />
 
                         {/* Cotes de dimensions sur le brut */}
                         <text
                           x={230}
                           y={rectTop - 8}
-                          fill="#cbd5e1"
+                          fill={isLight ? '#334155' : '#cbd5e1'}
                           fontSize="10"
                           textAnchor="middle"
                           fontFamily="monospace"
@@ -718,7 +721,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                         <text
                           x={rectLeft - 8}
                           y={125}
-                          fill="#cbd5e1"
+                          fill={isLight ? '#334155' : '#cbd5e1'}
                           fontSize="10"
                           textAnchor="middle"
                           fontFamily="monospace"
@@ -744,13 +747,13 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                               cx={target.x}
                               cy={target.y}
                               r="10"
-                              fill="#0ea5e9"
+                              fill={isLight ? '#0284c7' : '#0ea5e9'}
                               fillOpacity="0.25"
-                              stroke="#38bdf8"
+                              stroke={isLight ? '#0369a1' : '#38bdf8'}
                               strokeWidth="1.5"
                               className="transition duration-150 hover:r-12 hover:fill-sky-400 hover:fill-opacity-50"
                             />
-                            <circle cx={target.x} cy={target.y} r="2.5" fill="#f8fafc" />
+                            <circle cx={target.x} cy={target.y} r="2.5" fill={isLight ? '#0f172a' : '#f8fafc'} />
                             <title>Cliquez pour aller à : {target.title}</title>
                           </g>
                         ))}
@@ -763,7 +766,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                               cy={toolSvgY}
                               r="6"
                               fill="#ef4444"
-                              stroke="#ffffff"
+                              stroke={isLight ? '#0f172a' : '#ffffff'}
                               strokeWidth="1.5"
                             >
                               <animate
@@ -776,7 +779,7 @@ export const FramingModal: React.FC<FramingModalProps> = ({
                             <text
                               x={toolSvgX + 8}
                               y={toolSvgY - 4}
-                              fill="#f87171"
+                              fill={isLight ? '#dc2626' : '#f87171'}
                               fontSize="9"
                               fontFamily="monospace"
                               fontWeight="bold"

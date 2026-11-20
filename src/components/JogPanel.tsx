@@ -11,15 +11,12 @@ import {
   OctagonX,
   Keyboard,
   Gamepad2,
-  Fan,
-  Droplets,
-  Wind,
-  PowerOff,
   Gauge,
   Move,
   Hand,
 } from 'lucide-react';
 import { GrblStatus } from '../types/cnc';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface JogPanelProps {
   status: GrblStatus;
@@ -27,6 +24,7 @@ export interface JogPanelProps {
   onSendRealtime?: (byte: number | string) => void;
   onJog?: (axes: { x?: number; y?: number; z?: number }, feedRate: number) => void;
   onCancelJog?: () => void;
+  active?: boolean;
 }
 
 const STEP_PRESETS = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100];
@@ -39,15 +37,18 @@ export const JogPanel: React.FC<JogPanelProps> = ({
   onSendRealtime,
   onJog,
   onCancelJog,
+  active = true,
 }) => {
-  const [activeTab, setActiveTab] = useState<'jog' | 'spindle'>('jog');
+  const { preferences, updatePreferences } = useAppPreferences();
+  const prefsRef = useRef(preferences);
+  prefsRef.current = preferences;
+  const keyboardEnabled = preferences.keyboardShortcutsEnabled;
+
   const [jogMode, setJogMode] = useState<'step' | 'continuous'>('step');
   const [stepSize, setStepSize] = useState<number>(1);
   const [customStepInput, setCustomStepInput] = useState<string>('1');
   const [xyFeedRate, setXyFeedRate] = useState<number>(2000);
   const [zFeedRate, setZFeedRate] = useState<number>(500);
-  const [spindleRpm, setSpindleRpm] = useState<number>(status.spindleSpeed || 12000);
-  const [keyboardEnabled, setKeyboardEnabled] = useState<boolean>(true);
   const [gamepadConnected, setGamepadConnected] = useState<boolean>(false);
   const [gamepadName, setGamepadName] = useState<string>('');
   const [gamepadActiveAxis, setGamepadActiveAxis] = useState<string | null>(null);
@@ -137,9 +138,17 @@ export const JogPanel: React.FC<JogPanelProps> = ({
     setCustomStepInput(String(val));
   };
 
+  // Arrêt de sécurité si le panneau devient inactif (changement d'atelier ou d'onglet)
+  useEffect(() => {
+    if (!active && (continuousActiveRef.current || gamepadWasJoggingRef.current)) {
+      gamepadWasJoggingRef.current = false;
+      sendCancelJog();
+    }
+  }, [active, sendCancelJog]);
+
   // Raccourcis Clavier sécurisés
   useEffect(() => {
-    if (!keyboardEnabled) return;
+    if (!active || !keyboardEnabled) return;
 
     const isInputFocused = (el: EventTarget | null) => {
       if (!el || !(el instanceof HTMLElement)) return false;
@@ -280,10 +289,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [keyboardEnabled, jogMode, stepSize, executeJogMove, sendCancelJog, sendFeedHold]);
+  }, [active, keyboardEnabled, jogMode, stepSize, executeJogMove, sendCancelJog, sendFeedHold]);
 
   // Intégration native Web Gamepad API
   useEffect(() => {
+    if (!active) return;
     const onConnect = (e: GamepadEvent) => {
       setGamepadConnected(true);
       setGamepadName(e.gamepad.id.split('(')[0].trim() || 'Manette USB');
@@ -298,12 +308,13 @@ export const JogPanel: React.FC<JogPanelProps> = ({
     window.addEventListener('gamepaddisconnected', onDisconnect);
 
     let rafId: number;
-    const DEADZONE = 0.18;
 
     const pollGamepad = () => {
       if (typeof navigator.getGamepads === 'function') {
         const pads = navigator.getGamepads();
         const pad = pads ? pads[0] || pads[1] || pads[2] || pads[3] : null;
+        const deadzone = prefsRef.current.gamepadDeadzone;
+        const maxGamepadFeed = prefsRef.current.gamepadMaxSpeed;
 
         if (pad && pad.connected) {
           if (!gamepadConnected) {
@@ -340,11 +351,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
               const rawRightZ = -(pad.axes[3] || 0);
               const ltVal = pad.buttons[6]?.value || 0;
               const rtVal = pad.buttons[7]?.value || 0;
-              const rawZ = Math.abs(rawRightZ) > DEADZONE ? rawRightZ : rtVal - ltVal;
+              const rawZ = Math.abs(rawRightZ) > deadzone ? rawRightZ : rtVal - ltVal;
 
-              const ax = Math.abs(rawX) > DEADZONE ? rawX : 0;
-              const ay = Math.abs(rawY) > DEADZONE ? rawY : 0;
-              const az = Math.abs(rawZ) > DEADZONE ? rawZ : 0;
+              const ax = Math.abs(rawX) > deadzone ? rawX : 0;
+              const ay = Math.abs(rawY) > deadzone ? rawY : 0;
+              const az = Math.abs(rawZ) > deadzone ? rawZ : 0;
 
               if (ax !== 0 || ay !== 0 || az !== 0) {
                 gamepadWasJoggingRef.current = true;
@@ -357,7 +368,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
 
                 if (now - lastAnalogSendRef.current > 120) {
                   lastAnalogSendRef.current = now;
-                  const baseFeed = az !== 0 && ax === 0 && ay === 0 ? zFeedRate : xyFeedRate;
+                  const baseFeed =
+                    az !== 0 && ax === 0 && ay === 0
+                      ? Math.min(zFeedRate, maxGamepadFeed)
+                      : maxGamepadFeed;
                   const scaledFeed = Math.max(60, Math.round(baseFeed * mag));
                   const deltaSec = 0.14;
                   const distFactor = (scaledFeed / 60) * deltaSec;
@@ -381,102 +395,59 @@ export const JogPanel: React.FC<JogPanelProps> = ({
       window.removeEventListener('gamepadconnected', onConnect);
       window.removeEventListener('gamepaddisconnected', onDisconnect);
     };
-  }, [gamepadConnected, stepSize, xyFeedRate, zFeedRate, executeJogMove, sendCancelJog]);
-
-  const isSpindleActive = status.accessories.spindleCw || status.accessories.spindleCcw;
-  const isCoolantActive = status.accessories.floodCoolant || status.accessories.mistCoolant;
+  }, [active, gamepadConnected, stepSize, xyFeedRate, zFeedRate, executeJogMove, sendCancelJog]);
 
   const padBtnClass =
     'relative flex flex-col items-center justify-center rounded-xl border border-slate-700/80 bg-[#1b2436] hover:bg-[#243047] active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed min-h-[50px] select-none touch-none';
 
   return (
     <div className="bg-[#141b27] border border-slate-800 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)] rounded-xl p-3.5 flex flex-col gap-2.5 select-none">
-      {/* En-tête : 2 Onglets segmentés Jog XY/Z vs Broche & Aux avec état live permanent */}
-      <div className="grid grid-cols-2 gap-1 bg-[#090d14] p-1 rounded-xl border border-slate-800">
-        <button
-          type="button"
-          onClick={() => setActiveTab('jog')}
-          className={`min-h-9 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'jog'
-              ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
-              : 'text-slate-400 hover:text-slate-100 border border-transparent'
-          }`}
-        >
-          <Move className="w-3.5 h-3.5 text-sky-400" />
-          <span>Jog XY/Z</span>
-        </button>
+      {/* Sous-en-tête : Titre, Pas / Continu + Clavier / Manette */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-100 inline-flex items-center gap-1.5">
+            <Move className="w-3.5 h-3.5 text-sky-400" />
+            Jogging XYZ
+          </span>
+          <div className="inline-flex items-center bg-[#090d14] p-0.5 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setJogMode('step')}
+              className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                jogMode === 'step'
+                  ? 'bg-sky-400 text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Move className="w-3 h-3" />
+              <span>Pas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setJogMode('continuous')}
+              className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                jogMode === 'continuous'
+                  ? 'bg-amber-400 text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Hand className="w-3 h-3" />
+              <span>Continu</span>
+            </button>
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('spindle')}
-          className={`min-h-9 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'spindle'
-              ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
-              : 'text-slate-400 hover:text-slate-100 border border-transparent'
-          }`}
-        >
-          <Fan
-            className={`w-3.5 h-3.5 shrink-0 ${
-              isSpindleActive ? 'text-amber-400 animate-spin' : 'text-slate-400'
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => updatePreferences({ keyboardShortcutsEnabled: !keyboardEnabled })}
+            title="Activer/Désactiver le pilotage au clavier (Flèches, PageUp/Down, Pavé num, [ / ], Espace = Pause)"
+            className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-colors cursor-pointer ${
+              keyboardEnabled
+                ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                : 'bg-[#1b2436] border-slate-700 text-slate-400'
             }`}
-          />
-          <span className="truncate">Broche & Aux</span>
-          {isSpindleActive ? (
-            <span className="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-bold shrink-0">
-              {status.spindleSpeed}
-            </span>
-          ) : isCoolantActive ? (
-            <span className="px-1.5 py-0.5 rounded-full bg-sky-400 text-slate-950 font-mono text-[11px] font-bold shrink-0">
-              AUX
-            </span>
-          ) : (
-            <span className="text-[11px] font-mono text-slate-400 shrink-0">OFF</span>
-          )}
-        </button>
-      </div>
-
-      {activeTab === 'jog' ? (
-        <>
-          {/* Sous-en-tête : Pas / Continu + Clavier / Manette */}
-          <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <div className="inline-flex items-center bg-[#090d14] p-0.5 rounded-xl border border-slate-800">
-              <button
-                type="button"
-                onClick={() => setJogMode('step')}
-                className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  jogMode === 'step'
-                    ? 'bg-sky-400 text-slate-950 shadow-2xs'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Move className="w-3 h-3" />
-                <span>Pas</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setJogMode('continuous')}
-                className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  jogMode === 'continuous'
-                    ? 'bg-amber-400 text-slate-950 shadow-2xs'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Hand className="w-3 h-3" />
-                <span>Continu</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setKeyboardEnabled((v) => !v)}
-                title="Activer/Désactiver le pilotage au clavier (Flèches, PageUp/Down, Pavé num, [ / ], Espace = Pause)"
-                className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-colors cursor-pointer ${
-                  keyboardEnabled
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                    : 'bg-[#1b2436] border-slate-700 text-slate-400'
-                }`}
-              >
+          >
                 <Keyboard className="w-3.5 h-3.5" />
                 <span>{keyboardEnabled ? 'Clavier' : 'Clavier OFF'}</span>
               </button>
@@ -792,174 +763,6 @@ export const JogPanel: React.FC<JogPanelProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Bandeau de sécurité rapide si broche ou arrosage actif */}
-          {(isSpindleActive || isCoolantActive) && (
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-400/40 text-xs">
-              <div className="flex items-center gap-2 font-mono text-[11px] font-semibold text-amber-200">
-                {isSpindleActive && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Fan className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-                    Broche {status.accessories.spindleCw ? 'M3' : 'M4'} · {status.spindleSpeed} RPM
-                  </span>
-                )}
-                {isCoolantActive && (
-                  <span className="inline-flex items-center gap-1 text-sky-300">
-                    <Droplets className="w-3.5 h-3.5 text-sky-400" />
-                    {status.accessories.floodCoolant ? 'M8' : 'M7'}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5">
-                {isSpindleActive && (
-                  <button
-                    type="button"
-                    disabled={!status.connected}
-                    onClick={() => onSendCommand('M5')}
-                    className="min-h-8 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] cursor-pointer"
-                  >
-                    STOP M5
-                  </button>
-                )}
-                {isCoolantActive && (
-                  <button
-                    type="button"
-                    disabled={!status.connected}
-                    onClick={() => onSendCommand('M9')}
-                    className="min-h-8 px-2.5 py-1 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-[11px] cursor-pointer"
-                  >
-                    M9
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        /* ONGLET 2 : BROCHE (SPINDLE PWM) & ARROSAGE / ASPIRATION */
-        <div className="flex flex-col gap-2.5">
-          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Fan
-                  className={`w-4 h-4 ${
-                    isSpindleActive ? 'text-amber-400 animate-spin' : 'text-slate-400'
-                  }`}
-                />
-                <span className="text-xs font-bold text-slate-100">Broche PWM</span>
-              </div>
-              <div className="font-mono text-xs flex items-center gap-2">
-                <span className="text-slate-400">
-                  Cible <strong className="text-slate-100">{spindleRpm}</strong>
-                </span>
-                <span className="text-slate-600">|</span>
-                <span className="text-amber-300 font-bold">
-                  Actuel {status.spindleSpeed} RPM
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[11px] text-slate-400">0</span>
-              <input
-                type="range"
-                aria-label="Vitesse cible de la broche"
-                min={0}
-                max={24000}
-                step={500}
-                value={spindleRpm}
-                onChange={(e) => setSpindleRpm(Number(e.target.value))}
-                className="flex-1 accent-amber-400 h-2 bg-slate-800 rounded-lg cursor-pointer"
-              />
-              <span className="font-mono text-[11px] text-slate-400">24k</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand(`M3 S${spindleRpm}`)}
-                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
-                  status.accessories.spindleCw
-                    ? 'bg-amber-400 border-amber-300 text-slate-950'
-                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
-                }`}
-              >
-                <Fan className="w-3.5 h-3.5" />
-                <span>Horaire (M3)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand(`M4 S${spindleRpm}`)}
-                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
-                  status.accessories.spindleCcw
-                    ? 'bg-orange-400 border-orange-300 text-slate-950'
-                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
-                }`}
-              >
-                <Fan className="w-3.5 h-3.5" />
-                <span>Anti-hor. (M4)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand('M5')}
-                className="min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-red-950/60 border border-red-500/45 hover:bg-red-600 text-rose-200 hover:text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-35"
-              >
-                <PowerOff className="w-3.5 h-3.5" />
-                <span>STOP (M5)</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Arrosage & Aspiration
-            </span>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand('M8')}
-                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
-                  status.accessories.floodCoolant
-                    ? 'bg-sky-400 border-sky-300 text-slate-950'
-                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
-                }`}
-              >
-                <Droplets className={`w-3.5 h-3.5 ${status.accessories.floodCoolant ? 'text-slate-950' : 'text-sky-400'}`} />
-                <span>Flood (M8)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand('M7')}
-                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
-                  status.accessories.mistCoolant
-                    ? 'bg-sky-400 border-sky-300 text-slate-950'
-                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
-                }`}
-              >
-                <Wind className={`w-3.5 h-3.5 ${status.accessories.mistCoolant ? 'text-slate-950' : 'text-sky-400'}`} />
-                <span>Mist (M7)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => onSendCommand('M9')}
-                className="min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-[#1b2436] border border-slate-700 hover:bg-[#243047] text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-35"
-              >
-                <span>Arrêt (M9)</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

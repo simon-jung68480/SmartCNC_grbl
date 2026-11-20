@@ -25,14 +25,13 @@ import {
   expandLaserBounds,
   laserSpotDiameter,
   defaultLaserFocusSettings,
-  MAX_LASER_SCAN_OFFSET,
   type LaserFocusSettings,
   type LaserCutSettings,
   type LaserPath,
-  type LaserScanOffset,
   type Point2,
   type Placement,
 } from "../utils/laserCam";
+import { useLaserMachineProfile } from "../utils/laserMachineProfile";
 import type { LaserFillSettings } from "../utils/laserFill";
 import type { AppPreferences } from "../utils/appPreferences";
 import { LaserPreview } from "./LaserPreview";
@@ -46,9 +45,9 @@ import { LaserLayerDialog } from "./laser-workshop/LaserLayerDialog";
 import { LaserPresetLibrary } from "./laser-workshop/LaserPresetLibrary";
 import { applyLaserLayerSettings, assignLaserLayerColor, laserLayerKey, readLaserLayerSettings, shareLaserLayerSettings } from "../utils/laserLayerSettings";
 import { laserPresetStorageKey, parseLaserPresets, type LaserPreset } from "../utils/laserPresets";
-import { LaserJobOrigin, LaserMachineSettings } from "./laser-workshop/LaserMachineSettings";
+import { LaserJobOrigin } from "./laser-workshop/LaserMachineSettings";
 import { LaserFocusSettings as LaserFocusPanel } from "./laser-workshop/LaserFocusSettings";
-import { LaserMotionPanel } from "./laser-workshop/LaserMotionPanel";
+import { JogPanel } from "./JogPanel";
 import { button, card, input, NumberField } from "./laser-workshop/LaserControls";
 import { laserShapeNames, type LaserShape } from "../utils/laserShapes";
 
@@ -65,7 +64,10 @@ interface Props {
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
-  onJog: (axes: { x?: number; y?: number; z?: number }, feed: number) => void;
+  onSendCommand: (command: string) => void;
+  onSendRealtime?: (byteOrChar: number | string) => void;
+  onJog: (axes: { x?: number; y?: number; z?: number }, feedRate: number) => void;
+  onCancelJog?: () => void;
   onZero: (axis: "XY") => void;
   onLaserOff: () => void;
 }
@@ -105,18 +107,6 @@ const initialCut: LaserCutSettings = {
 const numberLabel = (v: number) => Number(v.toFixed(2)).toLocaleString("fr-FR");
 const duration = (s: number) =>
   s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
-const machineProfileKey = "smartcnc.laser.machine-profile";
-
-function readMachineProfile(): { offset: Point2; scanOffsets: LaserScanOffset[] } {
-  try {
-    const saved = JSON.parse(localStorage.getItem(machineProfileKey) ?? "null");
-    if (Number.isFinite(saved?.offset?.x) && Number.isFinite(saved?.offset?.y) &&
-        Array.isArray(saved?.scanOffsets) && saved.scanOffsets.every((row: LaserScanOffset) =>
-          Number.isFinite(row?.feed) && row.feed > 0 && Number.isFinite(row?.offset) && Math.abs(row.offset) <= MAX_LASER_SCAN_OFFSET) &&
-        new Set(saved.scanOffsets.map((row: LaserScanOffset) => row.feed)).size === saved.scanOffsets.length) return saved;
-  } catch { /* The browser may disable local storage. */ }
-  return { offset: { x: 0, y: 0 }, scanOffsets: [] };
-}
 
 const workFrame = (status: GrblStatus) => JSON.stringify([status.portPath, status.activeWCS, status.wco.x, status.wco.y]);
 const sameXY = (a: Point2, b: Point2) => Math.abs(a.x - b.x) < 0.005 && Math.abs(a.y - b.y) < 0.005;
@@ -134,16 +124,18 @@ export const LaserWorkshop: React.FC<Props> = ({
   onPause,
   onResume,
   onStop,
+  onSendCommand,
+  onSendRealtime,
   onJog,
+  onCancelJog,
   onZero,
   onLaserOff,
 }) => {
   const [source, setSource] = useState<Source>(emptyDrawing);
-  const [machineProfile] = useState(readMachineProfile);
-  const [jobPlacement, setJobPlacement] = useState<LaserJobPlacement>(() => ({ ...defaultLaserJobPlacement, offset: machineProfile.offset }));
-  const [scanOffsets, setScanOffsets] = useState(machineProfile.scanOffsets);
+  const { profile: machineProfile, updateProfile: updateMachineProfile } = useLaserMachineProfile();
+  const [jobPlacement, setJobPlacement] = useState<LaserJobPlacement>(defaultLaserJobPlacement);
   const [originFrame, setOriginFrame] = useState("");
-  const [inspector, setInspector] = useState<"operation" | "motion" | "machine" | "library">("operation");
+  const [inspector, setInspector] = useState<"operation" | "motion" | "library">("operation");
   const [selectedOperation, setSelectedOperation] = useState<"fill" | "contours">("fill");
   const [workspaceView, setWorkspaceView] = useState<"design" | "preview">("design");
   const [canvasRevision, setCanvasRevision] = useState(0);
@@ -160,23 +152,17 @@ export const LaserWorkshop: React.FC<Props> = ({
     setPresets(next);
   };
   const frameKey = workFrame(status);
-  const effectivePlacement = useMemo(() => originFrame === frameKey || !jobPlacement.userOrigin
-    ? jobPlacement : { ...jobPlacement, userOrigin: null }, [jobPlacement, originFrame, frameKey]);
+  const effectivePlacement = useMemo(() => ({
+    ...jobPlacement,
+    offset: machineProfile.offset,
+    userOrigin: originFrame === frameKey || !jobPlacement.userOrigin ? jobPlacement.userOrigin : null,
+  }), [jobPlacement, machineProfile.offset, originFrame, frameKey]);
   const updateJobPlacement = (next: LaserJobPlacement) => {
     if (next.userOrigin && next.userOrigin !== effectivePlacement.userOrigin) setOriginFrame(frameKey);
     setJobPlacement(next);
   };
   const latestStatus = useRef(status);
   latestStatus.current = status;
-
-  useEffect(() => {
-    const { offset } = jobPlacement;
-    if (!Number.isFinite(offset.x) || !Number.isFinite(offset.y) ||
-        scanOffsets.some(row => !Number.isFinite(row.feed) || row.feed <= 0 || !Number.isFinite(row.offset) || Math.abs(row.offset) > MAX_LASER_SCAN_OFFSET) ||
-        new Set(scanOffsets.map(row => row.feed)).size !== scanOffsets.length) return;
-    try { localStorage.setItem(machineProfileKey, JSON.stringify({ offset, scanOffsets })); }
-    catch { /* The browser may disable local storage. */ }
-  }, [jobPlacement.offset, scanOffsets]);
   const [placement, setPlacement] = useState<Placement>(initialPlacement),
     [cut, setCut] = useState<LaserCutSettings>(initialCut);
   const [fill, setFill] = useState<LaserFillSettings>({
@@ -209,9 +195,9 @@ export const LaserWorkshop: React.FC<Props> = ({
       cut,
       fill,
       effectivePlacement,
-      scanOffsets,
+      scanOffsets: machineProfile.scanOffsets,
     }),
-    [source, placement, cut, fill, effectivePlacement, scanOffsets],
+    [source, placement, cut, fill, effectivePlacement, machineProfile.scanOffsets],
   );
   const [program, setProgram] = useState<{
     name: string;
@@ -228,9 +214,7 @@ export const LaserWorkshop: React.FC<Props> = ({
   const [confirmed, setConfirmed] = useState(false),
     [working, setWorking] = useState(false),
     [error, setError] = useState("");
-  const [step, setStep] = useState(1),
-    [zStep, setZStep] = useState(0.2),
-    [jogFeed, setJogFeed] = useState(1000),
+  const [jogFeed, setJogFeed] = useState(1000),
     [margin, setMargin] = useState(0),
     [showCode, setShowCode] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -443,7 +427,7 @@ export const LaserWorkshop: React.FC<Props> = ({
         setSource({ kind: "gcode", name: file.name });
         setProgram({ name: file.name, code, signature: null });
         setWorkspaceView("preview");
-        setInspector("machine");
+        setInspector("operation");
         return;
       }
       if (!files.every(file => ["svg", "dxf", ...imageExtensions].includes(extension(file))))
@@ -505,7 +489,7 @@ export const LaserWorkshop: React.FC<Props> = ({
           : `${name} · hors focus manuel ${numberLabel(settings.offset)} mm` : "";
       const focusSummary = documentObjects.filter(object => object.enabled)
         .map(object => describeFocus(object.name, object.cut.focus)).filter(Boolean).join("\n");
-      const { code: generatedCode, notes, rasterOverscan, spotDiameter } = generateLaserDocument(documentObjects, { ...cut, scanOffsets });
+      const { code: generatedCode, notes, rasterOverscan, spotDiameter } = generateLaserDocument(documentObjects, { ...cut, scanOffsets: machineProfile.scanOffsets });
       let code = generatedCode;
       if (effectivePlacement.startFrom !== "absolute" || effectivePlacement.offset.x !== 0 || effectivePlacement.offset.y !== 0) {
         const bounds = analyseLaserGCode(code, source.name).bounds;
@@ -1215,13 +1199,12 @@ export const LaserWorkshop: React.FC<Props> = ({
             )}
           </div>
           <div className="space-y-3 min-w-0">
-            <div className="grid grid-cols-4 gap-1 rounded-xl border border-slate-800 bg-[#090d14] p-1" role="group" aria-label="Panneaux laser">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-[#090d14] p-1" role="group" aria-label="Panneaux laser">
               <button type="button" className={tabClass(inspector === "operation")} aria-pressed={inspector === "operation"} onClick={() => setInspector("operation")}>Calques</button>
               <button type="button" className={tabClass(inspector === "motion")} aria-pressed={inspector === "motion"} onClick={() => setInspector("motion")}>Déplacer</button>
-              <button type="button" className={tabClass(inspector === "machine")} aria-pressed={inspector === "machine"} onClick={() => setInspector("machine")}>Machine</button>
               <button type="button" className={tabClass(inspector === "library")} aria-pressed={inspector === "library"} onClick={() => setInspector("library")}>Tests</button>
             </div>
-            <div className="space-y-2 lg:max-h-[38vh] lg:overflow-y-auto lg:p-0.5">
+            <div className={inspector === "motion" ? "space-y-2" : "space-y-2 lg:max-h-[38vh] lg:overflow-y-auto lg:p-0.5"}>
               <div className="space-y-2" hidden={inspector !== "operation"}>
             {source.kind === "vector" && <LaserLayerTree
               objects={documentObjects}
@@ -1246,15 +1229,52 @@ export const LaserWorkshop: React.FC<Props> = ({
             />}
             {source.kind === "gcode" && focusSettings}
             </div>
-            <div hidden={inspector !== "motion"}>
-              <LaserMotionPanel status={status} step={step} zStep={zStep} feed={jogFeed}
-                canMove={canMove} canTurnOff={idle} showZ={focus.enabled && focus.controlZ}
-                onStep={setStep} onZStep={setZStep} onFeed={setJogFeed}
-                onJog={onJog} onZero={() => onZero("XY")} onLaserOff={onLaserOff} />
-            </div>
-            <div hidden={inspector !== "machine"}>
-              <LaserMachineSettings placement={effectivePlacement} onPlacement={updateJobPlacement}
-                scanOffsets={scanOffsets} onScanOffsets={setScanOffsets} disabled={busy || working} />
+            <div hidden={inspector !== "motion"} className="space-y-2.5">
+              <div className="rounded-xl border border-slate-800 bg-[#141b27] p-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-2 text-[11px] font-mono text-slate-300">
+                  <span>
+                    {status.connected ? status.state : "Déconnectée"} · {status.activeWCS} · mm
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-xs">
+                  {(["x", "y", "z"] as const).map((axis) => (
+                    <div key={axis} className="rounded-lg border border-slate-800 bg-[#090d14] py-1.5">
+                      <span className="text-[11px] font-bold text-slate-400">{axis.toUpperCase()}</span>
+                      <br />
+                      <b className="tabular-nums text-slate-50">
+                        {status.connected ? status.wpos[axis].toFixed(2) : "—"}
+                      </b>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    className={`${button} !min-h-9 font-mono text-sky-300`}
+                    disabled={!canMove}
+                    onClick={() => onZero("XY")}
+                    title="Mettre à zéro la position pièce sur X et Y"
+                  >
+                    Origine XY = 0
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-9 rounded-xl border border-red-500/50 bg-red-600/20 hover:bg-red-600/35 px-2.5 py-1.5 text-xs font-bold text-red-200 transition-colors cursor-pointer disabled:opacity-40"
+                    disabled={!idle}
+                    onClick={onLaserOff}
+                  >
+                    Éteindre laser (M5)
+                  </button>
+                </div>
+              </div>
+              <JogPanel
+                status={status}
+                onSendCommand={onSendCommand}
+                onSendRealtime={onSendRealtime}
+                onJog={onJog}
+                onCancelJog={onCancelJog}
+                active={active && inspector === "motion"}
+              />
             </div>
             <div hidden={inspector !== "library"}>
               <LaserCalibrationPanel cut={cut} x={placement.x} y={placement.y} disabled={busy || working}
@@ -1265,7 +1285,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                   setError("");
                   setWorkspaceView("preview");
                 }}
-                onApplyScanOffset={entry => setScanOffsets(rows => [...rows.filter(row => row.feed !== entry.feed), entry])}
+                onApplyScanOffset={entry => updateMachineProfile(current => ({
+                  ...current,
+                  scanOffsets: [...current.scanOffsets.filter(row => row.feed !== entry.feed), entry],
+                }))}
                 onApplyInterval={mm => {
                   if (raster) setRaster(current => ({ ...current, interval: mm }));
                   else setFill(current => ({ ...current, spacing: mm }));
@@ -1306,12 +1329,20 @@ export const LaserWorkshop: React.FC<Props> = ({
               <details className="my-2.5 text-xs text-slate-300">
                 <summary className="cursor-pointer font-semibold text-slate-100">Options de cadrage</summary>
                 <div className="mt-2">
-              <NumberField
-                label="Marge autour de la gravure (mm)"
-                value={margin}
-                min={0}
-                onChange={setMargin}
-              />
+                  <div className="grid grid-cols-2 gap-2">
+                    <NumberField
+                      label="Marge (mm)"
+                      value={margin}
+                      min={0}
+                      onChange={setMargin}
+                    />
+                    <NumberField
+                      label="Vitesse cadrage (mm/min)"
+                      value={jogFeed}
+                      min={1}
+                      onChange={setJogFeed}
+                    />
+                  </div>
               <p className="text-[11px] text-slate-300 mt-2 leading-relaxed">
                 Tour du rectangle à la hauteur Z actuelle. Aucun allumage laser,
                 aucun mouvement Z. Utilise l’avance de déplacement.

@@ -34,6 +34,7 @@ export function LaserPreview({
   active,
   playback,
 }: Props) {
+  const isLight = preferences.theme === "light";
   const [fullPreview, setFullPreview] = useState(false);
   useEffect(() => { setFullPreview(false); }, [playback?.startTime, analysis]);
   // Stop retains the last trace: the controller may reset its coordinates afterwards.
@@ -308,7 +309,7 @@ export function LaserPreview({
                   x={x - status.wco.x}
                   y={-bed.minY + font * 1.6}
                   textAnchor="middle"
-                  fill="#cbd5e1"
+                  fill={isLight ? "#334155" : "#cbd5e1"}
                   fontSize={font}
                 >
                   {n(x)}
@@ -320,7 +321,7 @@ export function LaserPreview({
                   x={bed.minX - font}
                   y={-(y - status.wco.y) + font / 3}
                   textAnchor="end"
-                  fill="#cbd5e1"
+                  fill={isLight ? "#334155" : "#cbd5e1"}
                   fontSize={font}
                 >
                   {n(y)}

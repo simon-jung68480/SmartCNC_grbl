@@ -1,6 +1,7 @@
 import React, { useId, useMemo, useRef, useState } from 'react';
 import { Circle, Minus, MousePointer2, Square, Trash2 } from 'lucide-react';
 import { boundsOfPaths, placePaths, type Bounds2, type LaserPath, type Placement, type Point2 } from '../utils/laserCam';
+import { useAppPreferences } from '../utils/appPreferences';
 import { laserRasterBounds, type LaserDocumentObject } from '../utils/laserDocument';
 import { laserFillRegions, prepareLaserFill } from '../utils/laserFill';
 import { laserShapeNames, laserShapePath, type LaserShape } from '../utils/laserShapes';
@@ -22,6 +23,8 @@ const tools = [{ tool: 'select', label: 'Sélectionner', Icon: MousePointer2 }, 
 const pathData = (path: LaserPath) => path.points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${-point.y}`).join(' ') + (path.fillClosed ? 'Z' : '');
 
 export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRatio, onSelect, onPlacement, onDraw, onRemove }: Props) {
+  const { preferences } = useAppPreferences();
+  const isLight = preferences.theme === 'light';
   const svg = useRef<SVGSVGElement>(null);
   const gridId = useId();
   const [tool, setTool] = useState<'select' | LaserShape>('select');
@@ -160,7 +163,7 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
         <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill="white" />
         <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill={`url(#${gridId})`} stroke="#94a3b8" strokeWidth={unit} />
         <path d={`M${bed.minX} 0H${bed.maxX} M0 ${-bed.minY}V${-bed.maxY}`} stroke="#cbd5e1" strokeWidth={unit} />
-        <g fontSize={unit * 10} fill="#cbd5e1" pointerEvents="none" aria-hidden="true">
+        <g fontSize={unit * 10} fill={isLight ? '#334155' : '#cbd5e1'} pointerEvents="none" aria-hidden="true">
           {rulerTicks(Math.max(bed.minX, x), Math.min(bed.maxX, x + width)).map(tick => <text key={tick} x={tick} y={-bed.maxY - unit * 4} textAnchor="middle">{Number(tick.toFixed(3))}</text>)}
           {rulerTicks(Math.max(bed.minY, -y - height), Math.min(bed.maxY, -y)).map(tick => <text key={tick} x={bed.minX - unit * 5} y={-tick + unit * 3} textAnchor="end">{Number(tick.toFixed(3))}</text>)}
         </g>

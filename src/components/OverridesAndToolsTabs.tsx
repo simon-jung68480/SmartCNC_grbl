@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sliders,
   Crosshair,
@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Layers,
-  Zap,
   ArrowRight,
   ArrowLeft,
   ArrowUp,
@@ -24,6 +23,12 @@ import {
   HeightmapGrid,
   ParsedGCodeStats,
 } from '../types/cnc';
+import {
+  clampFeedOverride,
+  computeFeedOverrideBytes,
+  FEED_OVERRIDE_MAX,
+  FEED_OVERRIDE_MIN,
+} from '../utils/grblOverrides';
 
 export interface OverridesAndToolsTabsProps {
   status: GrblStatus;
@@ -154,6 +159,77 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
     } else {
       onSendCommand(String.fromCharCode(byteCode));
     }
+  };
+
+  // État et synchronisation du curseur d'override d'avance (10 % – 200 %)
+  const liveFeedOverride = clampFeedOverride(status.overrides.feed);
+  const [dragFeedOverride, setDragFeedOverride] = useState<number | null>(null);
+  const [pendingFeedTarget, setPendingFeedTarget] = useState<number | null>(null);
+  const feedPointerDraggingRef = useRef<boolean>(false);
+  const pendingFeedTargetRef = useRef<number | null>(null);
+  const pendingFeedTimerRef = useRef<number | null>(null);
+
+  const displayedFeedOverride = dragFeedOverride ?? pendingFeedTarget ?? liveFeedOverride;
+
+  useEffect(() => {
+    if (!status.connected) {
+      setDragFeedOverride(null);
+      pendingFeedTargetRef.current = null;
+      setPendingFeedTarget(null);
+      if (pendingFeedTimerRef.current !== null) {
+        window.clearTimeout(pendingFeedTimerRef.current);
+        pendingFeedTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (pendingFeedTarget !== null && liveFeedOverride === pendingFeedTarget) {
+      pendingFeedTargetRef.current = null;
+      setPendingFeedTarget(null);
+      if (pendingFeedTimerRef.current !== null) {
+        window.clearTimeout(pendingFeedTimerRef.current);
+        pendingFeedTimerRef.current = null;
+      }
+    }
+  }, [status.connected, liveFeedOverride, pendingFeedTarget]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingFeedTimerRef.current !== null) {
+        window.clearTimeout(pendingFeedTimerRef.current);
+      }
+    };
+  }, []);
+
+  const commitFeedOverride = (rawTarget: number) => {
+    feedPointerDraggingRef.current = false;
+    setDragFeedOverride(null);
+    if (pendingFeedTimerRef.current !== null) {
+      window.clearTimeout(pendingFeedTimerRef.current);
+      pendingFeedTimerRef.current = null;
+    }
+
+    const target = clampFeedOverride(rawTarget);
+    if (!status.connected) return;
+
+    const baseFeed = pendingFeedTargetRef.current ?? liveFeedOverride;
+    const bytes = computeFeedOverrideBytes(baseFeed, target);
+    if (bytes.length === 0) {
+      if (target === liveFeedOverride) {
+        pendingFeedTargetRef.current = null;
+        setPendingFeedTarget(null);
+      }
+      return;
+    }
+
+    pendingFeedTargetRef.current = target;
+    setPendingFeedTarget(target);
+    bytes.forEach((byteCode) => sendRealtimeByte(byteCode));
+    pendingFeedTimerRef.current = window.setTimeout(() => {
+      pendingFeedTargetRef.current = null;
+      setPendingFeedTarget(null);
+      pendingFeedTimerRef.current = null;
+    }, 450);
   };
 
   // Exécution d'un cycle de palpage G38.2 (Z, X, Y, XY ou XYZ)
@@ -306,8 +382,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
   const dirX = probe.directionX === -1 ? -1 : 1;
   const dirY = probe.directionY === -1 ? -1 : 1;
   const totalOffsetXY = (probe.plateThicknessXY + probe.toolDiameter / 2).toFixed(3);
-  const hasAlertPin =
-    status.pins.xLimit || status.pins.yLimit || status.pins.zLimit || status.pins.door || status.pins.hold;
+  const hasAlertPin = status.pins.xLimit || status.pins.yLimit || status.pins.zLimit;
 
   return (
     <div className="bg-[#141b27] border border-slate-800 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)] rounded-xl p-3.5 flex flex-col gap-3 select-none">
@@ -366,8 +441,8 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
       {/* ONGLET 1 : OVERRIDES TEMPS RÉEL & DIAGNOSTIC PINS */}
       {activeTab === 'overrides' && (
         <div className="flex flex-col gap-2.5">
-          {/* Vitesse d'avance (Feed Override 10% - 200%) */}
-          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-2">
+          {/* Vitesse d'avance (Feed Override 10% - 200%) en slider continu */}
+          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 text-sky-400" />
@@ -376,166 +451,60 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
               <div className="font-mono text-xs flex items-center gap-1.5">
                 <span className="text-slate-300 tabular-nums">{status.feedRate} mm/min</span>
                 <span className="px-2 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/40 text-sky-300 font-bold tabular-nums">
-                  {status.overrides.feed}%
+                  {displayedFeedOverride}%
                 </span>
-              </div>
-            </div>
-
-            <div className="w-full h-2 bg-[#090d14] border border-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-sky-400 transition-all duration-150"
-                style={{ width: `${Math.min(100, (status.overrides.feed / 200) * 100)}%` }}
-              />
-            </div>
-
-            <div className="grid grid-cols-5 divide-x divide-slate-800 rounded-lg border border-slate-700/80 bg-[#1b2436] overflow-hidden">
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x92)}
-                title="Octet GRBL 0x92 (-10%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                -10%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x94)}
-                title="Octet GRBL 0x94 (-1%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                -1%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x90)}
-                title="Octet GRBL 0x90 (Reset 100%)"
-                className="min-h-9 py-1.5 bg-sky-500/15 hover:bg-sky-400 font-mono text-xs font-bold text-sky-300 hover:text-slate-950 cursor-pointer disabled:opacity-40 transition-colors"
-              >
-                100%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x93)}
-                title="Octet GRBL 0x93 (+1%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                +1%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x91)}
-                title="Octet GRBL 0x91 (+10%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                +10%
-              </button>
-            </div>
-          </div>
-
-          {/* Déplacements Rapides (Rapid Override 25% / 50% / 100%) */}
-          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-xs font-bold text-slate-100">Rapides (G0)</span>
-              <span className="font-mono text-xs font-bold text-amber-300 tabular-nums">
-                {status.overrides.rapid}%
-              </span>
-            </div>
-
-            <div className="inline-flex divide-x divide-slate-800 rounded-lg border border-slate-700/80 bg-[#1b2436] overflow-hidden">
-              {[
-                { val: 25, byte: 0x97 },
-                { val: 50, byte: 0x96 },
-                { val: 100, byte: 0x95 },
-              ].map(({ val, byte }) => (
                 <button
-                  key={val}
                   type="button"
                   disabled={!status.connected}
-                  onClick={() => sendRealtimeByte(byte)}
-                  title={`Octet GRBL 0x${byte.toString(16).toUpperCase()} (${val}%)`}
-                  className={`min-h-9 px-3 py-1 font-mono text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
-                    status.overrides.rapid === val
-                      ? 'bg-amber-400 text-slate-950'
-                      : 'text-slate-200 hover:bg-[#243047]'
+                  onClick={() => commitFeedOverride(100)}
+                  title="Octet GRBL 0x90 (Reset 100%)"
+                  className={`min-h-7 px-2 py-0.5 rounded-md border font-mono text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-40 ${
+                    displayedFeedOverride === 100
+                      ? 'bg-sky-400 border-sky-300 text-slate-950'
+                      : 'bg-[#1b2436] hover:bg-[#243047] border-slate-700/80 text-slate-100'
                   }`}
                 >
-                  {val}%
+                  100%
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Vitesse Broche (Spindle Override 10% - 200%) */}
-          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold text-slate-100">Broche (Spindle)</span>
-              <div className="font-mono text-xs flex items-center gap-1.5">
-                <span className="text-slate-300 tabular-nums">{status.spindleSpeed} RPM</span>
-                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold tabular-nums">
-                  {status.overrides.spindle}%
-                </span>
               </div>
             </div>
 
-            <div className="w-full h-2 bg-[#090d14] border border-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-400 transition-all duration-150"
-                style={{ width: `${Math.min(100, (status.overrides.spindle / 200) * 100)}%` }}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[11px] font-mono text-slate-400 tabular-nums">10%</span>
+              <input
+                type="range"
+                aria-label="Override vitesse d'avance"
+                min={FEED_OVERRIDE_MIN}
+                max={FEED_OVERRIDE_MAX}
+                step={1}
+                disabled={!status.connected}
+                value={displayedFeedOverride}
+                onPointerDown={() => {
+                  feedPointerDraggingRef.current = true;
+                }}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (feedPointerDraggingRef.current) {
+                    setDragFeedOverride(next);
+                  } else {
+                    commitFeedOverride(next);
+                  }
+                }}
+                onPointerUp={(e) => {
+                  commitFeedOverride(Number(e.currentTarget.value));
+                }}
+                onPointerCancel={() => {
+                  feedPointerDraggingRef.current = false;
+                  setDragFeedOverride(null);
+                }}
+                onBlur={() => {
+                  if (dragFeedOverride !== null) {
+                    commitFeedOverride(dragFeedOverride);
+                  }
+                }}
+                className="min-w-0 flex-1 h-2 bg-[#090d14] rounded-lg appearance-none cursor-pointer accent-sky-400 disabled:opacity-40"
               />
-            </div>
-
-            <div className="grid grid-cols-5 divide-x divide-slate-800 rounded-lg border border-slate-700/80 bg-[#1b2436] overflow-hidden">
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x9b)}
-                title="Octet GRBL 0x9B (-10%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                -10%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x9d)}
-                title="Octet GRBL 0x9D (-1%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                -1%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x99)}
-                title="Octet GRBL 0x99 (Reset 100%)"
-                className="min-h-9 py-1.5 bg-emerald-500/15 hover:bg-emerald-400 font-mono text-xs font-bold text-emerald-300 hover:text-slate-950 cursor-pointer disabled:opacity-40 transition-colors"
-              >
-                100%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x9c)}
-                title="Octet GRBL 0x9C (+1%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                +1%
-              </button>
-              <button
-                type="button"
-                disabled={!status.connected}
-                onClick={() => sendRealtimeByte(0x9a)}
-                title="Octet GRBL 0x9A (+10%)"
-                className="min-h-9 py-1.5 hover:bg-[#243047] font-mono text-xs font-bold text-slate-100 cursor-pointer disabled:opacity-40"
-              >
-                +10%
-              </button>
+              <span className="text-[11px] font-mono text-slate-400 tabular-nums">200%</span>
             </div>
           </div>
 
@@ -546,14 +515,12 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
               Capteurs Shield V3.0 (Fins de course & Sonde)
             </span>
 
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
                 { label: 'Lim X', active: status.pins.xLimit, dotColor: 'bg-white', alertColor: 'bg-red-600 border-red-400 text-white' },
                 { label: 'Lim Y', active: status.pins.yLimit, dotColor: 'bg-white', alertColor: 'bg-red-600 border-red-400 text-white' },
                 { label: 'Lim Z', active: status.pins.zLimit, dotColor: 'bg-white', alertColor: 'bg-red-600 border-red-400 text-white' },
                 { label: 'Probe', active: status.pins.probe, dotColor: 'bg-slate-950', alertColor: 'bg-emerald-500 border-emerald-300 text-slate-950' },
-                { label: 'Hold', active: status.pins.hold, dotColor: 'bg-slate-950', alertColor: 'bg-amber-400 border-amber-300 text-slate-950' },
-                { label: 'Door', active: status.pins.door, dotColor: 'bg-white', alertColor: 'bg-orange-600 border-orange-400 text-white' },
               ].map((pin) => (
                 <div
                   key={pin.label}

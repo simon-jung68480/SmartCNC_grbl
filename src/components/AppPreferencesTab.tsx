@@ -7,12 +7,13 @@ import {
   Volume2,
   VolumeX,
   Gamepad2,
+  Keyboard,
+  Sun,
+  Moon,
   RotateCcw,
   Check,
   Eye,
-  HelpCircle,
   Play,
-  Sliders,
   Home,
   LocateFixed,
 } from 'lucide-react';
@@ -25,17 +26,104 @@ import {
   playJogClick,
 } from '../utils/audioAlerts';
 
+export type AppPreferencesSection = 'all' | 'interface' | 'operation' | 'sound' | 'control';
+
 export interface AppPreferencesTabProps {
   onResetLayout?: () => void;
+  section?: AppPreferencesSection;
 }
 
-export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLayout }) => {
+export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({
+  onResetLayout,
+  section = 'all',
+}) => {
   const { preferences, updatePreferences, resetPreferences } = useAppPreferences();
   const { settings: audioSettings, updateSettings: updateAudioSettings } = useAudioAlertSettings();
 
+  const showInterface = section === 'all' || section === 'interface';
+  const showOperation = section === 'all' || section === 'operation';
+  const showSound = section === 'all' || section === 'sound';
+  const showControl = section === 'all' || section === 'control';
+
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[#0b0f17] text-slate-100">
+      {/* THÈME D'AFFICHAGE : MODE NUIT / MODE JOUR */}
+      {showInterface && (
+        <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
+          <div className="flex items-center gap-2.5 mb-2 text-sky-300 font-bold text-sm sm:text-base">
+            {preferences.theme === 'light' ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5 text-sky-400" />
+            )}
+            <h3>Thème d'affichage (Mode Nuit / Mode Jour)</h3>
+          </div>
+          <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+            Basculer entre l’interface sombre d’atelier et le mode jour haute lisibilité pour les espaces fortement éclairés.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <button
+              type="button"
+              onClick={() => updatePreferences({ theme: 'dark' })}
+              aria-pressed={preferences.theme === 'dark'}
+              className={`text-left p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                preferences.theme === 'dark'
+                  ? 'bg-sky-500/15 border-sky-400 shadow-sm'
+                  : 'bg-[#0f1520] border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <Moon className="w-4 h-4 text-sky-400" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-50">
+                    Mode Nuit (Atelier sombre)
+                  </span>
+                </div>
+                {preferences.theme === 'dark' && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-400 text-slate-950">
+                    Actif
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Thème sombre Cockpit réduisant la fatigue visuelle devant la machine en éclairage modéré.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => updatePreferences({ theme: 'light' })}
+              aria-pressed={preferences.theme === 'light'}
+              className={`text-left p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                preferences.theme === 'light'
+                  ? 'bg-sky-500/15 border-sky-400 shadow-sm'
+                  : 'bg-[#0f1520] border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-50">
+                    Mode Jour (Atelier lumineux)
+                  </span>
+                </div>
+                {preferences.theme === 'light' && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-400 text-slate-950">
+                    Actif
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Interface claire et contrastée, optimale sous éclairage d’atelier intense ou en plein jour.
+              </p>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* TAILLE DE L'INTERFACE & ZOOM ATELIER */}
+      {showInterface && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
           <ZoomIn className="w-5 h-5 text-sky-400" />
@@ -113,8 +201,10 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           />
         </div>
       </section>
+      )}
 
       {/* 0. CONFIGURATION MACHINE & FINS DE COURSE (HOMING) */}
+      {showOperation && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-2 text-sky-300 font-bold text-sm sm:text-base">
           <Home className="w-5 h-5 text-sky-400" />
@@ -194,8 +284,10 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           </div>
         </div>
       </section>
+      )}
 
       {/* 1. VUE 3D & HAUTEUR DE LA GRILLE / TABLE MARTYR */}
+      {showInterface && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
           <Layers className="w-5 h-5 text-sky-400" />
@@ -335,8 +427,10 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           </div>
         </div>
       </section>
+      )}
 
       {/* 3. DISPOSITION & GESTION DES FENÊTRES */}
+      {showInterface && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
           <LayoutGrid className="w-5 h-5 text-sky-400" />
@@ -367,8 +461,10 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           </button>
         </div>
       </section>
+      )}
 
       {/* 4. SÉCURITÉ MACHINE & GARDE-FOUS (Recommandations Audit Ergonomie) */}
+      {showOperation && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
           <ShieldAlert className="w-5 h-5 text-sky-400" />
@@ -430,8 +526,10 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           </div>
         </div>
       </section>
+      )}
 
       {/* 5. SIGNAUX SONORES D'ATELIER */}
+      {showSound && (
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2.5 mb-3">
           <div className="flex items-center gap-2.5 text-sky-300 font-bold text-sm sm:text-base">
@@ -526,8 +624,35 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           ))}
         </div>
       </section>
+      )}
 
-      {/* 6. MANETTE & CONTRÔLE */}
+      {/* 6. RACCOURCIS CLAVIER & MANETTE GAMEPAD */}
+      {showControl && (
+      <>
+      <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
+        <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
+          <Keyboard className="w-5 h-5 text-sky-400" />
+          <h3>Pilotage au Clavier</h3>
+        </div>
+        <div className="bg-[#0f1520] border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-4">
+          <div>
+            <label htmlFor="pref-keyboard-shortcuts" className="text-xs font-semibold text-slate-100 block">
+              Activer les raccourcis clavier de déplacement (Jogging XYZ)
+            </label>
+            <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+              Flèches / Pavé numérique pour XY, PageUp/PageDown (+/-) pour Z, <code className="font-mono text-sky-300">[</code> / <code className="font-mono text-sky-300">]</code> pour changer de pas, Espace pour Pause et Échap pour Stop Jog.
+            </p>
+          </div>
+          <input
+            id="pref-keyboard-shortcuts"
+            type="checkbox"
+            checked={preferences.keyboardShortcutsEnabled}
+            onChange={(e) => updatePreferences({ keyboardShortcutsEnabled: e.target.checked })}
+            className="w-5 h-5 accent-sky-400 rounded cursor-pointer shrink-0"
+          />
+        </div>
+      </section>
+
       <section className="bg-[#141b27] border border-slate-800 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-300 font-bold text-sm sm:text-base">
           <Gamepad2 className="w-5 h-5 text-sky-400" />
@@ -581,6 +706,8 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           </div>
         </div>
       </section>
+      </>
+      )}
 
       {/* BOUTON GLOBAL RÉINITIALISER PRÉFÉRENCES */}
       <div className="pt-2 flex justify-end">

@@ -22,6 +22,7 @@ import {
   ParsedGCodeStats,
 } from '../types/cnc';
 import { sampleHeightmapZ } from '../utils/gcodeParser';
+import { useAppPreferences } from '../utils/appPreferences';
 
 export interface Viewport3DProps {
   status: GrblStatus;
@@ -154,6 +155,8 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   laserBeamWidth,
   laserTrace,
 }) => {
+  const { preferences } = useAppPreferences();
+  const isLight = preferences.theme === 'light';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const updateLaserTraceRef = useRef<((trace: GCodeSegment[] | undefined) => void) | null>(null);
 
@@ -205,7 +208,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const height = container.clientHeight || 500;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0d121b');
+    scene.background = new THREE.Color(isLight ? '#e8eff7' : '#0d121b');
     sceneRef.current = scene;
 
     // Caméra Z-Up (standard CNC : X droite, Y profondeur, Z hauteur)
@@ -498,13 +501,13 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const zOffset = gridZOffset || 0;
     const majorStep = gridMajorStep || 50;
 
-    // Plateau machine en studio sombre (#151d2b)
+    // Plateau machine en studio sombre (#151d2b) ou clair (#f8fafc)
     const bedGeo = new THREE.PlaneGeometry(maxX, maxY);
     bedGeo.translate(maxX / 2, maxY / 2, zOffset - 0.15);
     const bedMat = new THREE.MeshBasicMaterial({
-      color: 0x151d2b,
+      color: isLight ? 0xf8fafc : 0x151d2b,
       transparent: true,
-      opacity: 0.94,
+      opacity: isLight ? 0.98 : 0.94,
       side: THREE.DoubleSide,
     });
     group.add(new THREE.Mesh(bedGeo, bedMat));
@@ -527,7 +530,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     group.add(
       new THREE.LineSegments(
         minorGeo,
-        new THREE.LineBasicMaterial({ color: 0x223047, transparent: true, opacity: 0.85 })
+        new THREE.LineBasicMaterial({ color: isLight ? 0xcbd5e1 : 0x223047, transparent: true, opacity: 0.85 })
       )
     );
 
@@ -536,16 +539,16 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     group.add(
       new THREE.LineSegments(
         majorGeo,
-        new THREE.LineBasicMaterial({ color: 0x3b4f70, transparent: true, opacity: 0.95 })
+        new THREE.LineBasicMaterial({ color: isLight ? 0x64748b : 0x3b4f70, transparent: true, opacity: 0.95 })
       )
     );
 
     // Graduations tous les majorStep sur X et Y
     for (let x = 0; x <= maxX; x += majorStep) {
       const lbl = createTextSprite(`${x}`, {
-        color: '#f1f5f9',
-        bgColor: 'rgba(15, 23, 42, 0.90)',
-        borderColor: 'rgba(100, 116, 139, 0.65)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 6.5,
       });
@@ -554,9 +557,9 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     }
     for (let y = majorStep; y <= maxY; y += majorStep) {
       const lbl = createTextSprite(`${y}`, {
-        color: '#f1f5f9',
-        bgColor: 'rgba(15, 23, 42, 0.90)',
-        borderColor: 'rgba(100, 116, 139, 0.65)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 6.5,
       });
@@ -571,13 +574,13 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const envLines = new THREE.LineSegments(
       envEdges,
       new THREE.LineBasicMaterial({
-        color: 0x475569,
+        color: isLight ? 0x64748b : 0x475569,
         transparent: true,
         opacity: 0.6,
       })
     );
     group.add(envLines);
-  }, [machineEnvelope.x, machineEnvelope.y, machineEnvelope.z, gridZOffset, gridMajorStep, customBedDimensions]);
+  }, [machineEnvelope.x, machineEnvelope.y, machineEnvelope.z, gridZOffset, gridMajorStep, customBedDimensions, isLight]);
 
   // Visibilité de la grille machine
   useEffect(() => {
@@ -585,6 +588,13 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       machineGroupRef.current.visible = showMachineGrid;
     }
   }, [showMachineGrid]);
+
+  // Synchronisation dynamique du fond de scène lors du changement Mode Nuit / Mode Jour
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.background = new THREE.Color(isLight ? '#e8eff7' : '#0d121b');
+    }
+  }, [isLight]);
 
   // Construction du parcours d'outil 3D haute performance (Float32Array pré-alloués)
   useEffect(() => {
@@ -637,7 +647,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const cutColors = new Float32Array(cutCount * 6);
     const cutLineIndices = new Int32Array(cutCount);
 
-    const pendingColor = new THREE.Color('#38bdf8');
+    const pendingColor = new THREE.Color(isLight ? '#0284c7' : '#38bdf8');
     let rPtr = 0;
     let cPtr = 0;
     let cIdxPtr = 0;
@@ -701,7 +711,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       const rapidGeo = new THREE.BufferGeometry();
       rapidGeo.setAttribute('position', new THREE.BufferAttribute(rapidPositions, 3));
       const rapidMat = new THREE.LineDashedMaterial({
-        color: 0xfb923c,
+        color: isLight ? 0xea580c : 0xfb923c,
         dashSize: 2.0,
         gapSize: 1.5,
         transparent: true,
@@ -733,7 +743,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       cutColorAttrRef.current = colorAttr;
       cutSegLineIndicesRef.current = cutLineIndices;
     }
-  }, [segments]);
+  }, [segments, isLight]);
 
   // Measured laser footprint. Kept separate from the CNC line geometry.
   useEffect(() => {
@@ -837,8 +847,8 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const len = lineIndices.length;
     if (!colorAttr || len === 0) return;
 
-    const doneColor = new THREE.Color('#34d399');
-    const pendingColor = new THREE.Color('#38bdf8');
+    const doneColor = new THREE.Color(isLight ? '#059669' : '#34d399');
+    const pendingColor = new THREE.Color(isLight ? '#0284c7' : '#38bdf8');
     const array = colorAttr.array as Float32Array;
 
     // Si retour à zéro ou recul de ligne, on réinitialise la plage précédemment colorée
@@ -882,7 +892,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     if (updated) {
       colorAttr.needsUpdate = true;
     }
-  }, [currentLineIndex, segments]);
+  }, [currentLineIndex, segments, isLight]);
 
   // Construction de la Boîte Englobante (Bounding Box) en lignes continues fines (#0369a1)
   useEffect(() => {
@@ -906,7 +916,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const boxLines = new THREE.LineSegments(
       edges,
       new THREE.LineBasicMaterial({
-        color: 0x38bdf8,
+        color: isLight ? 0x0284c7 : 0x38bdf8,
         transparent: true,
         opacity: 0.72,
       })
@@ -917,16 +927,16 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const dimLabel = createTextSprite(
       `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`,
       {
-        color: '#f1f5f9',
-        bgColor: 'rgba(15, 23, 42, 0.90)',
-        borderColor: 'rgba(100, 116, 139, 0.65)',
+        color: isLight ? '#0f172a' : '#f1f5f9',
+        bgColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.90)',
+        borderColor: isLight ? 'rgba(100, 116, 139, 0.7)' : 'rgba(100, 116, 139, 0.65)',
         fontSize: 22,
         scale: 9,
       }
     );
     dimLabel.position.set(cx, max.y + 8, max.z + 6);
     group.add(dimLabel);
-  }, [stats]);
+  }, [stats, isLight]);
 
   // Visibilité de la boîte englobante
   useEffect(() => {

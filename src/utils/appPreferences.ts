@@ -12,6 +12,7 @@ export interface AppPreferences {
   gridMajorStep: number; // Pas de la grille principale en mm (ex: 50 ou 100)
 
   // Interface & Échelle visuelle (Zoom)
+  theme: 'dark' | 'light'; // Thème visuel : Mode Nuit ('dark') ou Mode Jour ('light')
   uiScale: number; // Échelle globale de l'interface (ex: 0.9, 1.0, 1.1, 1.25, 1.4)
   largeDroFont: boolean; // Mode très grands chiffres pour le DRO (lisibilité à 2 mètres)
 
@@ -35,6 +36,7 @@ export const DEFAULT_APP_PREFERENCES: AppPreferences = {
   useCustomBedDimensions: false,
   gridMajorStep: 50,
 
+  theme: 'dark',
   uiScale: 1.0,
   largeDroFont: false,
 
@@ -71,6 +73,7 @@ export function loadAppPreferences(): AppPreferences {
       useCustomBedDimensions: typeof parsed.useCustomBedDimensions === 'boolean' ? parsed.useCustomBedDimensions : DEFAULT_APP_PREFERENCES.useCustomBedDimensions,
       gridMajorStep: typeof parsed.gridMajorStep === 'number' ? parsed.gridMajorStep : DEFAULT_APP_PREFERENCES.gridMajorStep,
 
+      theme: parsed.theme === 'light' || parsed.theme === 'dark' ? parsed.theme : DEFAULT_APP_PREFERENCES.theme,
       uiScale: clampUiScale(parsed.uiScale),
       largeDroFont: typeof parsed.largeDroFont === 'boolean' ? parsed.largeDroFont : DEFAULT_APP_PREFERENCES.largeDroFont,
 
@@ -89,15 +92,34 @@ export function loadAppPreferences(): AppPreferences {
 }
 
 /**
+ * Applique le thème visuel ('dark' | 'light') sur l'élément racine <html>
+ */
+export function applyTheme(theme: AppPreferences['theme']): void {
+  const root = document.documentElement;
+  if (theme === 'light') {
+    root.classList.remove('dark');
+    root.classList.add('light');
+  } else {
+    root.classList.remove('light');
+    root.classList.add('dark');
+  }
+}
+
+/**
  * Sauvegarde les préférences utilisateur dans le localStorage et notifie les composants
  */
 export function saveAppPreferences(prefs: AppPreferences): void {
-  const next = { ...prefs, uiScale: clampUiScale(prefs.uiScale) };
+  const next = {
+    ...prefs,
+    theme: prefs.theme === 'light' ? ('light' as const) : ('dark' as const),
+    uiScale: clampUiScale(prefs.uiScale),
+  };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch (err) {
     console.error('Erreur sauvegarde préférences SmartCNC', err);
   }
+  applyTheme(next.theme);
   applyUiScale(next.uiScale);
   window.dispatchEvent(new CustomEvent('smartcnc:preferences-changed', { detail: next }));
 }
@@ -117,7 +139,8 @@ export function useAppPreferences() {
   const latest = useRef(preferences);
 
   useEffect(() => {
-    // Applique l'échelle au premier montage
+    // Applique le thème et l'échelle au premier montage
+    applyTheme(latest.current.theme);
     applyUiScale(latest.current.uiScale);
 
     const handleUpdate = (e: Event) => {
