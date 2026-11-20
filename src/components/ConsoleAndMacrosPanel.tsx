@@ -354,22 +354,22 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-slate-300 text-slate-800 shadow-sm rounded-xl overflow-hidden">
-      {/* Barre d'onglets Console Série / Macros Personnalisées */}
-      <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+    <div className="flex flex-col h-full bg-white border border-slate-200/90 text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl overflow-hidden">
+      {/* Barre d'onglets Console / Macros */}
+      <div className="px-3 py-2 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab('console')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'console'
-                ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 border border-transparent'
             }`}
           >
-            <Terminal className="w-3.5 h-3.5 text-blue-600" />
-            <span>Console Série GRBL</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 border border-slate-200 text-slate-700">
+            <Terminal className="w-3.5 h-3.5 text-sky-600" />
+            <span>Console</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 tabular-nums">
               {filteredEntries.length}
             </span>
           </button>
@@ -377,15 +377,15 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('macros')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'macros'
-                ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 border border-transparent'
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-amber-600" />
-            <span>Macros Rapides</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 border border-slate-200 text-slate-700">
+            <span>Macros</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-600 tabular-nums">
               {activeMacros.length}
             </span>
           </button>
@@ -393,21 +393,21 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
         {/* Actions contextuelles selon l'onglet */}
         {activeTab === 'console' ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setHideStatusReports((v) => !v)}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer ${
                 hideStatusReports
-                  ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
-                  : 'bg-blue-50 border-blue-300 text-blue-800'
+                  ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                  : 'bg-sky-50 border-sky-200 text-sky-800'
               }`}
               title="Masquer/Afficher les trames de statut périodiques (? / <Idle|...>)"
             >
               {hideStatusReports ? (
-                <EyeOff className="w-3 h-3 text-slate-500" />
+                <EyeOff className="w-3 h-3 text-slate-400" />
               ) : (
-                <Eye className="w-3 h-3 text-blue-600" />
+                <Eye className="w-3 h-3 text-sky-600" />
               )}
               <span className="hidden sm:inline">Masquer ?</span>
             </button>
@@ -416,8 +416,9 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               type="button"
               onClick={handleExportLogs}
               disabled={filteredEntries.length === 0}
-              className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer disabled:opacity-40"
+              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer disabled:opacity-40"
               title="Exporter l'historique de la console (.log)"
+              aria-label="Exporter l'historique de la console"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -426,15 +427,16 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               <button
                 type="button"
                 onClick={onClearConsole}
-                className="p-1.5 rounded bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 hover:border-red-200 transition-colors cursor-pointer"
                 title="Vider la console"
+                aria-label="Vider la console"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => {
@@ -449,15 +451,15 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                   confirmBeforeRun: false,
                 });
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Nouvelle Macro</span>
+              <Plus className="w-3 h-3" />
+              <span>Macro</span>
             </button>
             <button
               type="button"
               onClick={handleResetDefaultMacros}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
               title="Réinitialiser les macros d'usine"
             >
               <RotateCcw className="w-3 h-3" />
@@ -470,34 +472,35 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
       {/* CONTENU ONGLET 1 : CONSOLE SERIE GRBL */}
       {activeTab === 'console' && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Boutons de commandes système rapides */}
-          <div className="px-3 py-1.5 bg-white border-b border-slate-200 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1">
-              Système GRBL :
+          {/* Barre de commandes système GRBL sur 1 ligne */}
+          <div className="px-3 py-1.5 bg-white border-b border-slate-200/80 flex flex-wrap items-center gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+              GRBL :
             </span>
             {[
-              { cmd: '$$', label: '$$ Paramètres' },
-              { cmd: '$#', label: '$# Décalages' },
-              { cmd: '$G', label: '$G État Parser' },
-              { cmd: '$I', label: '$I Infos Build' },
-              { cmd: '$C', label: '$C Mode Test' },
-              { cmd: '$X', label: '$X Déverrouiller' },
+              { cmd: '$$', title: '$$ — Afficher tous les paramètres EEPROM GRBL' },
+              { cmd: '$#', title: '$# — Afficher les décalages G54..G59, G28, G92' },
+              { cmd: '$G', title: '$G — Afficher l’état du parseur G-Code' },
+              { cmd: '$I', title: '$I — Afficher les informations de build GRBL' },
+              { cmd: '$C', title: '$C — Activer / désactiver le mode test sans mouvement' },
+              { cmd: '$X', title: '$X — Déverrouiller GRBL après alarme' },
             ].map((q) => (
               <button
                 key={q.cmd}
                 type="button"
                 disabled={!connected}
                 onClick={() => onSendCommand(q.cmd)}
-                className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer disabled:opacity-40"
+                title={q.title}
+                className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer disabled:opacity-40"
               >
-                {q.label}
+                {q.cmd}
               </button>
             ))}
           </div>
 
-          {/* Terminal temps réel sur fond clair */}
+          {/* Terminal temps réel */}
           <div
-            className="flex-1 min-h-[170px] overflow-y-auto p-3 bg-slate-50 border-b border-slate-200 text-slate-800 font-mono text-xs space-y-1.5 select-text"
+            className="flex-1 min-h-[150px] overflow-y-auto p-2.5 bg-slate-50/70 border-b border-slate-200/80 text-slate-800 font-mono text-xs space-y-1 select-text"
             onScroll={(e) => {
               const el = e.currentTarget;
               const isNearBottom =
@@ -506,16 +509,16 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
             }}
           >
             {filteredEntries.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-slate-500 text-xs">
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs text-center px-4">
                 En attente de communication série avec l'Arduino Uno (115200 bauds)...
               </div>
             ) : (
               filteredEntries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-start gap-2 leading-relaxed hover:bg-slate-200/60 px-1.5 py-0.5 rounded"
+                  className="flex items-start gap-2 leading-relaxed hover:bg-slate-200/50 px-1.5 py-0.5 rounded-md"
                 >
-                  <span className="text-[10px] text-slate-500 shrink-0 select-none pt-0.5">
+                  <span className="text-[10px] text-slate-400 shrink-0 select-none pt-0.5 tabular-nums">
                     {entry.timestamp}
                   </span>
                   <span
@@ -533,7 +536,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                           : entry.type === 'alarm'
                           ? 'text-amber-700 font-semibold'
                           : entry.type === 'tx'
-                          ? 'text-blue-700 font-medium'
+                          ? 'text-sky-700 font-medium'
                           : entry.type === 'ok'
                           ? 'text-emerald-700 font-medium'
                           : 'text-slate-900'
@@ -542,7 +545,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                       {entry.text}
                     </span>
                     {entry.detail && (
-                      <span className="ml-2 text-[11px] text-slate-600 italic">
+                      <span className="ml-2 text-[11px] text-slate-500 italic">
                         — {entry.detail}
                       </span>
                     )}
@@ -556,9 +559,12 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
           {/* Champ de commande manuelle MDI */}
           <form
             onSubmit={handleSendMdi}
-            className="p-2.5 bg-white flex items-center gap-2"
+            className="p-2 bg-white flex items-center gap-1.5"
           >
             <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-xs font-bold text-slate-400 pointer-events-none">
+                &gt;
+              </span>
               <input
                 type="text"
                 value={mdiInput}
@@ -567,19 +573,19 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
                 disabled={!connected}
                 placeholder={
                   connected
-                    ? 'Commande MDI (ex: G0 X10 Y10, $$, $#, $G, M3 S10000) — ↑/↓ Historique'
+                    ? 'Commande MDI (G0 X10, $$, M3 S10000...)'
                     : 'Connectez la CNC pour envoyer des commandes MDI...'
                 }
-                className="w-full bg-white border border-slate-300 focus:border-blue-500 rounded-lg pl-3 pr-20 py-2 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none disabled:opacity-50"
+                className="w-full bg-slate-50 focus:bg-white border border-slate-200 focus:border-sky-500 rounded-lg pl-6 pr-16 py-1.5 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none disabled:opacity-50"
               />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 pointer-events-none">
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 pointer-events-none">
                 ↑/↓ Hist.
               </span>
             </div>
             <button
               type="submit"
               disabled={!connected || !mdiInput.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Envoyer</span>
@@ -590,8 +596,8 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* CONTENU ONGLET 2 : MACROS PERSONNALISEES */}
       {activeTab === 'macros' && (
-        <div className="flex-1 p-3 overflow-y-auto bg-white">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="flex-1 p-2.5 overflow-y-auto bg-slate-50/40">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
             {activeMacros.map((macro) => {
               const style = MACRO_COLORS[macro.color] || MACRO_COLORS.cyan;
               const IconComponent = MACRO_ICONS[macro.icon] || Zap;
@@ -599,59 +605,64 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               return (
                 <div
                   key={macro.id}
-                  className={`group relative flex flex-col justify-between p-3 rounded-lg border transition-colors text-slate-800 ${style.bg} ${style.border}`}
+                  className="group relative flex flex-col justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors text-slate-800 shadow-2xs"
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded ${style.badge}`}>
-                          <IconComponent className="w-4 h-4" />
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`p-1.5 rounded-lg shrink-0 ${style.badge}`}>
+                          <IconComponent className="w-3.5 h-3.5" />
                         </div>
-                        <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                        <h4 className="text-xs font-bold text-slate-900 leading-snug truncate">
                           {macro.name}
                         </h4>
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 shrink-0 opacity-65 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={() => {
                             setIsCreatingMacro(false);
                             setEditingMacro({ ...macro });
                           }}
-                          className="p-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 hover:text-slate-900 cursor-pointer"
+                          className="p-1 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 cursor-pointer"
                           title="Modifier cette macro"
+                          aria-label={`Modifier ${macro.name}`}
                         >
                           <Edit3 className="w-3 h-3" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteMacro(macro.id)}
-                          className="p-1 rounded bg-slate-100 hover:bg-red-50 border border-slate-300 hover:border-red-300 text-slate-600 hover:text-red-700 cursor-pointer"
+                          className="p-1 rounded-md hover:bg-red-50 text-slate-500 hover:text-red-700 cursor-pointer"
                           title="Supprimer cette macro"
+                          aria-label={`Supprimer ${macro.name}`}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-slate-600 mb-2 line-clamp-2">
+                    <p className="text-[11px] text-slate-600 mb-1.5 line-clamp-2 leading-snug">
                       {macro.description}
                     </p>
 
-                    <pre className="p-2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-800 overflow-x-auto max-h-16 mb-2.5">
+                    <div
+                      title={macro.gcode}
+                      className="px-2 py-1 rounded-md bg-slate-50 border border-slate-200/80 text-[10px] font-mono text-slate-600 line-clamp-2 mb-2 whitespace-pre-wrap"
+                    >
                       {macro.gcode}
-                    </pre>
+                    </div>
                   </div>
 
                   <button
                     type="button"
                     disabled={!connected}
                     onClick={() => handleTriggerMacro(macro)}
-                    className="w-full py-1.5 px-3 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 border border-slate-300 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                    className="w-full py-1.5 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-800 border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                   >
                     <Play className={`w-3 h-3 ${style.text} fill-current`} />
-                    <span>Exécuter la macro</span>
+                    <span>Exécuter</span>
                   </button>
                 </div>
               );
@@ -662,10 +673,10 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* Modale de confirmation avant exécution de macro sensible */}
       {confirmingMacro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="bg-white border border-slate-300 shadow-lg rounded-xl max-w-md w-full p-5 space-y-4 text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-2xl max-w-md w-full p-5 space-y-4 text-slate-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-300">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
@@ -678,7 +689,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
             <p className="text-xs text-slate-700">{confirmingMacro.description}</p>
 
-            <pre className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-blue-700 overflow-x-auto">
+            <pre className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-sky-800 overflow-x-auto">
               {confirmingMacro.gcode}
             </pre>
 
@@ -686,7 +697,7 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setConfirmingMacro(null)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 cursor-pointer"
               >
                 Annuler
               </button>
@@ -705,10 +716,10 @@ export const ConsoleAndMacrosPanel: React.FC<ConsoleAndMacrosPanelProps> = ({
 
       {/* Modale de Création / Édition de Macro */}
       {editingMacro && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4">
           <form
             onSubmit={handleSaveMacro}
-            className="bg-white border border-slate-300 shadow-lg rounded-xl max-w-lg w-full overflow-hidden text-slate-800"
+            className="bg-white border border-slate-200 shadow-2xl rounded-2xl max-w-lg w-full overflow-hidden text-slate-800"
           >
             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h4 className="text-sm font-bold text-slate-900">

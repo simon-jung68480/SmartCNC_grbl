@@ -1,8 +1,9 @@
 export const button =
-  "inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold transition-colors";
+  "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold transition-colors cursor-pointer";
 export const input =
-  "w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 disabled:bg-slate-100";
-export const card = "rounded-xl border border-slate-200 bg-white p-4 shadow-sm";
+  "w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none disabled:bg-slate-100";
+export const card =
+  "rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]";
 
 export function NumberField({
   label,
@@ -20,7 +21,7 @@ export function NumberField({
   step?: number | "any";
 }) {
   return (
-    <label className="block text-xs text-slate-600 space-y-1">
+    <label className="block text-[11px] font-medium text-slate-600 space-y-1">
       <span>{label}</span>
       <input
         className={input}

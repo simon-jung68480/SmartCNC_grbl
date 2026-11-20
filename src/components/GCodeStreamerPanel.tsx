@@ -750,8 +750,8 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
   return (
     <div
-      className={`flex flex-col h-full bg-white text-slate-800 border rounded-lg overflow-hidden shadow-sm transition-colors ${
-        isDragging ? 'border-sky-500 bg-sky-50/40' : 'border-slate-300'
+      className={`flex flex-col h-full bg-white text-slate-800 border rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors ${
+        isDragging ? 'border-sky-500 bg-sky-50/40' : 'border-slate-200/90'
       }`}
       onDragOver={(e) => {
         e.preventDefault();
@@ -760,26 +760,26 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
     >
-      {/* En-tête sobre : Chargement de fichier, Exemples & Surfaçage Martyr */}
-      <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+      {/* Barre 1 : Fichier, actions fichier & édition unifiées */}
+      <div className="px-3 py-2 bg-slate-50/80 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1.5 rounded bg-white border border-slate-300 text-slate-700 shadow-2xs">
-            <FileCode className="w-4 h-4" />
+          <div className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shrink-0">
+            <FileCode className="w-4 h-4 text-sky-600" />
           </div>
-          <div className="truncate">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 truncate">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-xs font-bold text-slate-900 truncate max-w-[220px]">
                 {job.fileName || 'Aucun fichier G-Code chargé'}
               </h3>
               {job.heightmapApplied && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <Layers className="w-2.5 h-2.5" />
                   Heightmap Z
                 </span>
               )}
               {isCheckMode && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
-                  Mode Test $C
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                  Test $C
                 </span>
               )}
             </div>
@@ -787,26 +787,26 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
               {hasGCode ? (
                 <>
                   <span>{lines.length.toLocaleString('fr-FR')} lignes</span>
-                  <span>•</span>
+                  <span>·</span>
                   <button
                     type="button"
                     onClick={handleFrameBoundingBox}
                     className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-600 hover:underline cursor-pointer transition-colors"
                     title="Ouvrir l'assistant de Cadrage / Framing"
                   >
-                    <span>Cadre: {(computedBounds.size.x || 0).toFixed(1)} × {(computedBounds.size.y || 0).toFixed(1)} mm</span>
+                    <span>{(computedBounds.size.x || 0).toFixed(1)} × {(computedBounds.size.y || 0).toFixed(1)} mm</span>
                     <Maximize2 className="w-2.5 h-2.5 text-sky-500" />
                   </button>
                 </>
               ) : (
-                'Glissez-déposez un fichier .nc / .gcode / .tap ou choisissez un modèle'
+                'Glissez-déposez un fichier .nc / .gcode ou choisissez un modèle'
               )}
             </div>
           </div>
         </div>
 
-        {/* Boutons d'action fichier */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Boutons fichier + éditeur regroupés */}
+        <div className="flex flex-wrap items-center gap-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -823,23 +823,23 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isRunning}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
             title="Charger un fichier G-Code (.nc, .gcode, .tap, .ngc, .txt)"
           >
-            <Upload className="w-3.5 h-3.5 text-slate-600" />
-            <span>Ouvrir G-Code</span>
+            <Upload className="w-3 h-3 text-slate-500" />
+            <span>Ouvrir</span>
           </button>
 
-          {/* Menu déroulant des 4 fichiers d'exemple intégrés */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowSampleDropdown((v) => !v)}
               disabled={isRunning}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
+              title="Charger un programme G-Code d'exemple"
             >
-              <span>Exemples (4)</span>
-              <ChevronDown className="w-3 h-3 text-slate-500" />
+              <span>Exemples</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {showSampleDropdown && (
@@ -848,7 +848,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   className="fixed inset-0 z-30"
                   onClick={() => setShowSampleDropdown(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-80 bg-white border border-slate-300 rounded-lg shadow-xl z-40 py-1.5 divide-y divide-slate-200">
+                <div className="absolute right-0 mt-1.5 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-40 py-1.5 divide-y divide-slate-100">
                   <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50">
                     Programmes G-Code prêts à l'emploi
                   </div>
@@ -861,7 +861,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         setShowSampleDropdown(false);
                         setIsEditing(false);
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-100 transition flex flex-col gap-0.5"
+                      className="w-full text-left px-3 py-2 hover:bg-slate-50 transition flex flex-col gap-0.5 cursor-pointer"
                     >
                       <span className="text-xs font-semibold text-slate-800">
                         {sample.name}
@@ -876,111 +876,164 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             )}
           </div>
 
-          {/* Bouton Générateur de Surfaçage Martyr */}
           <button
             type="button"
             onClick={() => setShowSpoilboardModal(true)}
             disabled={isRunning}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 transition disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
             title="Ouvrir le générateur de surfaçage martyr (Spoilboard Wizard)"
           >
-            <Wand2 className="w-3.5 h-3.5 text-sky-600" />
-            <span>Surfaçage Martyr</span>
+            <Wand2 className="w-3 h-3 text-sky-600" />
+            <span>Surfaçage</span>
           </button>
+
+          <div className="h-4 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDraftGCode(gcodeText);
+                setIsEditing(true);
+              }}
+              disabled={isRunning}
+              title="Éditer le programme complet (ou double-cliquez sur une ligne)"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-40"
+            >
+              <Edit3 className="w-3 h-3 text-slate-500" />
+              <span>Éditer</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleSaveFullEdit}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer"
+              >
+                <Save className="w-3 h-3" />
+                <span>Appliquer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+                <span>Annuler</span>
+              </button>
+            </div>
+          )}
+
+          {hasGCode && (
+            <button
+              type="button"
+              onClick={handleExportGCode}
+              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition cursor-pointer"
+              title="Exporter le fichier G-Code (.nc)"
+              aria-label="Exporter le G-Code"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Contrôles d'exécution du programme */}
-      <div className="p-2.5 bg-white border-b border-slate-200 grid grid-cols-2 sm:grid-cols-6 gap-1.5">
-        <button
-          type="button"
-          onClick={onStartJob}
-          disabled={!connected || !hasGCode || isRunning || isPaused}
-          className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          <span>Lancer</span>
-        </button>
+      {/* Barre 2 : Contrôles contextuels d'exécution + Progression + Ligne active */}
+      <div className="px-3 py-2 bg-white border-b border-slate-200 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Boutons contextuels selon l'état */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {!isRunning && !isPaused ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onStartJob}
+                  disabled={!connected || !hasGCode}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none shadow-2xs"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Lancer</span>
+                </button>
 
-        <button
-          type="button"
-          onClick={onPauseJob}
-          disabled={!connected || !isRunning || isPaused}
-          className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition disabled:opacity-40 disabled:pointer-events-none"
-          title="Pause d'avance / Feed Hold (!)"
-        >
-          <Pause className="w-3.5 h-3.5 fill-current" />
-          <span>Pause (!)</span>
-        </button>
+                <button
+                  type="button"
+                  onClick={handleFrameBoundingBox}
+                  disabled={!connected}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 transition cursor-pointer disabled:opacity-40"
+                  title="Ouvrir l'assistant de Cadrage / Framing (Vérification du brut et brides de serrage)"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Cadrage</span>
+                </button>
 
-        <button
-          type="button"
-          onClick={onResumeJob}
-          disabled={!connected || !isPaused}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-xs font-bold transition disabled:opacity-40 disabled:pointer-events-none ${
-            isPaused
-              ? 'bg-sky-600 hover:bg-sky-500 text-white ring-2 ring-sky-400/50'
-              : 'bg-sky-700 text-white'
-          }`}
-          title="Reprendre l'usinage / Cycle Start (~)"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reprendre (~)</span>
-        </button>
+                <button
+                  type="button"
+                  onClick={onToggleCheckMode}
+                  disabled={!connected}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer disabled:opacity-40 ${
+                    isCheckMode
+                      ? 'bg-amber-50 border-amber-300 text-amber-800'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                  }`}
+                  title="Activer/Désactiver le mode de vérification syntaxique GRBL ($C) sans mouvement moteur"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Test $C</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {isRunning ? (
+                  <button
+                    type="button"
+                    onClick={onPauseJob}
+                    disabled={!connected}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition cursor-pointer disabled:opacity-40"
+                    title="Pause d'avance / Feed Hold (!)"
+                  >
+                    <Pause className="w-3.5 h-3.5 fill-current" />
+                    <span>Pause (!)</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onResumeJob}
+                    disabled={!connected}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white ring-2 ring-sky-400/40 transition cursor-pointer disabled:opacity-40"
+                    title="Reprendre l'usinage / Cycle Start (~)"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reprendre (~)</span>
+                  </button>
+                )}
 
-        <button
-          type="button"
-          onClick={onStopJob}
-          disabled={!connected || (!isRunning && !isPaused)}
-          className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition disabled:opacity-40 disabled:pointer-events-none"
-          title="Arrêter le programme"
-        >
-          <Square className="w-3.5 h-3.5 fill-current" />
-          <span>Arrêter</span>
-        </button>
+                <button
+                  type="button"
+                  onClick={onStopJob}
+                  disabled={!connected}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition cursor-pointer disabled:opacity-40"
+                  title="Arrêter le programme"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                  <span>Arrêter</span>
+                </button>
+              </>
+            )}
+          </div>
 
-        <button
-          type="button"
-          onClick={onToggleCheckMode}
-          disabled={!connected || isRunning || isPaused}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded text-xs font-semibold border transition disabled:opacity-40 ${
-            isCheckMode
-              ? 'bg-amber-50 border-amber-400 text-amber-800'
-              : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
-          }`}
-          title="Activer/Désactiver le mode de vérification syntaxique GRBL ($C) sans mouvement moteur"
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-          <span>Vérifier ($C)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleFrameBoundingBox}
-          disabled={!connected || isRunning || isPaused}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded text-xs font-bold bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-800 transition disabled:opacity-40"
-          title="Ouvrir l'assistant de Cadrage / Framing (Vérification du brut et brides de serrage)"
-        >
-          <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
-          <span>Cadrage / Framing</span>
-        </button>
-      </div>
-
-      {/* Barre de progression détaillée & Jauge Buffer Arduino Uno */}
-      <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2">
+          {/* Statut & temps */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
             <span
-              className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider border ${
+              className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] tracking-wider border ${
                 isPaused
-                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
                   : isRunning
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   : job.state === 'completed'
-                  ? 'bg-sky-50 text-sky-800 border-sky-300'
+                  ? 'bg-sky-50 text-sky-800 border-sky-200'
                   : job.state === 'error' || job.state === 'aborted'
-                  ? 'bg-rose-50 text-rose-800 border-rose-300'
-                  : 'bg-white text-slate-600 border-slate-300'
+                  ? 'bg-rose-50 text-rose-800 border-rose-200'
+                  : 'bg-slate-50 text-slate-600 border-slate-200'
               }`}
             >
               {isPaused
@@ -995,110 +1048,44 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                 ? 'Erreur'
                 : 'Prêt'}
             </span>
-            <span className="font-mono text-slate-900 font-bold">
+
+            <span className="font-mono text-slate-900 font-bold tabular-nums">
               {displayProgress.toFixed(1)}%
             </span>
-            <span className="text-slate-300">•</span>
-            <span className="font-mono text-slate-600 text-[11px]">
-              Lignes:{' '}
-              <strong className="text-slate-900">{job.acknowledgedLines}</strong> /{' '}
-              {job.totalLines || lines.length}
-            </span>
-          </div>
 
-          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-600">
-            <span className="inline-flex items-center gap-1" title="Temps écoulé">
-              <Clock className="w-3 h-3 text-slate-500" />
-              Écoulé: <strong className="text-slate-900">{formatDuration(liveElapsedMs)}</strong>
+            <span className="font-mono text-slate-500 text-[11px] tabular-nums">
+              <strong className="text-slate-800">{job.acknowledgedLines}</strong>/{job.totalLines || lines.length}
             </span>
-            <span className="inline-flex items-center gap-1" title="Temps restant estimé">
-              Restant:{' '}
-              <strong className="text-amber-700">
-                {formatDuration(job.estimatedRemainingMs)}
-              </strong>
+
+            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600 tabular-nums" title="Temps écoulé / restant estimé">
+              <Clock className="w-3 h-3 text-slate-400" />
+              <strong className="text-slate-800">{formatDuration(liveElapsedMs)}</strong>
+              <span className="text-slate-300">/</span>
+              <strong className="text-amber-700">{formatDuration(job.estimatedRemainingMs)}</strong>
             </span>
           </div>
         </div>
 
-        {/* Barre de progression principale sobre */}
-        <div className="w-full h-2 bg-slate-200 rounded overflow-hidden border border-slate-300">
+        {/* Barre de progression fine */}
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
           <div
             className="h-full bg-emerald-600 transition-all duration-200"
             style={{ width: `${displayProgress}%` }}
           />
         </div>
 
-        {/* Commande en cours / Ligne active */}
-        <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5 rounded border border-slate-200 text-[11px] font-mono truncate">
-          <div className="flex items-center gap-2 truncate min-w-0">
-            <span className="text-slate-500 shrink-0 font-sans font-medium">Ligne active:</span>
+        {/* Ligne active compacte */}
+        <div className="flex items-center justify-between gap-2 bg-slate-50/80 px-2.5 py-1 rounded-lg border border-slate-200/80 text-[11px] font-mono">
+          <div className="flex items-center gap-1.5 truncate min-w-0">
+            <span className="text-sky-600 font-bold shrink-0">▶</span>
             <span className="text-slate-800 font-medium truncate">
-              {job.currentCommand || lines[job.currentLineIndex] || (isRunning ? `Ligne #${job.currentLineIndex + 1}` : 'En attente')}
+              {job.currentCommand || lines[job.currentLineIndex] || (isRunning ? `Ligne #${job.currentLineIndex + 1}` : 'En attente de lancement')}
             </span>
           </div>
-          {job.acknowledgedLines > 0 && (
-            <span className="text-[10px] text-slate-500 font-sans shrink-0">
-              {job.acknowledgedLines} / {job.totalLines || lines.length} envoyées
+          {!isRunning && hasGCode && (
+            <span className="hidden sm:inline text-[10px] font-sans text-slate-400 shrink-0">
+              Double-clic sur une ligne pour éditer
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Barre d'outils de l'éditeur G-Code */}
-      <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-[11px] text-slate-600">
-          <span className="font-semibold text-slate-800">Visualiseur G-Code</span>
-          <span className="hidden sm:inline text-slate-300">|</span>
-          <span className="hidden sm:inline text-[10px] text-slate-500">
-            Double-cliquez sur une ligne pour l'éditer
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {hasGCode && (
-            <button
-              type="button"
-              onClick={handleExportGCode}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition"
-              title="Télécharger le G-Code actuel"
-            >
-              <Download className="w-3 h-3" />
-              <span>Exporter</span>
-            </button>
-          )}
-
-          {!isEditing ? (
-            <button
-              type="button"
-              onClick={() => {
-                setDraftGCode(gcodeText);
-                setIsEditing(true);
-              }}
-              disabled={isRunning}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition disabled:opacity-40"
-            >
-              <Edit3 className="w-3 h-3" />
-              <span>Éditer</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handleSaveFullEdit}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition"
-              >
-                <Save className="w-3 h-3" />
-                <span>Appliquer</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition"
-              >
-                <X className="w-3 h-3" />
-                <span>Annuler</span>
-              </button>
-            </div>
           )}
         </div>
       </div>
@@ -1107,7 +1094,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
       <div
         ref={scrollContainerRef}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        className="flex-1 min-h-[180px] overflow-y-auto bg-slate-50 text-slate-800 font-mono text-xs select-text"
+        className="flex-1 min-h-[160px] overflow-y-auto bg-slate-50/60 text-slate-800 font-mono text-xs select-text"
       >
         {isEditing ? (
           <textarea
@@ -1260,8 +1247,8 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
       {/* Modale Générateur de Surfaçage Martyr (Spoilboard Wizard) en Mode Clair */}
       {showSpoilboardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-300 text-slate-800 rounded-lg shadow-2xl w-full max-w-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-[2px] p-4">
+          <div className="bg-white border border-slate-200 text-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded bg-sky-50 border border-sky-200 text-sky-600">

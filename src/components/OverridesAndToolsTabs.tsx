@@ -306,51 +306,54 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
   const dirX = probe.directionX === -1 ? -1 : 1;
   const dirY = probe.directionY === -1 ? -1 : 1;
   const totalOffsetXY = (probe.plateThicknessXY + probe.toolDiameter / 2).toFixed(3);
+  const hasAlertPin =
+    status.pins.xLimit || status.pins.yLimit || status.pins.zLimit || status.pins.door || status.pins.hold;
 
   return (
-    <div className="bg-white border border-slate-300 text-slate-800 shadow-sm rounded-xl p-3.5 flex flex-col gap-3 select-none">
-      {/* Barre d'onglets sobre */}
-      <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
+    <div className="bg-white border border-slate-200/90 text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 flex flex-col gap-2.5 select-none">
+      {/* Barre d'onglets segmentée épurée */}
+      <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
         <button
           type="button"
           onClick={() => setActiveTab('overrides')}
-          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'overrides'
-              ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
+              : 'text-slate-600 hover:text-slate-900 border border-transparent'
           }`}
         >
-          <Sliders className="w-3.5 h-3.5 shrink-0 text-blue-600" />
-          <span className="truncate">Overrides & Pins</span>
+          <Sliders className="w-3.5 h-3.5 shrink-0 text-sky-600" />
+          <span className="truncate">Overrides</span>
+          {hasAlertPin && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />}
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('probe')}
-          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'probe'
-              ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
+              : 'text-slate-600 hover:text-slate-900 border border-transparent'
           }`}
         >
           <Crosshair className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-          <span className="truncate">Palpage XYZ</span>
-          {status.pins.probe && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+          <span className="truncate">Palpage</span>
+          {status.pins.probe && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('heightmap')}
-          className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'heightmap'
-              ? 'bg-white text-slate-900 border border-slate-300 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
+              : 'text-slate-600 hover:text-slate-900 border border-transparent'
           }`}
         >
           <Grid className="w-3.5 h-3.5 shrink-0 text-amber-600" />
-          <span className="truncate">Auto-nivellement</span>
+          <span className="truncate">Nivellement</span>
           {grid.enabled && (
-            <span className="px-1 py-0.2 text-[9px] bg-emerald-600 text-white rounded font-mono">
+            <span className="px-1 py-0.2 text-[9px] bg-emerald-600 text-white rounded font-mono shrink-0">
               ON
             </span>
           )}
@@ -359,36 +362,36 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
 
       {/* ONGLET 1 : OVERRIDES TEMPS RÉEL & DIAGNOSTIC PINS */}
       {activeTab === 'overrides' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {/* Vitesse d'avance (Feed Override 10% - 200%) */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-blue-600" />
-                Vitesse d'avance (Feed)
+                <Activity className="w-3.5 h-3.5 text-sky-600" />
+                Avance (Feed)
               </span>
-              <div className="font-mono text-xs">
-                <span className="text-slate-600 mr-2">{status.feedRate} mm/min</span>
-                <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold">
+              <div className="font-mono text-xs flex items-center gap-1.5">
+                <span className="text-slate-500 tabular-nums">{status.feedRate} mm/min</span>
+                <span className="px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 font-bold tabular-nums">
                   {status.overrides.feed}%
                 </span>
               </div>
             </div>
 
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-150"
+                className="h-full bg-sky-600 transition-all duration-150"
                 style={{ width: `${Math.min(100, (status.overrides.feed / 200) * 100)}%` }}
               />
             </div>
 
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
               <button
                 type="button"
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x92)}
                 title="Octet GRBL 0x92 (-10%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 -10%
               </button>
@@ -397,7 +400,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x94)}
                 title="Octet GRBL 0x94 (-1%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 -1%
               </button>
@@ -406,7 +409,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x90)}
                 title="Octet GRBL 0x90 (Reset 100%)"
-                className="py-1.5 rounded bg-blue-50 hover:bg-blue-600 border border-blue-300 hover:border-blue-600 font-mono text-xs font-bold text-blue-700 hover:text-white cursor-pointer disabled:opacity-40"
+                className="py-1.5 bg-sky-50 hover:bg-sky-600 font-mono text-xs font-bold text-sky-700 hover:text-white cursor-pointer disabled:opacity-40 transition-colors"
               >
                 100%
               </button>
@@ -415,7 +418,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x93)}
                 title="Octet GRBL 0x93 (+1%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 +1%
               </button>
@@ -424,7 +427,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x91)}
                 title="Octet GRBL 0x91 (+10%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 +10%
               </button>
@@ -432,18 +435,16 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
           </div>
 
           {/* Déplacements Rapides (Rapid Override 25% / 50% / 100%) */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-600" />
-                Rapides (G0)
-              </div>
-              <div className="text-[11px] font-mono text-slate-600 mt-0.5">
-                Actuel : <strong className="text-amber-700">{status.overrides.rapid}%</strong>
-              </div>
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="text-xs font-bold text-slate-900">Rapides (G0)</span>
+              <span className="font-mono text-xs font-bold text-amber-700 tabular-nums">
+                {status.overrides.rapid}%
+              </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="inline-flex divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
               {[
                 { val: 25, byte: 0x97 },
                 { val: 50, byte: 0x96 },
@@ -455,10 +456,10 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   disabled={!status.connected}
                   onClick={() => sendRealtimeByte(byte)}
                   title={`Octet GRBL 0x${byte.toString(16).toUpperCase()} (${val}%)`}
-                  className={`px-3 py-1.5 rounded font-mono text-xs font-bold border transition-colors cursor-pointer disabled:opacity-40 ${
+                  className={`px-3 py-1 font-mono text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
                     status.overrides.rapid === val
-                      ? 'bg-amber-500 border-amber-600 text-white'
-                      : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                      ? 'bg-amber-500 text-white'
+                      : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   {val}%
@@ -468,31 +469,31 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
           </div>
 
           {/* Vitesse Broche (Spindle Override 10% - 200%) */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900">Vitesse Broche (Spindle)</span>
-              <div className="font-mono text-xs">
-                <span className="text-slate-600 mr-2">{status.spindleSpeed} RPM</span>
-                <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-900">Broche (Spindle)</span>
+              <div className="font-mono text-xs flex items-center gap-1.5">
+                <span className="text-slate-500 tabular-nums">{status.spindleSpeed} RPM</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold tabular-nums">
                   {status.overrides.spindle}%
                 </span>
               </div>
             </div>
 
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-600 transition-all duration-150"
                 style={{ width: `${Math.min(100, (status.overrides.spindle / 200) * 100)}%` }}
               />
             </div>
 
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
               <button
                 type="button"
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x9b)}
                 title="Octet GRBL 0x9B (-10%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 -10%
               </button>
@@ -501,7 +502,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x9d)}
                 title="Octet GRBL 0x9D (-1%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 -1%
               </button>
@@ -510,7 +511,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x99)}
                 title="Octet GRBL 0x99 (Reset 100%)"
-                className="py-1.5 rounded bg-emerald-50 hover:bg-emerald-600 border border-emerald-300 hover:border-emerald-600 font-mono text-xs font-bold text-emerald-700 hover:text-white cursor-pointer disabled:opacity-40"
+                className="py-1.5 bg-emerald-50 hover:bg-emerald-600 font-mono text-xs font-bold text-emerald-700 hover:text-white cursor-pointer disabled:opacity-40 transition-colors"
               >
                 100%
               </button>
@@ -519,7 +520,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x9c)}
                 title="Octet GRBL 0x9C (+1%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 +1%
               </button>
@@ -528,7 +529,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!status.connected}
                 onClick={() => sendRealtimeByte(0x9a)}
                 title="Octet GRBL 0x9A (+10%)"
-                className="py-1.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 font-mono text-xs font-bold text-slate-800 cursor-pointer disabled:opacity-40"
+                className="py-1.5 hover:bg-slate-100 font-mono text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-40"
               >
                 +10%
               </button>
@@ -536,35 +537,38 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
           </div>
 
           {/* État des Capteurs / Pins du CNC Shield V3.0 */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-slate-600" />
-              Capteurs CNC Shield V3.0 (Fins de course & Sonde)
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-slate-500" />
+              Capteurs Shield V3.0 (Fins de course & Sonde)
             </span>
 
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
               {[
-                { label: 'Lim X', active: status.pins.xLimit, alertColor: 'bg-red-600 border-red-700 text-white' },
-                { label: 'Lim Y', active: status.pins.yLimit, alertColor: 'bg-red-600 border-red-700 text-white' },
-                { label: 'Lim Z', active: status.pins.zLimit, alertColor: 'bg-red-600 border-red-700 text-white' },
-                {
-                  label: 'Probe',
-                  active: status.pins.probe,
-                  alertColor: 'bg-emerald-600 border-emerald-700 text-white',
-                },
-                { label: 'Hold', active: status.pins.hold, alertColor: 'bg-amber-600 border-amber-700 text-white' },
-                { label: 'Door', active: status.pins.door, alertColor: 'bg-orange-600 border-orange-700 text-white' },
+                { label: 'Lim X', active: status.pins.xLimit, dotColor: 'bg-red-500', alertColor: 'bg-red-600 border-red-700 text-white' },
+                { label: 'Lim Y', active: status.pins.yLimit, dotColor: 'bg-red-500', alertColor: 'bg-red-600 border-red-700 text-white' },
+                { label: 'Lim Z', active: status.pins.zLimit, dotColor: 'bg-red-500', alertColor: 'bg-red-600 border-red-700 text-white' },
+                { label: 'Probe', active: status.pins.probe, dotColor: 'bg-emerald-500', alertColor: 'bg-emerald-600 border-emerald-700 text-white' },
+                { label: 'Hold', active: status.pins.hold, dotColor: 'bg-amber-500', alertColor: 'bg-amber-600 border-amber-700 text-white' },
+                { label: 'Door', active: status.pins.door, dotColor: 'bg-orange-500', alertColor: 'bg-orange-600 border-orange-700 text-white' },
               ].map((pin) => (
                 <div
                   key={pin.label}
-                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded border font-mono text-xs font-bold ${
+                  className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-lg border font-mono text-[11px] font-bold ${
                     pin.active
                       ? pin.alertColor
-                      : 'bg-white border-slate-200 text-slate-500'
+                      : 'bg-white border-slate-200 text-slate-600'
                   }`}
                 >
-                  <span>{pin.label}</span>
-                  <span className="text-[9px] uppercase mt-0.5">
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        pin.active ? 'bg-white animate-ping' : 'bg-slate-300'
+                      }`}
+                    />
+                    <span>{pin.label}</span>
+                  </div>
+                  <span className="text-[9px] uppercase opacity-80 mt-0.5">
                     {pin.active ? 'ACTIF' : 'OK'}
                   </span>
                 </div>
@@ -576,99 +580,97 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
 
       {/* ONGLET 2 : PALPAGE Z & PALPAGE XY COMPLET (TOUCH PLATE) */}
       {activeTab === 'probe' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {/* Indicateur de contact sonde en direct */}
           <div
-            className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-bold ${
+            className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-bold ${
               status.pins.probe
-                ? 'bg-emerald-50 border-emerald-400 text-emerald-900'
-                : 'bg-slate-50 border-slate-200 text-slate-800'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                : 'bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
             <div className="flex items-center gap-2">
               {status.pins.probe ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-slate-500" />
+                <AlertCircle className="w-4 h-4 text-slate-400" />
               )}
-              <span>Sonde de Palpage (Pin A5 / SCL) :</span>
+              <span>Sonde (Pin A5 / SCL) :</span>
             </div>
             <span
-              className={`px-2 py-0.5 rounded font-mono text-[11px] ${
+              className={`px-2 py-0.5 rounded-md font-mono text-[11px] ${
                 status.pins.probe
                   ? 'bg-emerald-600 text-white font-bold'
-                  : 'bg-slate-200 text-slate-700'
+                  : 'bg-white border border-slate-200 text-slate-600'
               }`}
             >
               {status.pins.probe ? 'CONTACT DÉTECTÉ' : 'CIRCUIT OUVERT'}
             </span>
           </div>
 
-          {/* Sens de palpage X et Y (pour palpage X, Y, Coin XY et XYZ) */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+          {/* Sens de palpage X et Y */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Sens de Palpage des Bords X & Y
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* Direction X */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-slate-600">Direction Axe X :</span>
+                <span className="text-[10px] font-mono text-slate-500">Axe X :</span>
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     type="button"
                     onClick={() => updateProbe({ directionX: 1 })}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg border text-[11px] font-bold cursor-pointer ${
                       dirX === 1
-                        ? 'bg-red-50 border-red-400 text-red-800'
-                        : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-red-50 border-red-300 text-red-800'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <ArrowRight className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                    <span>Vers X+ (Bord Gauche)</span>
+                    <ArrowRight className="w-3 h-3 text-red-600 shrink-0" />
+                    <span>X+ (Gauche)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => updateProbe({ directionX: -1 })}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg border text-[11px] font-bold cursor-pointer ${
                       dirX === -1
-                        ? 'bg-red-50 border-red-400 text-red-800'
-                        : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-red-50 border-red-300 text-red-800'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <ArrowLeft className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                    <span>Vers X- (Bord Droit)</span>
+                    <ArrowLeft className="w-3 h-3 text-red-600 shrink-0" />
+                    <span>X- (Droit)</span>
                   </button>
                 </div>
               </div>
 
-              {/* Direction Y */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-slate-600">Direction Axe Y :</span>
+                <span className="text-[10px] font-mono text-slate-500">Axe Y :</span>
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     type="button"
                     onClick={() => updateProbe({ directionY: 1 })}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg border text-[11px] font-bold cursor-pointer ${
                       dirY === 1
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
-                        : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <ArrowUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Vers Y+ (Bord Avant)</span>
+                    <ArrowUp className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span>Y+ (Avant)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => updateProbe({ directionY: -1 })}
-                    className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded border text-[11px] font-bold cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg border text-[11px] font-bold cursor-pointer ${
                       dirY === -1
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
-                        : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <ArrowDown className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Vers Y- (Bord Arrière)</span>
+                    <ArrowDown className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span>Y- (Arrière)</span>
                   </button>
                 </div>
               </div>
@@ -676,23 +678,23 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
           </div>
 
           {/* Paramètres : Cale Z, Cale XY, Diamètre fraise, Course & Vitesses */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Dimensions Cale & Fraise
               </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => updateProbe({ plateThicknessZ: 19.0, plateThicknessXY: 10.0 })}
-                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[10px] font-mono text-slate-800 cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-mono text-slate-700 cursor-pointer"
                 >
-                  Bloc XYZ (Z=19 / XY=10)
+                  Bloc XYZ (19/10)
                 </button>
                 <button
                   type="button"
                   onClick={() => updateProbe({ plateThicknessZ: 1.6, plateThicknessXY: 0 })}
-                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-[10px] font-mono text-slate-800 cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-mono text-slate-700 cursor-pointer"
                 >
                   PCB 1.6mm
                 </button>
@@ -701,7 +703,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
                   Cale Z (mm)
                 </label>
                 <input
@@ -709,12 +711,12 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   step="0.05"
                   value={probe.plateThicknessZ}
                   onChange={(e) => updateProbe({ plateThicknessZ: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-sky-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
                   Cale XY (mm)
                 </label>
                 <input
@@ -724,12 +726,12 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   onChange={(e) =>
                     updateProbe({ plateThicknessXY: parseFloat(e.target.value) || 0 })
                   }
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
                   Ø Fraise (mm)
                 </label>
                 <input
@@ -739,15 +741,13 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   onChange={(e) =>
                     updateProbe({ toolDiameter: parseFloat(e.target.value) || 3.175 })
                   }
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-                  Course Max (mm)
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  Course Max
                 </label>
                 <input
                   type="number"
@@ -756,13 +756,13 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   onChange={(e) =>
                     updateProbe({ maxSearchDistance: parseFloat(e.target.value) || 25 })
                   }
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-                  Vitesse Rapide
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  Vit. Rapide
                 </label>
                 <input
                   type="number"
@@ -770,13 +770,13 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   onChange={(e) =>
                     updateProbe({ fastFeedRate: parseFloat(e.target.value) || 100 })
                   }
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">
-                  Vitesse Fine
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                  Vit. Fine
                 </label>
                 <input
                   type="number"
@@ -784,33 +784,28 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   onChange={(e) =>
                     updateProbe({ slowFeedRate: parseFloat(e.target.value) || 25 })
                   }
-                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 font-mono text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-900 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="text-[11px] font-mono text-slate-600 bg-white px-2.5 py-1.5 rounded border border-slate-200 flex items-center justify-between">
-              <span>Compensation XY (Cale XY + Rayon Ø/2) :</span>
+            <div className="text-[11px] font-mono text-slate-600 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 flex items-center justify-between">
+              <span>Compensation XY (Cale + Ø/2) :</span>
               <strong className="text-emerald-700">{totalOffsetXY} mm</strong>
             </div>
           </div>
 
-          {/* Boutons d'exécution directs : Palper Z, Palper X, Palper Y, Palper XY, Palper XYZ */}
+          {/* Boutons d'exécution directs */}
           <div className="flex flex-col gap-1.5">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              Lancer un cycle de palpage (G38.2)
-            </div>
-
-            {/* Ligne 1 : Palper Z / Palper X / Palper Y */}
             <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 disabled={!canProbe}
                 onClick={() => triggerProbeWithMode('Z')}
                 title="Palper uniquement le dessus de la pièce en Z-"
-                className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 border border-blue-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                <Play className="w-3 h-3 fill-current shrink-0" />
                 <span>Palper Z</span>
               </button>
 
@@ -819,10 +814,10 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!canProbe}
                 onClick={() => triggerProbeWithMode('X')}
                 title={`Palper uniquement le bord X (${dirX === 1 ? 'vers X+' : 'vers X-'})`}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg bg-red-600 hover:bg-red-700 border border-red-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>Palper X ({dirX === 1 ? 'X+' : 'X-'})</span>
+                <Play className="w-3 h-3 fill-current shrink-0" />
+                <span>X ({dirX === 1 ? 'X+' : 'X-'})</span>
               </button>
 
               <button
@@ -830,24 +825,23 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!canProbe}
                 onClick={() => triggerProbeWithMode('Y')}
                 title={`Palper uniquement le bord Y (${dirY === 1 ? 'vers Y+' : 'vers Y-'})`}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 border border-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>Palper Y ({dirY === 1 ? 'Y+' : 'Y-'})</span>
+                <Play className="w-3 h-3 fill-current shrink-0" />
+                <span>Y ({dirY === 1 ? 'Y+' : 'Y-'})</span>
               </button>
             </div>
 
-            {/* Ligne 2 : Palper Coin XY / Palper Complet XYZ */}
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 disabled={!canProbe}
                 onClick={() => triggerProbeWithMode('XY')}
                 title="Palper automatiquement le coin X puis Y avec compensation rayon fraise + cale XY"
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Crosshair className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Palper XY (Coin X+Y)</span>
+                <Crosshair className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Coin XY</span>
               </button>
 
               <button
@@ -855,7 +849,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 disabled={!canProbe}
                 onClick={() => triggerProbeWithMode('XYZ')}
                 title="Palpage complet automatique : Z puis X puis Y"
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 border border-amber-600 text-white font-extrabold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Play className="w-3.5 h-3.5 fill-current shrink-0" />
                 <span>Palper XYZ Complet</span>
@@ -867,134 +861,149 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
 
       {/* ONGLET 3 : BED LEVELING / HEIGHTMAP (AUTO-NIVELLEMENT) */}
       {activeTab === 'heightmap' && (
-        <div className="flex flex-col gap-3">
-          {/* Interrupteur Activer la compensation Z sur le G-Code */}
-          <div className="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 text-slate-800">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-600" />
-              <div>
+        <div className="flex flex-col gap-2.5">
+          {/* Switch Activer la compensation Z */}
+          <div className="flex items-center justify-between gap-3 bg-slate-50/80 px-3 py-2.5 rounded-xl border border-slate-200/80">
+            <div className="flex items-center gap-2 min-w-0">
+              <Layers className="w-4 h-4 text-amber-600 shrink-0" />
+              <div className="min-w-0">
                 <div className="text-xs font-bold text-slate-900">
-                  Activer la compensation Z sur le G-Code
+                  Compensation Z sur le G-Code
                 </div>
-                <div className="text-[10px] text-slate-500">
-                  Interpolation bilinéaire automatique lors de l'usinage
+                <div className="text-[10px] text-slate-500 truncate">
+                  Interpolation bilinéaire en temps réel
                 </div>
               </div>
             </div>
 
             <button
               type="button"
+              role="switch"
+              aria-checked={grid.enabled}
+              aria-label="Activer la compensation Z sur le G-Code"
               onClick={() => updateGrid({ enabled: !grid.enabled })}
-              className={`px-3 py-1 rounded font-mono text-xs font-bold border transition-colors cursor-pointer ${
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors cursor-pointer ${
                 grid.enabled
-                  ? 'bg-emerald-600 border-emerald-700 text-white'
-                  : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-emerald-600 border-emerald-700'
+                  : 'bg-slate-200 border-slate-300'
               }`}
             >
-              {grid.enabled ? 'ACTIF (ON)' : 'INACTIF'}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition-transform ${
+                  grid.enabled ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
 
-          {/* Paramétrage de la grille X/Y, Colonnes/Lignes, Z sécurité */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                Zone & Maillage de Palpage
+          {/* Paramétrage de la grille (2 colonnes lisibles) */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Zone & Maillage
               </span>
               <button
                 type="button"
                 disabled={!gcodeStats}
                 onClick={applyGCodeBounds}
-                className="flex items-center gap-1 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Maximize2 className="w-3 h-3" />
-                <span>Dimensions du G-Code chargé</span>
+                <Maximize2 className="w-3 h-3 text-sky-600" />
+                <span>Dimensions G-Code</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] text-slate-600 font-mono">X Min / Max</label>
-                <div className="flex gap-1 mt-0.5">
+                <label className="block text-[10px] text-slate-500 font-mono mb-0.5">X Min / Max</label>
+                <div className="flex gap-1">
                   <input
                     type="number"
+                    aria-label="X Minimum"
                     value={grid.minX}
                     onChange={(e) => updateGrid({ minX: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                   <input
                     type="number"
+                    aria-label="X Maximum"
                     value={grid.maxX}
                     onChange={(e) => updateGrid({ maxX: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-600 font-mono">Y Min / Max</label>
-                <div className="flex gap-1 mt-0.5">
+                <label className="block text-[10px] text-slate-500 font-mono mb-0.5">Y Min / Max</label>
+                <div className="flex gap-1">
                   <input
                     type="number"
+                    aria-label="Y Minimum"
                     value={grid.minY}
                     onChange={(e) => updateGrid({ minY: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                   <input
                     type="number"
+                    aria-label="Y Maximum"
                     value={grid.maxY}
                     onChange={(e) => updateGrid({ maxY: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-600 font-mono">Cols × Lignes</label>
-                <div className="flex gap-1 mt-0.5">
+                <label className="block text-[10px] text-slate-500 font-mono mb-0.5">Cols × Lignes</label>
+                <div className="flex gap-1">
                   <input
                     type="number"
+                    aria-label="Nombre de colonnes"
                     min={2}
                     max={10}
                     value={grid.cols}
                     onChange={(e) =>
                       updateGrid({ cols: Math.max(2, Math.min(10, Number(e.target.value) || 3)) })
                     }
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900 font-bold"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900 font-bold"
                   />
                   <input
                     type="number"
+                    aria-label="Nombre de lignes"
                     min={2}
                     max={10}
                     value={grid.rows}
                     onChange={(e) =>
                       updateGrid({ rows: Math.max(2, Math.min(10, Number(e.target.value) || 3)) })
                     }
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900 font-bold"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900 font-bold"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-600 font-mono">Z Séc. / Prof.</label>
-                <div className="flex gap-1 mt-0.5">
+                <label className="block text-[10px] text-slate-500 font-mono mb-0.5">Z Séc. / Prof.</label>
+                <div className="flex gap-1">
                   <input
                     type="number"
+                    aria-label="Z de sécurité"
                     value={grid.clearanceZ}
                     onChange={(e) => updateGrid({ clearanceZ: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                   <input
                     type="number"
+                    aria-label="Profondeur de palpage Z"
                     value={grid.probeDepthZ}
                     onChange={(e) => updateGrid({ probeDepthZ: Number(e.target.value) })}
-                    className="w-1/2 bg-white border border-slate-300 rounded px-1.5 py-1 font-mono text-xs text-slate-900"
+                    className="w-1/2 bg-white border border-slate-200 rounded-lg px-2 py-1 font-mono text-xs text-slate-900"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-1.5 pt-1">
               <button
                 type="button"
                 disabled={!status.connected}
@@ -1002,25 +1011,25 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                 className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-40"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Scanner le plateau</span>
+                <span>Scanner</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleGenerateDemo}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-semibold transition-colors cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                <span>Plateau de test (Démo)</span>
+                <span>Démo</span>
               </button>
             </div>
           </div>
 
-          {/* Tableau visuel coloré des cotes Z mesurées (mm) */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-800">
+          {/* Carte topographique Z */}
+          <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                Carte Topographique Z ({grid.cols}×{grid.rows} = {grid.points.length} points)
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Carte Z ({grid.cols}×{grid.rows} = {grid.points.length} pts)
               </span>
               <button
                 type="button"
@@ -1037,7 +1046,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                     enabled: false,
                   })
                 }
-                className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-slate-900 cursor-pointer"
+                className="flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-900 cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Réinitialiser</span>
@@ -1054,7 +1063,7 @@ export const OverridesAndToolsTabs: React.FC<OverridesAndToolsTabsProps> = ({
                   title={`Point (${pt.col}, ${pt.row}) | X=${pt.x} Y=${pt.y} | Z=${
                     pt.z !== null ? `${pt.z.toFixed(3)} mm` : 'Non mesuré'
                   }`}
-                  className={`p-1.5 rounded border text-center font-mono ${getZCellColor(pt.z)}`}
+                  className={`p-1 rounded-lg border text-center font-mono ${getZCellColor(pt.z)}`}
                 >
                   <div className="text-[11px] font-bold tabular-nums">
                     {pt.z !== null ? (pt.z >= 0 ? `+${pt.z.toFixed(3)}` : pt.z.toFixed(3)) : '---'}

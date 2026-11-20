@@ -2,8 +2,8 @@ import { Plus, Settings2, Trash2 } from "lucide-react";
 import type { LaserScanOffset, Point2 } from "../../utils/laserCam";
 import type { LaserJobAnchor, LaserJobPlacement } from "../../utils/laserJobPlacement";
 
-const field = "w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm";
-const button = "rounded-md border border-slate-300 bg-white px-2 py-1.5 font-semibold hover:bg-slate-100 disabled:opacity-40";
+const field = "w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm focus:border-sky-500 focus:outline-none";
+const button = "rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40";
 const anchors: { value: LaserJobAnchor; label: string }[] = [
   { value: "top-left", label: "Haut gauche" },
   { value: "top-center", label: "Haut centre" },
@@ -36,9 +36,9 @@ function NumericInput({ value, onChange, label, min }: {
 
 export function LaserMachineSettings({ placement, onPlacement, scanOffsets, onScanOffsets, disabled }: Props) {
   return (
-    <fieldset disabled={disabled} className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm disabled:opacity-60">
-      <h2 className="flex items-center gap-2 text-sm font-bold"><Settings2 size={16} /> Compensations machine</h2>
-      <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-3">
+    <fieldset disabled={disabled} className="space-y-3.5 rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] disabled:opacity-60">
+      <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600"><Settings2 size={15} className="text-sky-600" /> Compensations machine</h2>
+      <div className="grid grid-cols-2 gap-2 border-t border-slate-200/80 pt-3">
         {(["x", "y"] as const).map(axis => <label key={axis} className="space-y-1 text-xs">
           <span>Offset {axis.toUpperCase()} (mm)</span>
           <NumericInput label={`Offset ${axis.toUpperCase()} (mm)`} value={placement.offset[axis]}

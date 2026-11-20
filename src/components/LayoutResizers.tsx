@@ -8,9 +8,9 @@ export interface LayoutSizes {
 }
 
 export const DEFAULT_LAYOUT: LayoutSizes = {
-  leftWidth: 340,
-  rightWidth: 430,
-  centerTopPercent: 50,
+  leftWidth: 345,
+  rightWidth: 400,
+  centerTopPercent: 55,
   rightTopPercent: 52,
 };
 
@@ -183,7 +183,7 @@ export function useLayoutResizer(containerRef: React.RefObject<HTMLElement | nul
 }
 
 /**
- * Séparateur vertical entre colonnes avec poignée et retour visuel au survol
+ * Séparateur vertical entre colonnes avec filet discret et barre de saisie au survol
  */
 export const VerticalSplitter: React.FC<{
   onPointerDown: (e: React.PointerEvent) => void;
@@ -196,47 +196,26 @@ export const VerticalSplitter: React.FC<{
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
       title={title}
-      className={`cnc-splitter w-2.5 shrink-0 -mx-0.5 cursor-col-resize group relative items-center justify-center select-none z-20 transition-colors ${
-        isActive ? 'bg-sky-100' : 'hover:bg-slate-200/80'
-      }`}
+      className="cnc-splitter w-2 shrink-0 cursor-col-resize group relative items-center justify-center select-none z-20"
     >
-      {/* Ligne centrale */}
       <div
-        className={`w-[2px] h-full transition-colors ${
-          isActive ? 'bg-sky-600' : 'bg-slate-300 group-hover:bg-sky-500'
+        className={`w-[2px] h-full rounded-full transition-colors ${
+          isActive ? 'bg-sky-500' : 'bg-slate-200/80 group-hover:bg-sky-400'
         }`}
       />
-
-      {/* Poignée de saisie avec 3 petits points verticaux */}
       <div
-        className={`absolute top-1/2 -translate-y-1/2 flex flex-col gap-1 px-0.5 py-2 rounded-full border transition-all ${
+        className={`absolute top-1/2 -translate-y-1/2 w-1 h-8 rounded-full transition-opacity pointer-events-none ${
           isActive
-            ? 'bg-sky-600 border-sky-700 shadow-sm'
-            : 'bg-white border-slate-300 group-hover:border-sky-400 group-hover:bg-sky-50'
+            ? 'bg-sky-600 opacity-100'
+            : 'bg-sky-500 opacity-0 group-hover:opacity-100'
         }`}
-      >
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-      </div>
+      />
     </div>
   );
 };
 
 /**
- * Séparateur horizontal entre panneaux avec poignée et retour visuel au survol
+ * Séparateur horizontal entre panneaux avec filet discret et barre de saisie au survol
  */
 export const HorizontalSplitter: React.FC<{
   onPointerDown: (e: React.PointerEvent) => void;
@@ -249,41 +228,20 @@ export const HorizontalSplitter: React.FC<{
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
       title={title}
-      className={`cnc-splitter h-2.5 shrink-0 -my-0.5 cursor-row-resize group relative items-center justify-center select-none z-20 transition-colors ${
-        isActive ? 'bg-sky-100' : 'hover:bg-slate-200/80'
-      }`}
+      className="cnc-splitter h-2 shrink-0 cursor-row-resize group relative items-center justify-center select-none z-20"
     >
-      {/* Ligne centrale */}
       <div
-        className={`h-[2px] w-full transition-colors ${
-          isActive ? 'bg-sky-600' : 'bg-slate-300 group-hover:bg-sky-500'
+        className={`h-[2px] w-full rounded-full transition-colors ${
+          isActive ? 'bg-sky-500' : 'bg-slate-200/80 group-hover:bg-sky-400'
         }`}
       />
-
-      {/* Poignée de saisie avec 3 petits points horizontaux */}
       <div
-        className={`absolute left-1/2 -translate-x-1/2 flex flex-row gap-1 py-0.5 px-2 rounded-full border transition-all ${
+        className={`absolute left-1/2 -translate-x-1/2 h-1 w-8 rounded-full transition-opacity pointer-events-none ${
           isActive
-            ? 'bg-sky-600 border-sky-700 shadow-sm'
-            : 'bg-white border-slate-300 group-hover:border-sky-400 group-hover:bg-sky-50'
+            ? 'bg-sky-600 opacity-100'
+            : 'bg-sky-500 opacity-0 group-hover:opacity-100'
         }`}
-      >
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-        <span
-          className={`w-1 h-1 rounded-full ${
-            isActive ? 'bg-white' : 'bg-slate-400 group-hover:bg-sky-600'
-          }`}
-        />
-      </div>
+      />
     </div>
   );
 };

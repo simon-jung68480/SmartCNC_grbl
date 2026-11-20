@@ -205,7 +205,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const height = container.clientHeight || 500;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#eef2f6');
+    scene.background = new THREE.Color('#f4f7fa');
     sceneRef.current = scene;
 
     // Caméra Z-Up (standard CNC : X droite, Y profondeur, Z hauteur)
@@ -1084,168 +1084,169 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   }, [stats?.fileName, stats?.totalLines]);
 
   return (
-    <div className="relative w-full h-full min-h-0 bg-[#eef2f6] rounded-lg overflow-hidden border border-slate-300 shadow-sm select-none flex flex-col">
+    <div className="relative w-full h-full min-h-0 bg-[#f4f7fa] rounded-xl overflow-hidden border border-slate-200/90 shadow-[0_1px_2px_rgba(15,23,42,0.04)] select-none flex flex-col">
       {/* Canvas 3D Three.js */}
       <div ref={containerRef} className="w-full h-full flex-1 cursor-grab active:cursor-grabbing" />
 
-      {/* Barre d'outils et légende flottantes supérieures en Mode Clair */}
-      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 pointer-events-none z-10">
-        <div className="flex flex-wrap items-center justify-between gap-1.5">
-          {/* Vues caméra */}
-          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setViewPreset('iso')}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue 3D Isométrique"
-            >
-              <Compass className="w-3.5 h-3.5 text-slate-600" />
-              <span>3D Iso</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('xy')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Dessus (Plan XY)"
-            >
-              XY
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('xz')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Face (Plan XZ)"
-            >
-              XZ
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewPreset('yz')}
-              className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Vue de Côté (Plan YZ)"
-            >
-              YZ
-            </button>
-            <div className="h-4 w-px bg-slate-300 mx-0.5" />
-            <button
-              type="button"
-              onClick={() => setViewPreset('center')}
-              className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded transition-colors"
-              title="Centrer la caméra sur la pièce"
-            >
-              <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
-              <span>Centrer</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFollowTool((v) => !v)}
-              className={`flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                followTool
-                  ? 'bg-sky-600 border-sky-700 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Verrouiller la caméra sur la fraise en temps réel"
-            >
-              <Crosshair className="w-3.5 h-3.5" />
-              <span>{laserBeamWidth === undefined ? 'Suivre Fraise' : 'Suivre la tête laser'}</span>
-            </button>
-          </div>
+      {/* Barre d'outils flottante unique et épurée */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+        {/* Vues caméra */}
+        <div className="flex flex-wrap items-center gap-0.5 bg-white/90 backdrop-blur-sm border border-slate-200/90 text-slate-800 shadow-sm rounded-xl p-1 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setViewPreset('iso')}
+            className="flex items-center gap-1 px-2 py-1 text-xs font-semibold hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title="Vue 3D Isométrique"
+          >
+            <Compass className="w-3.5 h-3.5 text-slate-500" />
+            <span>Iso</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('xy')}
+            className="px-2 py-1 text-xs font-semibold hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Dessus (Plan XY)"
+          >
+            XY
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('xz')}
+            className="px-2 py-1 text-xs font-semibold hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Face (Plan XZ)"
+          >
+            XZ
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewPreset('yz')}
+            className="px-2 py-1 text-xs font-semibold hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title="Vue de Côté (Plan YZ)"
+          >
+            YZ
+          </button>
+          <div className="h-4 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => setViewPreset('center')}
+            className="flex items-center gap-1 px-2 py-1 text-xs font-semibold hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+            title="Centrer la caméra sur la pièce"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-slate-500" />
+            <span>Centrer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFollowTool((v) => !v)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              followTool
+                ? 'bg-sky-600 text-white'
+                : 'hover:bg-slate-100 text-slate-700'
+            }`}
+            title={laserBeamWidth === undefined ? 'Verrouiller la caméra sur la fraise en temps réel' : 'Verrouiller la caméra sur la tête laser en temps réel'}
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+            <span>Suivre</span>
+          </button>
+        </div>
 
-          {/* Toggles d'affichage */}
-          <div className="flex flex-wrap items-center gap-1 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md p-1 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setShowRapids((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showRapids
-                  ? 'bg-orange-50 text-orange-700 border-orange-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer les déplacements rapides G0 (pointillés)"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>G0 Rapides</span>
-            </button>
+        {/* Toggles de couches & cadrage */}
+        <div className="flex flex-wrap items-center gap-1 bg-white/90 backdrop-blur-sm border border-slate-200/90 text-slate-800 shadow-sm rounded-xl p-1 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setShowRapids((v) => !v)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showRapids
+                ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                : 'hover:bg-slate-100 text-slate-600 border border-transparent'
+            }`}
+            title="Afficher / Masquer les déplacements rapides G0 (pointillés)"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>G0</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setShowBoundingBox((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showBoundingBox
-                  ? 'bg-sky-50 text-sky-800 border-sky-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer la boîte englobante cotée"
-            >
-              <Box className="w-3.5 h-3.5" />
-              <span>Dimensions</span>
-            </button>
+          <button
+            type="button"
+            onClick={() => setShowBoundingBox((v) => !v)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showBoundingBox
+                ? 'bg-sky-50 text-sky-800 border border-sky-200'
+                : 'hover:bg-slate-100 text-slate-600 border border-transparent'
+            }`}
+            title="Afficher / Masquer la boîte englobante cotée"
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Cotes</span>
+          </button>
 
-            {onOpenFraming && (
+          <button
+            type="button"
+            onClick={() => setShowHeightmap((v) => !v)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showHeightmap
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'hover:bg-slate-100 text-slate-600 border border-transparent'
+            }`}
+            title="Afficher / Masquer le maillage 3D Heightmap"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Heightmap</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowMachineGrid((v) => !v)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              showMachineGrid
+                ? 'bg-slate-200/80 text-slate-900 border border-slate-300'
+                : 'hover:bg-slate-100 text-slate-600 border border-transparent'
+            }`}
+            title="Afficher / Masquer le plateau et la grille machine"
+          >
+            <Grid className="w-3.5 h-3.5" />
+            <span>Grille</span>
+          </button>
+
+          {onOpenFraming && (
+            <>
+              <div className="h-4 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
               <button
                 type="button"
                 onClick={onOpenFraming}
                 disabled={!status.connected || status.state === 'Run'}
-                className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300 disabled:opacity-40"
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-colors bg-sky-600 hover:bg-sky-700 text-white disabled:opacity-40 cursor-pointer"
                 title="Ouvrir l'assistant de traçage de cadre (Framing)"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+                <Maximize2 className="w-3.5 h-3.5" />
                 <span>Cadrer</span>
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setShowHeightmap((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showHeightmap
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer le maillage 3D Heightmap"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Heightmap</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowMachineGrid((v) => !v)}
-              className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded transition-colors ${
-                showMachineGrid
-                  ? 'bg-slate-200 text-slate-900 border-slate-400'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-              title="Afficher / Masquer le plateau et la grille machine"
-            >
-              <Grid className="w-3.5 h-3.5" />
-              <span>Grille</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Légende compacte des couleurs en flux naturel sous les barres d'outils (anti-superposition) */}
-        <div className="self-start flex flex-wrap items-center gap-3 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded px-2.5 py-1 text-[11px] pointer-events-auto">
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 border-b-2 border-dashed border-orange-600 inline-block" />
-            G0 Rapide (Pointillés)
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 h-0.5 bg-sky-600 inline-block" />
-            {laserBeamWidth === undefined ? 'Coupe G1/G2/G3' : 'Parcours laser'}
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 h-0.5 bg-green-600 inline-block" />
-            {laserBeamWidth === undefined ? 'Exécuté' : 'Gravure effectuée'}
-          </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Bandeau télémétrique compact en bas du viewport */}
-      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-white/95 border border-slate-300 text-slate-800 shadow-sm rounded-md px-3 py-1.5 text-xs pointer-events-none">
-        <div className="flex flex-wrap items-center gap-4">
+      {/* Bandeau télémétrique & légende intégrée en bas du viewport */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-white/90 backdrop-blur-sm border border-slate-200/90 text-slate-800 shadow-sm rounded-xl px-3 py-1.5 text-xs pointer-events-none">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Légende compacte intégrée */}
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-600 pr-2 border-r border-slate-200">
+            <span className="flex items-center gap-1 font-medium" title="Déplacements rapides G0">
+              <span className="w-2.5 border-b-2 border-dashed border-orange-600 inline-block" />
+              G0
+            </span>
+            <span className="flex items-center gap-1 font-medium">
+              <span className="w-2.5 h-0.5 bg-sky-600 inline-block rounded-full" />
+              {laserBeamWidth === undefined ? 'Coupe' : 'Laser'}
+            </span>
+            <span className="flex items-center gap-1 font-medium">
+              <span className="w-2.5 h-0.5 bg-green-600 inline-block rounded-full" />
+              {laserBeamWidth === undefined ? 'Exécuté' : 'Gravé'}
+            </span>
+          </div>
+
           <div className="flex items-center gap-1.5">
-            <Ruler className="w-3.5 h-3.5 text-slate-500" />
+            <Ruler className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-500">Pièce :</span>
             <span className="font-mono font-semibold text-slate-900">
               {stats
@@ -1255,7 +1256,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-slate-500" />
+            <Activity className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-500">Parcours :</span>
             <span className="font-mono font-semibold text-slate-900">
               {stats ? `${stats.totalDistanceMm.toFixed(0)} mm` : '0 mm'}
@@ -1268,7 +1269,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-500">Durée :</span>
             <span className="font-mono font-semibold text-slate-900">
               {stats ? formatDuration(stats.estimatedTimeSec) : '0s'}
@@ -1276,7 +1277,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
           </div>
 
           {heightmap?.enabled && (
-            <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
+            <div className="flex items-center gap-1 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
               <Layers className="w-3 h-3 text-emerald-600" />
               <span className="text-[11px] font-semibold">Heightmap Active</span>
             </div>
@@ -1284,17 +1285,11 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
         </div>
 
         {/* Position actuelle de l'outil (WPos) */}
-        <div className="flex items-center gap-2 font-mono text-xs bg-slate-100 border border-slate-300 px-2.5 py-1 rounded">
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-red-600 font-bold">
-            X:{status.wpos.x.toFixed(2)}
-          </span>
-          <span className="text-emerald-700 font-bold">
-            Y:{status.wpos.y.toFixed(2)}
-          </span>
-          <span className="text-blue-700 font-bold">
-            Z:{status.wpos.z.toFixed(2)}
-          </span>
+        <div className="flex items-center gap-2 font-mono text-xs bg-slate-100/90 border border-slate-200 px-2.5 py-0.5 rounded-lg tabular-nums">
+          <Eye className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-red-600 font-bold">X:{status.wpos.x.toFixed(2)}</span>
+          <span className="text-emerald-700 font-bold">Y:{status.wpos.y.toFixed(2)}</span>
+          <span className="text-blue-700 font-bold">Z:{status.wpos.z.toFixed(2)}</span>
         </div>
       </div>
     </div>

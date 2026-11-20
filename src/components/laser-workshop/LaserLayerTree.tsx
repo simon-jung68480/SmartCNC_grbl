@@ -27,8 +27,8 @@ const operations = {
   'fill-and-contours': ['fill', 'contours'],
 } as const;
 
-const action = 'inline-flex min-h-8 min-w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-sky-600 disabled:opacity-35';
-const trigger = 'inline-flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200/60 focus-visible:outline-2 focus-visible:outline-sky-600';
+const action = 'inline-flex min-h-7 min-w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-sky-600 disabled:opacity-35 cursor-pointer transition-colors';
+const trigger = 'inline-flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200/60 focus-visible:outline-2 focus-visible:outline-sky-600 cursor-pointer';
 const format = new Intl.NumberFormat('fr-CH', { maximumFractionDigits: 2 });
 
 export function LaserLayerTree({ objects, selectedId, disabled, onSelect, onToggle, onToggleVisibility, onDuplicate, onRemove, onMove, onSelectOperation, onRename, onEdit, colorName }: Props) {
@@ -39,8 +39,8 @@ export function LaserLayerTree({ objects, selectedId, disabled, onSelect, onTogg
   const selected = objects.find(object => object.id === selectedId);
 
   return (
-    <section aria-label="Calques et ordre de gravure" className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 p-3">
+    <section aria-label="Calques et ordre de gravure" className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 px-3 py-2.5 bg-slate-50/60">
         <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800"><Layers size={16} aria-hidden="true" /> Calques</h2>
         {selected && (
           <div role="group" aria-label={`Actions pour ${selected.name}`} className="flex flex-wrap gap-1">

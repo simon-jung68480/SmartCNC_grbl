@@ -80,7 +80,10 @@ const layerColors = [
 ];
 const layerColorName = (color: string) => layerColors.find(entry => entry.hex === color.toLowerCase())?.name ?? color;
 const tabClass = (selected: boolean) =>
-  "rounded-md px-3 py-2 text-xs font-semibold disabled:opacity-40 " + (selected ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100");
+  "rounded-md px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 " +
+  (selected
+    ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80"
+    : "text-slate-600 hover:text-slate-900 border border-transparent");
 const initialPlacement: Placement = {
   width: 50,
   height: 50,
@@ -577,7 +580,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                   <Settings2 size={17} />
                   Réglages de gravure
                 </h2>
-                {combinedOperation && <div className="mb-3 flex gap-1" role="group" aria-label="Opération du calque">
+                {combinedOperation && <div className="mb-3 inline-flex gap-1 rounded-lg bg-slate-100 p-1 border border-slate-200" role="group" aria-label="Opération du calque">
                   <button type="button" className={tabClass(!editingContours)} aria-pressed={!editingContours} onClick={() => setSelectedOperation("fill")}>Remplissage</button>
                   <button type="button" className={tabClass(editingContours)} aria-pressed={editingContours} onClick={() => setSelectedOperation("contours")}>Contour</button>
                 </div>}
@@ -820,9 +823,9 @@ export const LaserWorkshop: React.FC<Props> = ({
     workCoordinateSystem={status.activeWCS} changeFocus={changeFocus} />;
 
   return (
-    <main className="flex-1 min-h-0 overflow-auto bg-slate-100 text-slate-800">
+    <main className="flex-1 min-h-0 overflow-auto bg-[#f1f5f9] text-slate-800">
       {layerDialogOpen && selectedLayer && <LaserLayerDialog name={selectedLayer.name} focusSettings={focusSettings} onClose={() => setLayerDialogOpen(false)}>
-        {selectedGroupSize > 1 && <p className="rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-900">Ces réglages s’appliquent aux {selectedGroupSize} objets du calque {layerColorName(selectedLayer.color!)}.</p>}
+        {selectedGroupSize > 1 && <p className="rounded-xl bg-sky-50 border border-sky-200 px-3 py-2 text-xs text-sky-900">Ces réglages s’appliquent aux {selectedGroupSize} objets du calque {layerColorName(selectedLayer.color!)}.</p>}
         {operationSettings}
       </LaserLayerDialog>}
       {presetLibraryOpen && <LaserPresetLibrary presets={presets} disabled={busy || working}
@@ -832,20 +835,100 @@ export const LaserWorkshop: React.FC<Props> = ({
           if (!selectedLayer || busy || working) return;
           editLayer(selectedLayer.id, layer => applyLaserLayerSettings(layer, settings));
         }} />}
-      <div className="max-w-[1700px] mx-auto p-3 md:p-5 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-3 items-center">
-            <div className="rounded-xl bg-amber-500 p-2.5 text-white">
-              <Flame size={25} />
-            </div>
-            <div>
-              <h1 className="font-bold text-xl">Atelier laser</h1>
-              <p className="text-xs text-slate-500">{source.kind === "vector" ? `${documentObjects.length} calque${documentObjects.length === 1 ? "" : "s"}` : source.name} · {status.activeWCS}</p>
-            </div>
+      <div className="max-w-[1700px] mx-auto p-2.5 md:p-3.5 space-y-3">
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-800"
+          >
+            {error}
           </div>
-          <div className="flex gap-2 items-center">
+        )}
+        {/* Barre d'outils laser unifiée (fichiers + statut $32 + sélecteur Dessin/Aperçu) */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/90 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+          role="group"
+          aria-label="Barre d’outils laser"
+        >
+          <input
+            ref={uploadRef}
+            className="hidden"
+            type="file"
+            multiple
+            accept=".svg,.dxf,.png,.jpg,.jpeg,.webp,.bmp,.nc,.gcode,.gc,.tap,.txt"
+            disabled={busy || working}
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = "";
+              if (files.length) void importFiles(files);
+            }}
+          />
+          <input
+            ref={projectUploadRef}
+            type="file"
+            accept=".smartlaser.json,.json"
+            className="hidden"
+            disabled={busy || working}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void openProject(file);
+            }}
+          />
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div
+              className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0"
+              title="Atelier laser"
+            >
+              <Flame size={16} />
+            </div>
+            <button type="button" className={button} disabled={busy || working} onClick={newDrawing}>
+              <FilePlus2 size={14} /> Nouveau
+            </button>
+            <button type="button" className={button} disabled={busy || working} onClick={() => projectUploadRef.current?.click()}>
+              <FolderOpen size={14} /> Ouvrir projet
+            </button>
+            <button type="button" className={button} disabled={busy || working || !documentObjects.length} onClick={saveProject}>
+              <Save size={14} /> Enregistrer
+            </button>
+            <button type="button" className={button} disabled={busy || working} title="SVG, DXF, image ou G-code" onClick={() => uploadRef.current?.click()}>
+              <FileUp size={14} /> Importer
+            </button>
+            <button type="button" className={button} onClick={() => setPresetLibraryOpen(true)}>
+              <BookOpen size={14} /> Préréglages
+            </button>
+            {source.kind !== "vector" && !!savedVector?.objects.length && (
+              <button
+                type="button"
+                className={button}
+                disabled={busy || working}
+                onClick={() => {
+                  loadObject(savedVector.objects, savedVector.selectedId);
+                  setProgram(null);
+                  setWorkspaceView("design");
+                  setInspector("operation");
+                }}
+              >
+                Revenir au dessin
+              </button>
+            )}
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="hidden xl:inline text-[11px] font-mono text-slate-500">
+              {source.kind === "vector"
+                ? `${documentObjects.length} calque${documentObjects.length === 1 ? "" : "s"}`
+                : source.name}{" "}
+              · {status.activeWCS}
+            </span>
+
             <span
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full ${laserMode === 1 ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
+                laserMode === 1
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-amber-50 border-amber-200 text-amber-900"
+              }`}
             >
               GRBL $32{" "}
               {laserMode === undefined
@@ -854,55 +937,52 @@ export const LaserWorkshop: React.FC<Props> = ({
                   ? "activé"
                   : "désactivé"}
             </span>
+
             <button
+              type="button"
               className={button}
               disabled={!status.connected || busy}
               onClick={onRefreshSettings}
+              title="Lire les paramètres GRBL"
             >
               <RotateCcw size={13} />
-              Lire GRBL
+              <span>Lire GRBL</span>
             </button>
-          </div>
-        </div>
-        {error && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800"
-          >
-            {error}
-          </div>
-        )}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm" role="group" aria-label="Barre d’outils laser">
-              <input
-                ref={uploadRef}
-                className="hidden"
-                type="file"
-                multiple
-                accept=".svg,.dxf,.png,.jpg,.jpeg,.webp,.bmp,.nc,.gcode,.gc,.tap,.txt"
-                disabled={busy || working}
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  e.target.value = "";
-                  if (files.length) void importFiles(files);
+
+            <div className="h-5 w-px bg-slate-200 hidden sm:block" aria-hidden="true" />
+
+            <div className="inline-flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              {source.kind === "vector" && (
+                <button
+                  type="button"
+                  className={tabClass(workspaceView === "design")}
+                  aria-pressed={workspaceView === "design"}
+                  onClick={() => setWorkspaceView("design")}
+                >
+                  Dessin
+                </button>
+              )}
+              <button
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
+                  workspaceView === "preview" && !!program
+                    ? "bg-sky-600 text-white shadow-2xs"
+                    : "bg-sky-700 hover:bg-sky-800 text-white"
+                }`}
+                aria-pressed={workspaceView === "preview" && !!program}
+                disabled={
+                  working ||
+                  ((!program || stale) &&
+                    (busy || (source.kind === "vector" && !documentObjects.some((object) => object.enabled))))
+                }
+                onClick={() => {
+                  if (source.kind === "gcode" || (program && !stale)) setWorkspaceView("preview");
+                  else void generate();
                 }}
-              />
-              <input ref={projectUploadRef} type="file" accept=".smartlaser.json,.json" className="hidden" disabled={busy || working} onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void openProject(file); }} />
-          <button type="button" className={button} disabled={busy || working} onClick={newDrawing}><FilePlus2 size={16} /> Nouveau</button>
-          <button type="button" className={button} disabled={busy || working} onClick={() => projectUploadRef.current?.click()}><FolderOpen size={16} /> Ouvrir projet</button>
-          <button type="button" className={button} disabled={busy || working || !documentObjects.length} onClick={saveProject}><Save size={16} /> Enregistrer</button>
-          <button type="button" className={button} disabled={busy || working} title="SVG, DXF, image ou G-code" onClick={() => uploadRef.current?.click()}><FileUp size={16} /> Importer</button>
-          <button type="button" className={button} onClick={() => setPresetLibraryOpen(true)}><BookOpen size={16} /> Préréglages</button>
-          {source.kind !== "vector" && !!savedVector?.objects.length && <button type="button" className={button} disabled={busy || working}
-            onClick={() => { loadObject(savedVector.objects, savedVector.selectedId); setProgram(null); setWorkspaceView("design"); setInspector("operation"); }}>Revenir au dessin</button>}
-          <div className="ml-auto flex flex-wrap gap-1">
-            {source.kind === "vector" && <button type="button" className={tabClass(workspaceView === "design")} aria-pressed={workspaceView === "design"} onClick={() => setWorkspaceView("design")}>Dessin</button>}
-            <button type="button"
-              className="inline-flex items-center gap-2 rounded-md bg-sky-700 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-40"
-              aria-pressed={workspaceView === "preview" && !!program}
-              disabled={working || ((!program || stale) && (busy || (source.kind === "vector" && !documentObjects.some(object => object.enabled))))}
-              onClick={() => { if (source.kind === "gcode" || (program && !stale)) setWorkspaceView("preview"); else void generate(); }}>
-              <Play size={14} /> {working ? "Traitement…" : "Aperçu du parcours"}
-            </button>
+              >
+                <Play size={13} /> {working ? "Traitement…" : "Aperçu du parcours"}
+              </button>
+            </div>
           </div>
         </div>
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
@@ -1033,10 +1113,10 @@ export const LaserWorkshop: React.FC<Props> = ({
               onRemove={removeObject}
             />}
             </div>
-            {source.kind === "vector" && workspaceView === "design" && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2" role="group" aria-label="Couleur du calque">
+            {source.kind === "vector" && workspaceView === "design" && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" role="group" aria-label="Couleur du calque">
               <span className="mr-1 text-xs font-semibold text-slate-600">Couleur du calque</span>
               {layerColors.map(({ hex, name }) => <button key={hex} type="button" title={name} aria-label={name}
-                className="size-6 rounded-md border border-black/10 aria-pressed:ring-2 aria-pressed:ring-slate-700 aria-pressed:ring-offset-2 disabled:opacity-40"
+                className="size-6 rounded-md border border-black/10 aria-pressed:ring-2 aria-pressed:ring-slate-700 aria-pressed:ring-offset-2 disabled:opacity-40 cursor-pointer"
                 style={{ backgroundColor: hex }} aria-pressed={selectedLayer?.color?.toLowerCase() === hex && !selectedLayer.isolatedColor}
                 disabled={!selectedLayer || busy || working} onClick={() => {
                   if (selectedLayer) editLayer(selectedLayer.id, object => assignLaserLayerColor(object, hex, documentObjects));
@@ -1128,14 +1208,14 @@ export const LaserWorkshop: React.FC<Props> = ({
               </section>
             )}
           </div>
-          <div className="space-y-4 min-w-0">
-            <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-white p-1" role="group" aria-label="Panneaux laser">
+          <div className="space-y-3 min-w-0">
+            <div className="grid grid-cols-4 gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1" role="group" aria-label="Panneaux laser">
               <button type="button" className={tabClass(inspector === "operation")} aria-pressed={inspector === "operation"} onClick={() => setInspector("operation")}>Calques</button>
               <button type="button" className={tabClass(inspector === "motion")} aria-pressed={inspector === "motion"} onClick={() => setInspector("motion")}>Déplacer</button>
               <button type="button" className={tabClass(inspector === "machine")} aria-pressed={inspector === "machine"} onClick={() => setInspector("machine")}>Machine</button>
               <button type="button" className={tabClass(inspector === "library")} aria-pressed={inspector === "library"} onClick={() => setInspector("library")}>Tests</button>
             </div>
-            <div className="space-y-2 lg:max-h-[35vh] lg:overflow-y-auto lg:p-0.5">
+            <div className="space-y-2 lg:max-h-[38vh] lg:overflow-y-auto lg:p-0.5">
               <div className="space-y-2" hidden={inspector !== "operation"}>
             {source.kind === "vector" && <LaserLayerTree
               objects={documentObjects}

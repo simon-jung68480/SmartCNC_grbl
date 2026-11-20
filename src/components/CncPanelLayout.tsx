@@ -94,31 +94,31 @@ export function CncLayoutDialog({ layout, onChange, onReset, onClose }: LayoutDi
     onChange({ ...layout, [column]: items });
   }
 
-  const iconButton = "rounded border border-slate-300 p-1 hover:bg-slate-100 disabled:opacity-30";
+  const iconButton = "rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30 cursor-pointer transition-colors";
   return <dialog ref={dialog} onCancel={event => { event.preventDefault(); onClose(); }}
     aria-labelledby="cnc-layout-title"
-    className="m-auto w-[calc(100%-1rem)] max-w-4xl max-h-[calc(100%-1rem)] overflow-auto rounded-xl border border-slate-300 bg-white p-4 text-slate-900 shadow-xl backdrop:bg-slate-900/50">
-    <div className="flex items-center justify-between gap-2">
+    className="m-auto w-[calc(100%-1rem)] max-w-4xl max-h-[calc(100%-1rem)] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl backdrop:bg-slate-900/45">
+    <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200">
       <h2 id="cnc-layout-title" className="text-base font-bold">Disposition de l’atelier CNC</h2>
       <button type="button" className={iconButton} aria-label="Fermer la disposition" onClick={onClose}><X size={18}/></button>
     </div>
     <p className="my-3 text-xs text-slate-600">Glissez les panneaux entre les colonnes ou utilisez les menus et les flèches. Décochez un panneau pour le masquer.</p>
-    <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))]">
-      {columns.map(({ id, label }) => <section key={id} className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-2"
+    <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))]">
+      {columns.map(({ id, label }) => <section key={id} className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5"
         onDragOver={event => { if (dragged) event.preventDefault(); }} onDrop={event => drop(event, id)}>
-        <h3 className="mb-2 text-xs font-bold">{label}</h3>
+        <h3 className="mb-2 text-xs font-bold text-slate-700 px-1">{label}</h3>
         {layout[id].map((panel, index) => <div key={panel}
-          className="mb-1 flex flex-wrap items-center gap-1 rounded border border-slate-200 bg-white p-1.5 text-xs"
+          className="mb-1.5 flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-white p-2 text-xs shadow-2xs"
           onDrop={event => drop(event, id, panel)}>
-          <span draggable className="cursor-grab text-slate-500" title={`Glisser ${panelLabels[panel]}`}
+          <span draggable className="cursor-grab text-slate-400 hover:text-slate-700" title={`Glisser ${panelLabels[panel]}`}
             onDragStart={event => { event.dataTransfer.setData("text/plain", panel); event.dataTransfer.effectAllowed = "move"; setDragged(panel); }}
             onDragEnd={() => setDragged(null)}><GripVertical size={16}/></span>
-          <label className="flex flex-1 items-center gap-1 whitespace-nowrap">
-            <input type="checkbox" checked={!layout.hidden.includes(panel)}
+          <label className="flex flex-1 items-center gap-1.5 whitespace-nowrap font-medium text-slate-800 cursor-pointer">
+            <input type="checkbox" className="accent-sky-600 rounded" checked={!layout.hidden.includes(panel)}
               onChange={event => onChange({ ...layout, hidden: event.target.checked ? layout.hidden.filter(item => item !== panel) : [...layout.hidden, panel] })}/>
             {panelLabels[panel]}
           </label>
-          <select className="rounded border border-slate-300 p-1" aria-label={`Colonne de ${panelLabels[panel]}`}
+          <select className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-xs" aria-label={`Colonne de ${panelLabels[panel]}`}
             value={id} onChange={event => move(panel, event.target.value as Column)}>
             {columns.map(column => <option key={column.id} value={column.id}>{column.label}</option>)}
           </select>
@@ -129,7 +129,9 @@ export function CncLayoutDialog({ layout, onChange, onReset, onClose }: LayoutDi
         </div>)}
       </section>)}
     </div>
-    <button type="button" className="mt-3 rounded border border-slate-300 px-3 py-2 text-xs font-medium hover:bg-slate-50" onClick={onReset}>Rétablir la disposition par défaut</button>
+    <div className="mt-4 flex justify-end">
+      <button type="button" className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer" onClick={onReset}>Rétablir la disposition par défaut</button>
+    </div>
   </dialog>;
 }
 
@@ -150,13 +152,13 @@ export function CncWorkspace({ panels, panelLayout, sizes, containerRef, onConfi
   const { layout, activeDrag, startDrag, resetLeftWidth, resetRightWidth } = sizes;
 
   if (!visible.length) return <main className="flex flex-1 items-center justify-center">
-    <button type="button" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm" onClick={onConfigure}>Afficher des panneaux CNC</button>
+    <button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm hover:bg-slate-50 cursor-pointer" onClick={onConfigure}>Afficher des panneaux CNC</button>
   </main>;
 
   return <>
-    <nav aria-label="Panneaux CNC" className="cnc-column-tabs flex-wrap border-b border-slate-300 bg-white">
+    <nav aria-label="Panneaux CNC" className="cnc-column-tabs flex-wrap border-b border-slate-200 bg-white px-2 gap-1">
       {visible.map(({ id, panels }) => <button type="button" key={id} aria-pressed={active === id}
-        className={`flex-1 border-b-2 px-2 py-2 text-xs font-semibold ${active === id ? "border-sky-600 text-sky-700" : "border-transparent text-slate-600"}`}
+        className={`flex-1 border-b-2 px-2 py-2 text-xs font-semibold transition-colors cursor-pointer ${active === id ? "border-sky-600 text-sky-700" : "border-transparent text-slate-500 hover:text-slate-800"}`}
         onClick={() => setSelected(id)}>{panels.map(panel => panelLabels[panel]).join(" · ")}</button>)}
     </nav>
     <main ref={containerRef} className="flex min-h-0 min-w-0 flex-1 gap-2 overflow-hidden p-2">
