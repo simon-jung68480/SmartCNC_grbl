@@ -17,9 +17,6 @@ import {
   Wifi,
   ShieldAlert,
   Sliders,
-  Terminal,
-  Box,
-  RotateCcw,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -51,11 +48,8 @@ import {
   playJogClick,
   useAudioAlertSettings,
 } from './utils/audioAlerts';
-import {
-  useLayoutResizer,
-  VerticalSplitter,
-  HorizontalSplitter,
-} from './components/LayoutResizers';
+import { useLayoutResizer } from "./components/LayoutResizers";
+import { CncLayoutDialog, CncWorkspace, useCncPanelLayout } from "./components/CncPanelLayout";
 import { useAppPreferences } from './utils/appPreferences';
 
 const INITIAL_STATUS: GrblStatus = {
@@ -177,7 +171,6 @@ export const App: React.FC = () => {
 
   const [workshop, setWorkshop] = useState<'cnc' | 'laser'>('cnc');
 
-  const [mobileTab, setMobileTab] = useState<'pilotage' | '3d-gcode' | 'outils-console'>('pilotage');
 
   const setPendantModeWithUrl = useCallback((active: boolean) => {
     setIsPendantMode(active);
@@ -202,19 +195,11 @@ export const App: React.FC = () => {
   }, []);
 
   // Redimensionnement fluide des colonnes et panneaux (enregistré dans localStorage)
-  const workspaceContainerRef = useRef<HTMLDivElement | null>(null);
-  const {
-    layout,
-    activeDrag,
-    centerColRef,
-    rightColRef,
-    startDrag,
-    resetAll,
-    resetLeftWidth,
-    resetRightWidth,
-    resetCenterTop,
-    resetRightTop,
-  } = useLayoutResizer(workspaceContainerRef);
+  const workspaceContainerRef = useRef<HTMLElement | null>(null);
+  const layoutSizes = useLayoutResizer(workspaceContainerRef);
+  const { panelLayout, setPanelLayout, resetPanels } = useCncPanelLayout();
+  const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
+  const resetLayout = () => { layoutSizes.resetAll(); resetPanels(); };
 
   // Préférences utilisateur (Zoom, Hauteur grille 3D, Sécurité, Sons, etc.)
   const { preferences } = useAppPreferences();
@@ -602,33 +587,32 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-100 text-slate-900 overflow-hidden select-none">
+    <div className="smartcnc-shell flex flex-col bg-slate-100 text-slate-900 overflow-hidden select-none">
       {/* =====================================================================
           TOP HEADER BAR — MODE CLAIR SOBRE & UTILITAIRE
       ===================================================================== */}
-      <header className="h-12 shrink-0 bg-white border-b border-slate-300 px-3 flex items-center justify-between gap-2 z-30 shadow-xs">
+      <header className="shrink-0 bg-white border-b border-slate-300 px-2 py-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 z-30 shadow-xs">
         {/* Left: Brand & USB Connection */}
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded bg-slate-800 flex items-center justify-center">
               <Cpu className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-sm text-slate-900">SmartCNC</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-300 hidden sm:inline">
+            <span className="app-toolbar-wide text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-300">
               GRBL 1.1
             </span>
           </div>
 
-          <div className="h-5 w-px bg-slate-200 hidden md:block" />
-
           {/* Connection Controls */}
-          <div className="flex items-center gap-1.5">
-            <Usb className="w-3.5 h-3.5 text-slate-500 hidden sm:block" />
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+            <Usb className="app-toolbar-wide w-3.5 h-3.5 text-slate-500" />
             <select
               value={selectedPort}
+              aria-label="Port série"
               onChange={(e) => setSelectedPort(e.target.value)}
               disabled={status.connected}
-              className="bg-slate-50 text-xs font-mono text-slate-800 rounded px-2 py-1 border border-slate-300 focus:outline-none focus:border-slate-500 disabled:opacity-60 max-w-[220px] sm:max-w-[270px]"
+              className="min-w-0 w-40 max-w-full bg-slate-50 text-xs font-mono text-slate-800 rounded px-2 py-1 border border-slate-300 focus:outline-none focus:border-slate-500 disabled:opacity-60"
             >
               {ports.map((p) => (
                 <option key={p.path} value={p.path}>
@@ -641,9 +625,10 @@ export const App: React.FC = () => {
 
             <select
               value={selectedBaud}
+              aria-label="Débit du port série"
               onChange={(e) => setSelectedBaud(Number(e.target.value))}
               disabled={status.connected}
-              className="bg-slate-50 text-xs font-mono text-slate-700 rounded px-1.5 py-1 border border-slate-300 focus:outline-none disabled:opacity-60 hidden lg:block"
+              className="bg-slate-50 text-xs font-mono text-slate-700 rounded px-1.5 py-1 border border-slate-300 focus:outline-none disabled:opacity-60"
             >
               <option value={115200}>115200</option>
               <option value={250000}>250000</option>
@@ -685,15 +670,16 @@ export const App: React.FC = () => {
         </div>
 
         {/* Center: Unified Pause / Resume / Emergency Stop */}
-        <div className="hidden xl:flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={handlePauseJob}
             disabled={!status.connected || (!isRunning && status.state !== 'Jog')}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold disabled:opacity-35 disabled:pointer-events-none cursor-pointer"
             title="Mettre en pause l'usinage ou le mouvement (Feed Hold !)"
+            aria-label="Mettre en pause"
           >
             <Pause className="w-3.5 h-3.5" />
-            <span>Pause (!)</span>
+            <span className="app-toolbar-wide">Pause (!)</span>
           </button>
 
           <button
@@ -701,9 +687,10 @@ export const App: React.FC = () => {
             disabled={!status.connected || !isPaused}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold disabled:opacity-35 disabled:pointer-events-none cursor-pointer"
             title="Reprendre l'usinage après une pause (Cycle Start ~)"
+            aria-label="Reprendre"
           >
             <Play className="w-3.5 h-3.5" />
-            <span>Reprendre (~)</span>
+            <span className="app-toolbar-wide">Reprendre (~)</span>
           </button>
 
           <button
@@ -718,26 +705,27 @@ export const App: React.FC = () => {
         </div>
 
         {/* Right: Settings $$, Pinout & Tablet Info */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {/* Bouton Télécommande Mobile d'Atelier */}
           <button
             onClick={() => setPendantModeWithUrl(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
             title="Passer en mode Télécommande Mobile / Pendant d'Atelier (optimisé smartphone tactile)"
+            aria-label="Télécommande mobile"
           >
             <Smartphone className="w-3.5 h-3.5 text-sky-600" />
-            <span className="hidden sm:inline">Télécommande Mobile</span>
-            <span className="sm:hidden">Pendant</span>
+            <span className="app-toolbar-wide">Télécommande</span>
           </button>
 
-          <button
-            onClick={resetAll}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-medium cursor-pointer"
-            title="Réinitialiser la disposition des fenêtres par défaut"
+          {workshop === 'cnc' && <button
+            onClick={() => setLayoutDialogOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-medium cursor-pointer"
+            title="Personnaliser la disposition CNC"
+            aria-label="Personnaliser la disposition CNC"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden xl:inline">Disposition</span>
-          </button>
+            <Sliders className="w-3.5 h-3.5 text-slate-600" />
+            <span className="app-toolbar-wide">Disposition</span>
+          </button>}
 
           <button
             onClick={() => {
@@ -748,10 +736,10 @@ export const App: React.FC = () => {
             }}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-medium cursor-pointer"
             title="Paramètres de l'application & Configuration GRBL ($$)"
+            aria-label="Paramètres"
           >
             <Settings className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden md:inline font-semibold">Paramètres</span>
-            <span className="hidden xl:inline text-[10px] text-slate-500 font-normal">($$ & App)</span>
+            <span className="app-toolbar-wide font-semibold">Paramètres</span>
           </button>
 
           <button
@@ -760,7 +748,7 @@ export const App: React.FC = () => {
             title="Mémo câblage CNC Shield V3.0"
           >
             <HelpCircle className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden lg:inline">Câblage</span>
+            <span className="app-toolbar-wide">Câblage</span>
           </button>
 
           <button
@@ -768,8 +756,8 @@ export const App: React.FC = () => {
             className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-medium cursor-pointer"
             title="Accès Wi-Fi Tablette / Smartphone"
           >
-            <Smartphone className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden lg:inline">Wi-Fi</span>
+            <Wifi className="w-3.5 h-3.5 text-slate-600" />
+            <span className="app-toolbar-wide">Wi-Fi</span>
           </button>
 
           <button
@@ -786,12 +774,12 @@ export const App: React.FC = () => {
             ) : (
               <VolumeX className="w-3.5 h-3.5 text-red-500" />
             )}
-            <span className="hidden lg:inline">Son</span>
+            <span className="app-toolbar-wide">Son</span>
           </button>
         </div>
       </header>
 
-      <nav aria-label="Ateliers" className="flex shrink-0 bg-white border-b border-slate-300 px-3">
+      <nav aria-label="Ateliers" className="flex flex-wrap shrink-0 bg-white border-b border-slate-300 px-3">
         {(['cnc', 'laser'] as const).map(mode => <button key={mode} type="button" disabled={isRunning || isPaused || status.state === 'Jog'} onClick={() => { setWorkshop(mode); if (mode === 'laser' && status.connected) socket?.emit('cnc:settings:get'); }} className={`px-5 py-2 text-sm font-bold border-b-2 disabled:opacity-50 ${workshop === mode ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-600'}`} aria-current={workshop === mode ? 'page' : undefined}>Atelier {mode === 'cnc' ? 'CNC' : 'laser'}</button>)}
       </nav>
       <div className={workshop === 'laser' ? 'flex flex-1 min-h-0' : 'hidden'}>
@@ -813,215 +801,101 @@ export const App: React.FC = () => {
           onJog={handleJog} onZero={handleZeroWorkAxis} onLaserOff={() => handleSendCommand('M5')}
         />
       </div>
-      {workshop === 'cnc' && <>
-      {/* =====================================================================
-          MOBILE / TABLET TABS (< 1024px)
-      ===================================================================== */}
-      <div className="flex lg:hidden bg-white border-b border-slate-300 shrink-0">
-        <button
-          onClick={() => setMobileTab('pilotage')}
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 ${
-            mobileTab === 'pilotage'
-              ? 'border-sky-600 text-sky-700 bg-sky-50/50'
-              : 'border-transparent text-slate-600'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>DRO & Jogging</span>
-        </button>
-        <button
-          onClick={() => setMobileTab('3d-gcode')}
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 ${
-            mobileTab === '3d-gcode'
-              ? 'border-sky-600 text-sky-700 bg-sky-50/50'
-              : 'border-transparent text-slate-600'
-          }`}
-        >
-          <Box className="w-3.5 h-3.5" />
-          <span>Vue 3D & G-Code</span>
-        </button>
-        <button
-          onClick={() => setMobileTab('outils-console')}
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 ${
-            mobileTab === 'outils-console'
-              ? 'border-sky-600 text-sky-700 bg-sky-50/50'
-              : 'border-transparent text-slate-600'
-          }`}
-        >
-          <Terminal className="w-3.5 h-3.5" />
-          <span>Outils</span>
-        </button>
-        <button
-          onClick={() => setPendantModeWithUrl(true)}
-          className="py-2 px-3 text-xs font-bold flex items-center justify-center gap-1 text-sky-800 bg-sky-50 hover:bg-sky-100 border-l border-slate-200 transition-colors shrink-0 cursor-pointer"
-          title="Ouvrir la Télécommande Mobile d'Atelier tactile"
-        >
-          <Smartphone className="w-3.5 h-3.5 text-sky-600" />
-          <span>Pendant</span>
-        </button>
-      </div>
-
-      {/* =====================================================================
-          MAIN WORKSPACE — REDIMENSIONNABLE 3 COLONNES EN MODE CLAIR
-      ===================================================================== */}
-      <main
-        ref={workspaceContainerRef}
-        className="flex-1 min-h-0 flex flex-col lg:flex-row p-2 gap-2 lg:gap-0 overflow-hidden relative"
-      >
-        {/* LEFT COLUMN: DRO + JOGGING */}
-        <section
-          style={{ width: `${layout.leftWidth}px` }}
-          className={`shrink-0 flex flex-col gap-2 min-h-0 overflow-y-auto lg:pr-1 ${
-            mobileTab === 'pilotage' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
-          }`}
-        >
-          <DROPanel
-            status={status}
-            onSendCommand={handleSendCommand}
-            onSendRealtime={handleSendRealtime}
-            onSoftReset={handleSoftReset}
-            onZeroWorkAxis={handleZeroWorkAxis}
-            onSetMachineZero={handleSetMachineZero}
-            largeFont={preferences.largeDroFont}
-            safeRetractZBeforeOrigin={preferences.safeRetractZBeforeOrigin}
-            safeRetractZHeight={preferences.safeRetractZHeight}
-            confirmZeroAll={preferences.confirmZeroAll}
-            useHoming={preferences.useHoming}
-          />
-          <JogPanel
-            status={status}
-            onSendCommand={handleSendCommand}
-            onSendRealtime={handleSendRealtime}
-            onJog={handleJog}
-            onCancelJog={handleCancelJog}
-          />
-        </section>
-
-        {/* SÉPARATEUR VERTICAL GAUCHE / CENTRE */}
-        <VerticalSplitter
-          onPointerDown={(e) => startDrag('col-left', e)}
-          onDoubleClick={resetLeftWidth}
-          isActive={activeDrag === 'col-left'}
-          title="Glisser pour ajuster la largeur du panneau Pilotage (Double-clic pour réinitialiser)"
-        />
-
-        {/* CENTER COLUMN: 3D VIEWPORT + VIRTUALIZED G-CODE STREAMER */}
-        <section
-          ref={centerColRef}
-          className={`flex-1 min-w-0 lg:min-w-[320px] flex flex-col min-h-0 overflow-hidden lg:px-1 gap-1.5 ${
-            mobileTab === '3d-gcode' ? 'flex' : 'hidden lg:flex'
-          }`}
-        >
-          {/* Haut: Vue 3D Three.js */}
-          <div
-            style={{ height: `${layout.centerTopPercent}%` }}
-            className="min-h-[160px] rounded-lg overflow-hidden border border-slate-300 bg-white relative shadow-xs shrink-0"
-          >
-            <Viewport3D
-              status={status}
-              segments={parsedGCode.segments}
-              stats={parsedGCode.stats}
-              currentLineIndex={job.currentLineIndex}
-              heightmap={heightmap}
-              machineEnvelope={machineEnvelope}
-              gridZOffset={preferences.gridZOffset}
-              gridMajorStep={preferences.gridMajorStep}
-              customBedDimensions={
-                preferences.useCustomBedDimensions
-                  ? { x: preferences.customBedWidth, y: preferences.customBedLength }
-                  : null
-              }
-              onOpenFraming={handleOpenFraming}
-            />
-          </div>
-
-          {/* SÉPARATEUR HORIZONTAL VUE 3D / G-CODE */}
-          <HorizontalSplitter
-            onPointerDown={(e) => startDrag('row-center', e)}
-            onDoubleClick={resetCenterTop}
-            isActive={activeDrag === 'row-center'}
-            title="Glisser pour ajuster la hauteur Vue 3D / G-Code (Double-clic pour réinitialiser)"
-          />
-
-          {/* Bas: Visualiseur et Streamer G-Code */}
-          <div className="flex-1 min-h-[160px] overflow-hidden flex flex-col">
-            <GCodeStreamerPanel
-              connected={status.connected}
-              machineState={status.state}
-              job={job}
-              gcodeText={rawGCode}
-              stats={parsedGCode.stats}
-              onLoadGCode={handleLoadGCode}
-              onUpdateGCode={(updated) => setRawGCode(updated)}
-              onStartJob={handleStartJob}
-              onPauseJob={handlePauseJob}
-              onResumeJob={handleResumeJob}
-              onStopJob={handleStopJob}
-              onToggleCheckMode={handleToggleCheckMode}
-              onFrameJob={handleFrameJob}
-              onOpenFramingModal={handleOpenFraming}
-              onSendCommand={handleSendCommand}
-            />
-          </div>
-        </section>
-
-        {/* SÉPARATEUR VERTICAL CENTRE / DROITE */}
-        <VerticalSplitter
-          onPointerDown={(e) => startDrag('col-right', e)}
-          onDoubleClick={resetRightWidth}
-          isActive={activeDrag === 'col-right'}
-          title="Glisser pour ajuster la largeur du panneau Outils / Console (Double-clic pour réinitialiser)"
-        />
-
-        {/* RIGHT COLUMN: OVERRIDES / PROBE XY-Z / HEIGHTMAP + CONSOLE / MACROS */}
-        <section
-          ref={rightColRef}
-          style={{ width: `${layout.rightWidth}px` }}
-          className={`shrink-0 flex flex-col min-h-0 overflow-hidden lg:pl-1 gap-1.5 ${
-            mobileTab === 'outils-console' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
-          }`}
-        >
-          {/* Haut: Overrides, Palpage XY/Z, Auto-nivellement */}
-          <div
-            style={{ height: `${layout.rightTopPercent}%` }}
-            className="min-h-[160px] overflow-y-auto shrink-0"
-          >
-            <OverridesAndToolsTabs
+      {workshop === 'cnc' && <CncWorkspace
+        containerRef={workspaceContainerRef}
+        panelLayout={panelLayout}
+        sizes={layoutSizes}
+        onConfigure={() => setLayoutDialogOpen(true)}
+        panels={{
+          dro: (
+            <DROPanel
               status={status}
               onSendCommand={handleSendCommand}
               onSendRealtime={handleSendRealtime}
-              gcodeStats={parsedGCode.stats}
-              heightmap={heightmap}
-              onHeightmapChange={handleHeightmapChange}
-              onStartHeightmapScan={handleStartHeightmapScan}
-              onGenerateDemoHeightmap={handleGenerateDemoHeightmap}
-              probeConfig={probeConfig}
-              onProbeConfigChange={setProbeConfig}
-              onStartProbe={handleStartProbe}
+              onSoftReset={handleSoftReset}
+              onZeroWorkAxis={handleZeroWorkAxis}
+              onSetMachineZero={handleSetMachineZero}
+              largeFont={preferences.largeDroFont}
+              safeRetractZBeforeOrigin={preferences.safeRetractZBeforeOrigin}
+              safeRetractZHeight={preferences.safeRetractZHeight}
+              confirmZeroAll={preferences.confirmZeroAll}
+              useHoming={preferences.useHoming}
             />
-          </div>
-
-          {/* SÉPARATEUR HORIZONTAL OUTILS / CONSOLE */}
-          <HorizontalSplitter
-            onPointerDown={(e) => startDrag('row-right', e)}
-            onDoubleClick={resetRightTop}
-            isActive={activeDrag === 'row-right'}
-            title="Glisser pour ajuster la hauteur Outils / Console (Double-clic pour réinitialiser)"
-          />
-
-          {/* Bas: Console Série GRBL & Macros */}
-          <div className="flex-1 min-h-[160px] overflow-hidden flex flex-col">
-            <ConsoleAndMacrosPanel
-              connected={status.connected}
-              entries={consoleLogs}
+          ),
+          jog: (
+            <JogPanel
+              status={status}
               onSendCommand={handleSendCommand}
-              onClearConsole={() => setConsoleLogs([])}
-              jobBounds={parsedGCode.stats?.bounds}
+              onSendRealtime={handleSendRealtime}
+              onJog={handleJog}
+              onCancelJog={handleCancelJog}
             />
-          </div>
-        </section>
-      </main>
-      </>}
+          ),
+          viewport: (
+            <Viewport3D
+                status={status}
+                segments={parsedGCode.segments}
+                stats={parsedGCode.stats}
+                currentLineIndex={job.currentLineIndex}
+                heightmap={heightmap}
+                machineEnvelope={machineEnvelope}
+                gridZOffset={preferences.gridZOffset}
+                gridMajorStep={preferences.gridMajorStep}
+                customBedDimensions={
+                  preferences.useCustomBedDimensions
+                    ? { x: preferences.customBedWidth, y: preferences.customBedLength }
+                    : null
+                }
+                onOpenFraming={handleOpenFraming}
+              />
+          ),
+          gcode: (
+            <GCodeStreamerPanel
+                connected={status.connected}
+                machineState={status.state}
+                job={job}
+                gcodeText={rawGCode}
+                stats={parsedGCode.stats}
+                onLoadGCode={handleLoadGCode}
+                onUpdateGCode={(updated) => setRawGCode(updated)}
+                onStartJob={handleStartJob}
+                onPauseJob={handlePauseJob}
+                onResumeJob={handleResumeJob}
+                onStopJob={handleStopJob}
+                onToggleCheckMode={handleToggleCheckMode}
+                onFrameJob={handleFrameJob}
+                onOpenFramingModal={handleOpenFraming}
+                onSendCommand={handleSendCommand}
+              />
+          ),
+          tools: (
+            <OverridesAndToolsTabs
+                status={status}
+                onSendCommand={handleSendCommand}
+                onSendRealtime={handleSendRealtime}
+                gcodeStats={parsedGCode.stats}
+                heightmap={heightmap}
+                onHeightmapChange={handleHeightmapChange}
+                onStartHeightmapScan={handleStartHeightmapScan}
+                onGenerateDemoHeightmap={handleGenerateDemoHeightmap}
+                probeConfig={probeConfig}
+                onProbeConfigChange={setProbeConfig}
+                onStartProbe={handleStartProbe}
+              />
+          ),
+          console: (
+            <ConsoleAndMacrosPanel
+                connected={status.connected}
+                entries={consoleLogs}
+                onSendCommand={handleSendCommand}
+                onClearConsole={() => setConsoleLogs([])}
+                jobBounds={parsedGCode.stats?.bounds}
+              />
+          ),
+        }}
+      />}
+      {layoutDialogOpen && <CncLayoutDialog layout={panelLayout} onChange={setPanelLayout}
+        onReset={resetLayout} onClose={() => setLayoutDialogOpen(false)} />}
 
       {/* =====================================================================
           MODAL 1 : ÉDITEUR DE CONFIGURATION GRBL ($$)
@@ -1036,7 +910,8 @@ export const App: React.FC = () => {
           onSendCommand={handleSendCommand}
           onReadSettings={() => socket?.emit('cnc:settings:get')}
           onSaveSettings={handleSaveGrblSettings}
-          onResetLayout={resetAll}
+          initialTab="app"
+          onResetLayout={resetLayout}
         />
       )}
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell } = require('electron');
+const { app, BrowserWindow, dialog, screen, shell } = require('electron');
 const { fork } = require('node:child_process');
 const path = require('node:path');
 
@@ -31,8 +31,13 @@ function startServer() {
 app.whenReady().then(async () => {
   try {
     await startServer();
+    const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const width = Math.min(1440, workArea.width);
+    const height = Math.min(900, workArea.height);
     window = new BrowserWindow({
-      width: 1440, height: 900, minWidth: 900, minHeight: 650,
+      x: workArea.x + Math.floor((workArea.width - width) / 2),
+      y: workArea.y + Math.floor((workArea.height - height) / 2),
+      width, height, minWidth: Math.min(720, width), minHeight: Math.min(480, height),
       title: 'SmartCNC', autoHideMenuBar: true,
       webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
     });

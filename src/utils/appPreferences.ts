@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface AppPreferences {
   // Machine & Fins de Course (Homing)
@@ -49,6 +49,11 @@ export const DEFAULT_APP_PREFERENCES: AppPreferences = {
 };
 
 const STORAGE_KEY = 'smartcnc_app_preferences_v1';
+export const MIN_UI_SCALE = 0.75;
+export const MAX_UI_SCALE = 1.6;
+const clampUiScale = (scale: number) => Number.isFinite(scale)
+  ? Math.max(MIN_UI_SCALE, Math.min(MAX_UI_SCALE, scale))
+  : DEFAULT_APP_PREFERENCES.uiScale;
 
 /**
  * Charge les préférences utilisateur depuis le localStorage
@@ -66,7 +71,7 @@ export function loadAppPreferences(): AppPreferences {
       useCustomBedDimensions: typeof parsed.useCustomBedDimensions === 'boolean' ? parsed.useCustomBedDimensions : DEFAULT_APP_PREFERENCES.useCustomBedDimensions,
       gridMajorStep: typeof parsed.gridMajorStep === 'number' ? parsed.gridMajorStep : DEFAULT_APP_PREFERENCES.gridMajorStep,
 
-      uiScale: typeof parsed.uiScale === 'number' ? parsed.uiScale : DEFAULT_APP_PREFERENCES.uiScale,
+      uiScale: clampUiScale(parsed.uiScale),
       largeDroFont: typeof parsed.largeDroFont === 'boolean' ? parsed.largeDroFont : DEFAULT_APP_PREFERENCES.largeDroFont,
 
       safeRetractZBeforeOrigin: typeof parsed.safeRetractZBeforeOrigin === 'boolean' ? parsed.safeRetractZBeforeOrigin : DEFAULT_APP_PREFERENCES.safeRetractZBeforeOrigin,
@@ -87,27 +92,21 @@ export function loadAppPreferences(): AppPreferences {
  * Sauvegarde les préférences utilisateur dans le localStorage et notifie les composants
  */
 export function saveAppPreferences(prefs: AppPreferences): void {
+  const next = { ...prefs, uiScale: clampUiScale(prefs.uiScale) };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    // Applique l'échelle d'interface globale (zoom)
-    applyUiScale(prefs.uiScale);
-    window.dispatchEvent(new CustomEvent('smartcnc:preferences-changed', { detail: prefs }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch (err) {
     console.error('Erreur sauvegarde préférences SmartCNC', err);
   }
+  applyUiScale(next.uiScale);
+  window.dispatchEvent(new CustomEvent('smartcnc:preferences-changed', { detail: next }));
 }
 
 /**
  * Applique le facteur d'échelle / zoom sur l'interface du navigateur
  */
 export function applyUiScale(scale: number): void {
-  const clamped = Math.max(0.75, Math.min(1.6, scale || 1.0));
-  try {
-    // Zoom CSS moderne universel (Chromium, Edge, Safari)
-    (document.documentElement.style as any).zoom = String(clamped);
-  } catch {
-    // fallback
-  }
+  document.documentElement.style.setProperty('zoom', String(clampUiScale(scale)));
 }
 
 /**
@@ -115,18 +114,15 @@ export function applyUiScale(scale: number): void {
  */
 export function useAppPreferences() {
   const [preferences, setPreferences] = useState<AppPreferences>(() => loadAppPreferences());
+  const latest = useRef(preferences);
 
   useEffect(() => {
     // Applique l'échelle au premier montage
-    applyUiScale(preferences.uiScale);
+    applyUiScale(latest.current.uiScale);
 
     const handleUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<AppPreferences>;
-      if (customEvent.detail) {
-        setPreferences(customEvent.detail);
-      } else {
-        setPreferences(loadAppPreferences());
-      }
+      latest.current = (e as CustomEvent<AppPreferences>).detail ?? loadAppPreferences();
+      setPreferences(latest.current);
     };
 
     window.addEventListener('smartcnc:preferences-changed', handleUpdate);
@@ -136,16 +132,11 @@ export function useAppPreferences() {
   }, []);
 
   const updatePreferences = useCallback((changes: Partial<AppPreferences>) => {
-    setPreferences((prev) => {
-      const next = { ...prev, ...changes };
-      saveAppPreferences(next);
-      return next;
-    });
+    saveAppPreferences({ ...latest.current, ...changes });
   }, []);
 
   const resetPreferences = useCallback(() => {
     saveAppPreferences(DEFAULT_APP_PREFERENCES);
-    setPreferences(DEFAULT_APP_PREFERENCES);
   }, []);
 
   return {

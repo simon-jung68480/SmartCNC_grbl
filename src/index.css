@@ -11,6 +11,54 @@
   }
 }
 
+.smartcnc-shell {
+  position: fixed;
+  inset: 0;
+  container: smartcnc / inline-size;
+}
+
+.app-toolbar-wide,
+.cnc-splitter,
+.cnc-column-group {
+  display: none;
+}
+
+.cnc-column-tabs,
+.cnc-column-group[data-active="true"] {
+  display: flex;
+  flex: 1;
+}
+
+.cnc-column-tabs {
+  flex: none;
+}
+
+@container smartcnc (min-width: 60rem) {
+  .cnc-column-tabs {
+    display: none;
+  }
+
+  .cnc-splitter,
+  .cnc-column-group {
+    display: flex;
+  }
+
+  .cnc-column-group.cnc-column-sized {
+    flex: 0 1 var(--panel-width);
+    min-width: 15rem;
+  }
+
+  .cnc-column-group[data-column="center"] {
+    min-width: 16rem;
+  }
+}
+
+@container smartcnc (min-width: 87rem) {
+  .app-toolbar-wide {
+    display: inline-block;
+  }
+}
+
 /* Light mode clean scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

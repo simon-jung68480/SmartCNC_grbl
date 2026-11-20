@@ -16,7 +16,7 @@ export const DEFAULT_LAYOUT: LayoutSizes = {
 
 const STORAGE_KEY = 'smartcnc_layout_sizes';
 
-export function useLayoutResizer(containerRef: React.RefObject<HTMLDivElement | null>) {
+export function useLayoutResizer(containerRef: React.RefObject<HTMLElement | null>) {
   const [layout, setLayout] = useState<LayoutSizes>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -95,19 +95,23 @@ export function useLayoutResizer(containerRef: React.RefObject<HTMLDivElement | 
     if (!activeDrag) return;
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!containerRef.current) return;
-      const containerRect = containerRef.current.getBoundingClientRect();
+      const container = containerRef.current;
+      if (!container || !container.clientWidth) return;
+      const containerRect = container.getBoundingClientRect();
+      const zoom = containerRect.width / container.clientWidth;
 
       if (activeDrag === 'col-left') {
-        const rawWidth = e.clientX - containerRect.left;
-        const minWidth = 260;
-        const maxWidth = Math.max(minWidth, Math.min(560, containerRect.width - layout.rightWidth - 300));
+        const rawWidth = (e.clientX - containerRect.left) / zoom;
+        const right = container.querySelector<HTMLElement>('.cnc-column-sized[data-column="right"]');
+        const minWidth = 240;
+        const maxWidth = Math.max(minWidth, Math.min(560, container.clientWidth - (right?.offsetWidth ?? 0) - 280));
         const clamped = Math.max(minWidth, Math.min(maxWidth, rawWidth));
         setLayout((prev) => ({ ...prev, leftWidth: Math.round(clamped) }));
       } else if (activeDrag === 'col-right') {
-        const rawWidth = containerRect.right - e.clientX;
-        const minWidth = 300;
-        const maxWidth = Math.max(minWidth, Math.min(750, containerRect.width - layout.leftWidth - 300));
+        const rawWidth = (containerRect.right - e.clientX) / zoom;
+        const left = container.querySelector<HTMLElement>('.cnc-column-sized[data-column="left"]');
+        const minWidth = 240;
+        const maxWidth = Math.max(minWidth, Math.min(750, container.clientWidth - (left?.offsetWidth ?? 0) - 280));
         const clamped = Math.max(minWidth, Math.min(maxWidth, rawWidth));
         setLayout((prev) => ({ ...prev, rightWidth: Math.round(clamped) }));
       } else if (activeDrag === 'row-center' && centerColRef.current) {
@@ -157,7 +161,7 @@ export function useLayoutResizer(containerRef: React.RefObject<HTMLDivElement | 
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [activeDrag, layout.leftWidth, layout.rightWidth, containerRef]);
+  }, [activeDrag, containerRef]);
 
   const startDrag = useCallback((type: 'col-left' | 'col-right' | 'row-center' | 'row-right', e: React.PointerEvent) => {
     e.preventDefault();
@@ -192,7 +196,7 @@ export const VerticalSplitter: React.FC<{
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
       title={title}
-      className={`hidden lg:flex w-2.5 shrink-0 -mx-0.5 cursor-col-resize group relative items-center justify-center select-none z-20 transition-colors ${
+      className={`cnc-splitter w-2.5 shrink-0 -mx-0.5 cursor-col-resize group relative items-center justify-center select-none z-20 transition-colors ${
         isActive ? 'bg-sky-100' : 'hover:bg-slate-200/80'
       }`}
     >
@@ -245,7 +249,7 @@ export const HorizontalSplitter: React.FC<{
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
       title={title}
-      className={`hidden lg:flex h-2.5 shrink-0 -my-0.5 cursor-row-resize group relative items-center justify-center select-none z-20 transition-colors ${
+      className={`cnc-splitter h-2.5 shrink-0 -my-0.5 cursor-row-resize group relative items-center justify-center select-none z-20 transition-colors ${
         isActive ? 'bg-sky-100' : 'hover:bg-slate-200/80'
       }`}
     >

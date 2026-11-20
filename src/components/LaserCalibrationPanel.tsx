@@ -7,7 +7,7 @@ interface Props {
   x: number;
   y: number;
   disabled?: boolean;
-  onLoadProgram: (name: string, code: string, notes: string[]) => void;
+  onLoadProgram: (name: string, code: string, notes: string[], maxPower: number) => void;
   onApplyInterval?: (mm: number) => void;
   onApplyScanOffset?: (entry: LaserScanOffset) => void;
 }
@@ -30,6 +30,18 @@ export function LaserCalibrationPanel({cut,x,y,disabled,onLoadProgram,onApplyInt
   const [kind,setKind]=useState<LaserCalibrationKind>("material");
   const [minimum,setMinimum]=useState(10),[maximum,setMaximum]=useState(50);
   const [samples,setSamples]=useState(5),[size,setSize]=useState(10),[gap,setGap]=useState(3);
+  const [positionX, setPositionX] = useState<number | null>(null);
+  const [positionY, setPositionY] = useState<number | null>(null);
+  const [engraving, setEngraving] = useState<Partial<LaserCutSettings>>({});
+  const testCut = { ...cut, ...engraving };
+  const [matrix, setMatrix] = useState({ columns: 5, rows: 5, hatch: 0.15 });
+  const [matrixMinFeed, setMatrixMinFeed] = useState<number | null>(null);
+  const [matrixMaxFeed, setMatrixMaxFeed] = useState<number | null>(null);
+  const [scanInput, setScanInput] = useState<string | null>(null);
+  const [correctionFeed, setCorrectionFeed] = useState<number | null>(null);
+  const scanField = scanInput ?? String(testCut.feed);
+  const scanFeeds = scanField.trim().split(/[\s;]+/).filter(Boolean).map(value => Number(value.replace(",", ".")));
+  const scanCalibrationFeed = correctionFeed ?? scanFeeds[0] ?? testCut.feed;
   const [referenceZ,setReferenceZ]=useState(0),[zFeed,setZFeed]=useState(100),[allowZ,setAllowZ]=useState(false);
   const [error,setError]=useState("");
   const [currentSteps,setCurrentSteps]=useState(80),[requested,setRequested]=useState(100),[measured,setMeasured]=useState(100);
@@ -39,33 +51,68 @@ export function LaserCalibrationPanel({cut,x,y,disabled,onLoadProgram,onApplyInt
   const scanOffset = scanDifference / 2;
   const validScanOffset = Number.isFinite(scanOffset)
     && Math.abs(scanOffset) <= MAX_LASER_SCAN_OFFSET
-    && Number.isFinite(cut.feed) && cut.feed > 0;
+    && Number.isFinite(scanCalibrationFeed) && scanCalibrationFeed >= 1 && scanCalibrationFeed <= 30000;
   let stepsResult:number|undefined,kerf:number|undefined;
   try { stepsResult=calibratedSteps(currentSteps,requested,measured); } catch {}
   try { kerf=measuredKerf(opening,insert); } catch {}
   const variable = ["material","focus","interval","passes"].includes(kind);
+  const separateSamples = ["focus", "interval", "passes"].includes(kind);
+  const usesGap = !["dimensions", "kerf"].includes(kind);
   const unit=kind==="material"?"%":kind==="passes"?"passes":"mm";
   function generate() {
     setError("");
     try {
-      const program=buildLaserCalibration({kind,x,y,size,gap,samples,min:minimum,max:maximum,referenceZ,zFeed,allowZ},cut);
-      onLoadProgram(program.name,program.code,program.notes);
+      const program = buildLaserCalibration({
+        kind, x: positionX ?? x, y: positionY ?? y, size, gap: usesGap ? gap : 3,
+        samples: separateSamples ? samples : 5, min: minimum, max: maximum, referenceZ, zFeed, allowZ,
+        matrix: { ...matrix, minFeed: matrixMinFeed ?? testCut.feed / 2, maxFeed: matrixMaxFeed ?? testCut.feed * 2 },
+        scanFeeds,
+      }, testCut);
+      onLoadProgram(program.name, program.code, program.notes, testCut.maxPower);
     } catch(e) { setError(e instanceof Error?e.message:String(e)); }
   }
   return <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
     <h3 className="text-sm font-bold text-slate-800">Banc de calibration laser</h3>
-    <p className="text-xs text-slate-500">Générer un échantillon, contrôler son aperçu, puis lancer avec les commandes de l’atelier. Aucun test ne démarre ici. Vitesse, puissance, mode M3/M4 et échelle S proviennent des réglages de l’atelier. Sauf le test kerf, les passes de l’atelier sont ignorées.</p>
     <fieldset disabled={disabled} className="space-y-3 disabled:opacity-50">
       <label className="block text-xs text-slate-600 space-y-1"><span>Calibration</span><select className={fieldClass} value={kind} onChange={e=>{const choice=choices.find(c=>c.id===e.target.value)!;setKind(choice.id);setMinimum(choice.min);setMaximum(choice.max);setAllowZ(false);setError("");}}>{choices.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-      <div className="grid grid-cols-2 gap-2"><Numeric label="Taille du motif (mm)" value={size} onChange={setSize} min={2} max={200}/><Numeric label="Écart entre échantillons (mm)" value={gap} onChange={setGap} min={1} max={50}/></div>
-      {variable&&<><Numeric label="Nombre d’échantillons (par axe pour la matrice)" value={samples} onChange={setSamples} min={2} max={10} step={1}/><div className="grid grid-cols-2 gap-2"><Numeric label={`Minimum (${unit})`} value={minimum} onChange={setMinimum}/><Numeric label={`Maximum (${unit})`} value={maximum} onChange={setMaximum}/></div></>}
-      {kind==="material"&&<p className="text-xs text-slate-600">Colonnes de vitesse : {display(cut.feed/2)} à {display(cut.feed*2)} mm/min. Lignes de puissance : minimum à maximum. Aplats au pas de 0,15 mm.</p>}
+      <div className="grid grid-cols-2 gap-2">
+        <Numeric label="Origine X pièce (mm)" value={positionX ?? x} onChange={setPositionX}/>
+        <Numeric label="Origine Y pièce (mm)" value={positionY ?? y} onChange={setPositionY}/>
+        <Numeric label="Taille du motif (mm)" value={size} onChange={setSize} min={2} max={200}/>
+        {usesGap && <Numeric label="Écart (mm)" value={gap} onChange={setGap} min={1} max={50}/>}
+      </div>
+      {separateSamples && <Numeric label="Nombre d’échantillons" value={samples} onChange={setSamples} min={2} max={10} step={1}/>}
+      {variable && <div className="grid grid-cols-2 gap-2"><Numeric label={`Minimum (${unit})`} value={minimum} onChange={setMinimum}/><Numeric label={`Maximum (${unit})`} value={maximum} onChange={setMaximum}/></div>}
+      {kind === "material" && <div className="grid grid-cols-2 gap-2">
+        <Numeric label="Colonnes (vitesses)" value={matrix.columns} onChange={columns => setMatrix(current => ({ ...current, columns }))} min={2} max={10} step={1}/>
+        <Numeric label="Lignes (puissances)" value={matrix.rows} onChange={rows => setMatrix(current => ({ ...current, rows }))} min={2} max={10} step={1}/>
+        <Numeric label="Vitesse min (mm/min)" value={matrixMinFeed ?? testCut.feed / 2} onChange={setMatrixMinFeed} min={1}/>
+        <Numeric label="Vitesse max (mm/min)" value={matrixMaxFeed ?? testCut.feed * 2} onChange={setMatrixMaxFeed} min={1}/>
+        <Numeric label="Pas de remplissage (mm)" value={matrix.hatch} onChange={hatch => setMatrix(current => ({ ...current, hatch }))} min={0.05}/>
+      </div>}
       {kind==="focus"&&<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-xs"><p>Ce test déplace réellement Z entre les lignes. Vérifier la course libre et la référence de mise au point. Un Z positif monte la tête. Le test termine à Z référence.</p><div className="grid grid-cols-2 gap-2"><Numeric label="Z référence pièce (mm)" value={referenceZ} onChange={setReferenceZ}/><Numeric label="Avance Z (mm/min)" value={zFeed} onChange={setZFeed} min={1} max={5000}/></div><label className="flex items-center gap-2"><input type="checkbox" checked={allowZ} onChange={e=>setAllowZ(e.target.checked)}/>Autoriser les mouvements Z de ce test</label></div>}
-      {kind==="scan-offset"&&<p className="text-xs text-slate-600">20 lignes aller/retour espacées de 0,4 mm. À la vitesse choisie, mesurer le décalage entre deux lignes voisines au même bord du motif. Le motif utilise les coordonnées de référence pour mesurer le décalage brut.</p>}
+      {kind === "scan-offset" && <label className="block space-y-1 text-xs text-slate-600">
+        <span>Vitesses du test (mm/min)</span>
+        <input className={fieldClass} value={scanField} onChange={event => setScanInput(event.target.value)} />
+        <span>Séparez les vitesses par des espaces, par exemple 600 1200 2400. Le motif grave 20 lignes par vitesse.</span>
+      </label>}
       {kind==="dimensions"&&<p className="text-xs text-slate-600">Carré, cercle et diagonales. Mesurer les centres des traits ; des diagonales différentes indiquent un défaut mécanique d’équerrage.</p>}
-      {kind==="kerf"&&<p className="text-xs text-slate-600">Découper un carré puis mesurer l’ouverture et l’insert. Utilise {cut.passes} passe(s). Le calculateur ci-dessous donne la largeur de coupe et le décalage à prévoir.</p>}
-      <p className="text-xs text-slate-500">Départ au repère pièce X {display(x)}, Y {display(y)} mm. Les valeurs de chaque échantillon figurent dans les notes du programme.</p>
-      <button type="button" className={buttonClass} onClick={generate}>Préparer le programme de calibration</button>
+      {kind==="kerf"&&<p className="text-xs text-slate-600">Découper un carré puis mesurer l’ouverture et l’insert. Le calculateur ci-dessous donne la largeur de coupe et le décalage à prévoir.</p>}
+      <details className="rounded-lg border border-slate-200 p-2">
+        <summary className="cursor-pointer text-xs font-semibold">Réglages de gravure</summary>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Numeric label={kind === "material" || kind === "scan-offset" ? "Avance des repères (mm/min)" : "Avance (mm/min)"} value={testCut.feed} onChange={feed => setEngraving(current => ({ ...current, feed }))} min={1}/>
+          <Numeric label={kind === "material" ? "Puissance des repères (%)" : "Puissance (%)"} value={testCut.power} onChange={power => setEngraving(current => ({ ...current, power }))} min={0.1} max={100}/>
+          {kind === "kerf" && <Numeric label="Passes" value={testCut.passes} onChange={passes => setEngraving(current => ({ ...current, passes }))} min={1} max={50} step={1}/>}
+          <Numeric label="S maximal (GRBL $30)" value={testCut.maxPower} onChange={maxPower => setEngraving(current => ({ ...current, maxPower }))} min={1}/>
+          <label className="block space-y-1 text-xs text-slate-600">Mode laser
+            <select className={fieldClass} value={testCut.mode} onChange={event => setEngraving(current => ({ ...current, mode: event.target.value as LaserCutSettings["mode"] }))}>
+              <option value="M4">M4 dynamique</option><option value="M3">M3 constant</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <button type="button" className={buttonClass} onClick={generate}>Créer le G-code et afficher l’aperçu</button>
       {error&&<p role="alert" className="text-xs text-red-700">{error}</p>}
     </fieldset>
     <details className="border-t border-slate-200 pt-3"><summary className="cursor-pointer text-xs font-semibold">Mesures et calculateurs</summary><div className="pt-3 space-y-4">
@@ -74,14 +121,15 @@ export function LaserCalibrationPanel({cut,x,y,disabled,onLoadProgram,onApplyInt
       <div className="space-y-2"><h4 className="text-xs font-semibold">Spot et intervalle de balayage</h4><Numeric label="Largeur de spot mesurée (mm)" value={spot} onChange={setSpot} min={0.02} max={20}/><p className="text-xs">{Number.isFinite(spot)&&spot>=0.02&&spot<=20?`Point de départ : pas ${display(spot*0.8)} mm (recouvrement 20 %). Affiner avec les aplats.`:"Mesurer un trait net sur le matériau."}</p><Numeric label="Intervalle retenu (mm)" value={interval} onChange={setInterval} min={0.025} max={2}/>{onApplyInterval&&<button className={buttonClass} type="button" disabled={disabled||!Number.isFinite(interval)||interval<0.025||interval>2} onClick={()=>onApplyInterval(interval)}>Appliquer au remplissage et à l’image</button>}</div>
       <div className="space-y-2">
         <h4 className="text-xs font-semibold">Décalage aller / retour</h4>
+        <Numeric label="Vitesse mesurée (mm/min)" value={scanCalibrationFeed} onChange={setCorrectionFeed} min={1} max={30000}/>
         <Numeric label="X aller moins X retour au même bord (mm)"
           value={scanDifference} onChange={setScanDifference}
           min={-2 * MAX_LASER_SCAN_OFFSET} max={2 * MAX_LASER_SCAN_OFFSET}/>
         <p className="text-xs text-slate-600">L’aller va vers X positif. Une correction positive décale chaque ligne dans le sens opposé à son déplacement.</p>
-        {validScanOffset && <p className="text-xs">Correction par sens de {display(scanOffset)} mm à {display(cut.feed)} mm/min.</p>}
+        {validScanOffset && <p className="text-xs">Correction par sens de {display(scanOffset)} mm à {display(scanCalibrationFeed)} mm/min.</p>}
         {onApplyScanOffset && (
           <button type="button" className={buttonClass} disabled={disabled || !validScanOffset}
-            onClick={() => onApplyScanOffset({ feed: cut.feed, offset: scanOffset })}>
+            onClick={() => onApplyScanOffset({ feed: scanCalibrationFeed, offset: scanOffset })}>
             Appliquer à cette vitesse
           </button>
         )}

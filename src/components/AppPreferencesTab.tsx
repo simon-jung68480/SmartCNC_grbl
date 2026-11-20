@@ -16,7 +16,7 @@ import {
   Home,
   LocateFixed,
 } from 'lucide-react';
-import { useAppPreferences } from '../utils/appPreferences';
+import { MAX_UI_SCALE, MIN_UI_SCALE, useAppPreferences } from '../utils/appPreferences';
 import {
   useAudioAlertSettings,
   playProbeContactBeep,
@@ -35,6 +35,85 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-slate-800">
+      {/* TAILLE DE L'INTERFACE & ZOOM ATELIER */}
+      <section className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5">
+        <div className="flex items-center gap-2.5 mb-3 text-sky-800 font-bold text-sm sm:text-base">
+          <ZoomIn className="w-5 h-5 text-sky-600" />
+          <h3>Zoom de l’interface</h3>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="app-ui-scale" className="text-xs font-semibold text-slate-800">
+              Niveau de zoom
+            </label>
+            <span className="font-mono text-sm font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+              {Math.round(preferences.uiScale * 100)} %
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-[11px] font-mono text-slate-500">{MIN_UI_SCALE * 100} %</span>
+            <input
+              id="app-ui-scale"
+              type="range"
+              min={MIN_UI_SCALE}
+              max={MAX_UI_SCALE}
+              step={0.05}
+              value={preferences.uiScale}
+              onChange={(e) => updatePreferences({ uiScale: parseFloat(e.target.value) || 1.0 })}
+              aria-valuetext={`${Math.round(preferences.uiScale * 100)} %`}
+              className="min-w-0 flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
+            />
+            <span className="text-[11px] font-mono text-slate-500">{MAX_UI_SCALE * 100} %</span>
+          </div>
+
+          <div className="grid gap-1.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,7rem),1fr))]">
+            {[
+              { label: '90% Compact', val: 0.9 },
+              { label: '100% Standard', val: 1.0 },
+              { label: '110% Confort', val: 1.1 },
+              { label: '125% Atelier (1.5m)', val: 1.25 },
+              { label: '140% Éloigné (2m+)', val: 1.4 },
+            ].map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => updatePreferences({ uiScale: preset.val })}
+                className={`py-1.5 px-2 text-xs font-medium rounded border transition-colors ${
+                  Math.abs(preferences.uiScale - preset.val) < 0.02
+                    ? 'bg-sky-600 text-white border-sky-700 font-bold'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mode Grand DRO */}
+        <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-slate-600" />
+              <label className="text-xs font-semibold text-slate-800">
+                Mode Grand DRO (Chiffres X, Y, Z extra-larges)
+              </label>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Agrandit les chiffres du panneau Coordonnées.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={preferences.largeDroFont}
+            onChange={(e) => updatePreferences({ largeDroFont: e.target.checked })}
+            className="w-5 h-5 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
+          />
+        </div>
+      </section>
+
       {/* 0. CONFIGURATION MACHINE & FINS DE COURSE (HOMING) */}
       <section className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-2 text-sky-800 font-bold text-sm sm:text-base">
@@ -257,86 +336,6 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
         </div>
       </section>
 
-      {/* 2. TAILLE DE L'INTERFACE & ZOOM ATELIER */}
-      <section className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5">
-        <div className="flex items-center gap-2.5 mb-3 text-sky-800 font-bold text-sm sm:text-base">
-          <ZoomIn className="w-5 h-5 text-sky-600" />
-          <h3>Taille de l'Interface & Zoom Visuel (Écran d'Atelier)</h3>
-        </div>
-        <p className="text-xs text-slate-600 mb-4">
-          Ajustez la taille globale de l'interface pour s'adapter à votre distance de travail ou à la résolution de votre moniteur d'atelier.
-        </p>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-slate-800">
-              Facteur de zoom de l'application :
-            </label>
-            <span className="font-mono text-sm font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-              {Math.round(preferences.uiScale * 100)} %
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 mb-3">
-            <span className="text-[11px] font-mono text-slate-500">80 %</span>
-            <input
-              type="range"
-              min={0.8}
-              max={1.5}
-              step={0.05}
-              value={preferences.uiScale}
-              onChange={(e) => updatePreferences({ uiScale: parseFloat(e.target.value) || 1.0 })}
-              className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
-            />
-            <span className="text-[11px] font-mono text-slate-500">150 %</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-            {[
-              { label: '90% Compact', val: 0.9 },
-              { label: '100% Standard', val: 1.0 },
-              { label: '110% Confort', val: 1.1 },
-              { label: '125% Atelier (1.5m)', val: 1.25 },
-              { label: '140% Éloigné (2m+)', val: 1.4 },
-            ].map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => updatePreferences({ uiScale: preset.val })}
-                className={`py-1.5 px-2 text-xs font-medium rounded border transition-colors ${
-                  Math.abs(preferences.uiScale - preset.val) < 0.02
-                    ? 'bg-sky-600 text-white border-sky-700 font-bold'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mode Grand DRO */}
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-slate-600" />
-              <label className="text-xs font-semibold text-slate-800">
-                Mode Grand DRO (Chiffres X, Y, Z extra-larges)
-              </label>
-            </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Augmente encore la taille de police des coordonnées sur le panneau de gauche pour une lecture immédiate de loin.
-            </p>
-          </div>
-          <input
-            type="checkbox"
-            checked={preferences.largeDroFont}
-            onChange={(e) => updatePreferences({ largeDroFont: e.target.checked })}
-            className="w-5 h-5 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
-          />
-        </div>
-      </section>
-
       {/* 3. DISPOSITION & GESTION DES FENÊTRES */}
       <section className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2.5 mb-3 text-sky-800 font-bold text-sm sm:text-base">
@@ -344,7 +343,7 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
           <h3>Disposition & Dimensions des Fenêtres</h3>
         </div>
         <p className="text-xs text-slate-600 mb-3">
-          Toutes les fenêtres sont librement redimensionnables à la souris sur l'interface principale grâce aux séparateurs bleus interactifs (avec sauvegarde automatique dans votre navigateur).
+          Dans l’atelier CNC, ouvrez Disposition pour déplacer ou masquer les panneaux. Utilisez les séparateurs pour ajuster leur taille.
         </p>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3">
@@ -353,7 +352,7 @@ export const AppPreferencesTab: React.FC<AppPreferencesTabProps> = ({ onResetLay
               Réinitialiser la disposition d'origine
             </span>
             <span className="text-[11px] text-slate-500">
-              Restaure les largeurs et hauteurs d'origine des 3 colonnes et des 4 panneaux.
+              Restaure la position, la visibilité et les dimensions des panneaux CNC.
             </span>
           </div>
           <button

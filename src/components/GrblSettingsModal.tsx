@@ -599,10 +599,10 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-2 sm:p-5">
-      <div className="bg-white border border-slate-300 text-slate-800 rounded-2xl shadow-2xl w-full max-w-7xl h-[92vh] flex flex-col overflow-hidden">
+      <div className="bg-white border border-slate-300 text-slate-800 rounded-2xl shadow-2xl w-full max-w-7xl h-full flex flex-col overflow-hidden">
         {/* Barre de navigation principale supérieure : GRBL ($$) vs Préférences App */}
         <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setMainTab('grbl')}
@@ -632,9 +632,6 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
             >
               <Sliders className="w-4 h-4 text-sky-600" />
               <span>Préférences de l'Application</span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                Zoom, 3D, Sécurité
-              </span>
             </button>
           </div>
 

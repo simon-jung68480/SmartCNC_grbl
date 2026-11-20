@@ -1,4 +1,5 @@
-import { calibrationPaths, generateVectorGCode, materialTestPaths, type LaserCutSettings, type LaserPath } from "./laserCam";
+import { calibrationPaths, generateVectorGCode, materialTestPaths, type LaserCutSettings, type LaserPath, type MaterialTest } from "./laserCam";
+import { calibrationLabel, calibrationLabelWidth } from "./laserCalibrationLabels";
 
 export type LaserCalibrationKind = "material" | "focus" | "interval" | "passes" | "dimensions" | "kerf" | "scan-offset";
 export interface LaserCalibrationConfig {
@@ -13,9 +14,12 @@ export interface LaserCalibrationConfig {
   referenceZ: number;
   zFeed: number;
   allowZ: boolean;
+  matrix?: Pick<MaterialTest, "columns" | "rows" | "minFeed" | "maxFeed" | "hatch">;
+  scanFeeds?: number[];
 }
 export interface LaserCalibrationProgram { name: string; code: string; notes: string[] }
 const f = (n: number) => Number(n.toFixed(4)).toString();
+const gcodeValue = (n: number) => Number(n.toFixed(3)).toString();
 function range(n: number, min: number, max: number, label: string) {
   if (!Number.isFinite(n) || n < min || n > max) throw new Error(`${label} : valeur attendue entre ${min} et ${max}.`);
 }
@@ -35,21 +39,37 @@ export function measuredKerf(opening: number, insert: number): number {
 }
 export function buildLaserCalibration(c: LaserCalibrationConfig, cut: LaserCutSettings): LaserCalibrationProgram {
   range(c.x, -10000, 10000, "Position X"); range(c.y, -10000, 10000, "Position Y");
+  range(cut.feed, 1, 30000, "Avance de gravure");
   range(c.size, 2, 200, "Taille"); range(c.gap, 1, 50, "Écart");
   range(c.samples, 2, 10, "Échantillons");
   if (!Number.isInteger(c.samples)) throw new Error("Le nombre d’échantillons doit être entier.");
-  const clean: LaserCutSettings = { ...cut, passes: 1, focus: undefined };
+  const clean: LaserCutSettings = { ...cut, passes: 1, focus: undefined, scanOffsets: undefined, contourDirection: "original" };
   const values = Array.from({length:c.samples}, (_,i)=> c.min + (c.max-c.min)*i/(c.samples-1));
   const paths: LaserPath[] = [];
-  const notes: string[] = ["Repère pièce en mm. Contrôler le cadrage avant lancement. Les numéros et valeurs figurent dans le G-code, pas gravés sur le matériau."];
+  const notes: string[] = ["Repère pièce en mm. Contrôler le cadrage avant lancement."];
   const offset = (ps: LaserPath[], x = c.x, y = c.y) => ps.map(p => ({ ...p, points:p.points.map(q=>({x:q.x+x,y:q.y+y})) }));
   const square = (x: number, y: number, size: number, label: string): LaserPath => ({label, points:[{x,y},{x:x+size,y},{x:x+size,y:y+size},{x,y:y+size},{x,y}]});
+  const pitch = c.size + c.gap;
+  const labelHeight = 2;
   let name: string;
   if (c.kind === "material") {
     range(c.min, 0.1, 100, "Puissance minimale"); range(c.max, c.min, 100, "Puissance maximale");
     name = "Matrice vitesse-puissance";
-    paths.push(...offset(materialTestPaths({columns:c.samples,rows:c.samples,size:c.size,gap:c.gap,minFeed:cut.feed/2,maxFeed:cut.feed*2,minPower:c.min,maxPower:c.max,hatch:0.15})));
-    notes.push(`Colonnes : vitesse de ${f(cut.feed/2)} à ${f(cut.feed*2)} mm/min. Lignes : puissance de ${f(c.min)} à ${f(c.max)} %.`);
+    const matrix = c.matrix ?? { columns: c.samples, rows: c.samples, minFeed: cut.feed / 2, maxFeed: cut.feed * 2, hatch: 0.15 };
+    if (c.matrix) {
+      range(matrix.minFeed, 1, 30000, "Vitesse minimale");
+      range(matrix.maxFeed, matrix.minFeed, 30000, "Vitesse maximale");
+    }
+    paths.push(...offset(materialTestPaths({ ...matrix, size: c.size, gap: c.gap, minPower: c.min, maxPower: c.max })));
+    for (let col = 0; col < matrix.columns; col++) {
+      const feed = matrix.minFeed + (matrix.maxFeed - matrix.minFeed) * col / (matrix.columns - 1);
+      paths.push(...calibrationLabel(`F${gcodeValue(feed)}`, c.x + col * pitch + (c.size + labelHeight) / 2, c.y + matrix.rows * pitch, labelHeight, true));
+    }
+    for (let row = 0; row < matrix.rows; row++) {
+      const power = c.min + (c.max - c.min) * row / (matrix.rows - 1);
+      paths.push(...calibrationLabel(`${f(power)}%`, c.x + matrix.columns * pitch, c.y + row * pitch + (c.size - labelHeight) / 2, labelHeight));
+    }
+    notes.push(`Vitesses F gravées en bout de colonne (${f(matrix.minFeed)} à ${f(matrix.maxFeed)} mm/min). Puissances gravées à droite de chaque ligne (${f(c.min)} à ${f(c.max)} %).`);
   } else if (c.kind === "focus") {
     if (!c.allowZ) throw new Error("Autorisez explicitement les mouvements Z pour le test de focus.");
     range(c.min,-20,20,"Décalage Z minimal"); range(c.max,c.min,20,"Décalage Z maximal");
@@ -59,15 +79,24 @@ export function buildLaserCalibration(c: LaserCalibrationConfig, cut: LaserCutSe
       const path = {label:`Ligne ${i+1} - Z relatif ${f(z)} mm`, points:[{x:c.x,y:c.y+i*c.gap},{x:c.x+c.size,y:c.y+i*c.gap}]};
       return `M5\nG1 Z${f(c.referenceZ+z)} F${f(c.zFeed)}\n${generateVectorGCode([path],clean,name)}`;
     });
-    notes.push("Une ligne par hauteur Z, du minimum au maximum. Retenir la ligne la plus fine. Z positif monte la tête. Retour à la référence en fin de test.", ...values.map((v,i)=>`Ligne ${i+1} : Z référence ${f(c.referenceZ)} + ${f(v)} mm.`));
-    return {name,code:[`; ${name}`,"M5","G21","G90","G17","G94",...blocks,"M5",`G1 Z${f(c.referenceZ)} F${f(c.zFeed)}`,"G90"].join("\n"),notes};
+    const height = Math.min(labelHeight, c.gap * 0.8);
+    const labels = values.flatMap((v, i) =>
+      calibrationLabel(`Z${f(c.referenceZ + v)}`, c.x + pitch, c.y + i * c.gap, height));
+    notes.push("Une ligne par hauteur Z, du minimum au maximum. Retenir la ligne la plus fine. Z positif monte la tête. Les hauteurs Z pièce sont gravées après le retour à la référence.", ...values.map((v,i)=>`Ligne ${i+1} : Z référence ${f(c.referenceZ)} + ${f(v)} mm.`));
+    return { name, code: [
+      `; ${name}`, "M5", "G21", "G90", "G17", "G94", ...blocks,
+      "M5", `G1 Z${f(c.referenceZ)} F${f(c.zFeed)}`, generateVectorGCode(labels, clean, "Repères Z"),
+    ].join("\n"), notes };
   } else if (c.kind === "interval") {
     name = "Échelle de pas de balayage";
     range(c.min,0.025,2,"Pas minimal"); range(c.max,c.min,2,"Pas maximal");
+    let x = c.x;
     for (const [i,step] of values.entries()) {
-      const x = c.x+i*(c.size+c.gap);
       const rows = Math.floor(c.size/step);
       for(let row=0;row<=rows;row++) paths.push({label:`Case ${i+1} - pas ${f(step)} mm`,points:[{x:x+(row%2?c.size:0),y:c.y+row*step},{x:x+(row%2?0:c.size),y:c.y+row*step}]});
+      const label = `${f(step)} MM / ${Math.round(25.4 / step)} DPI`;
+      paths.push(...calibrationLabel(label, x, c.y + pitch, labelHeight));
+      x += Math.max(c.size, calibrationLabelWidth(label, labelHeight)) + c.gap;
     }
     notes.push("Choisir le plus grand pas donnant un aplat régulier sans bandes.",...values.map((v,i)=>`Case ${i+1} de gauche à droite : ${f(v)} mm (${f(25.4/v)} DPI).`));
   } else if (c.kind === "passes") {
@@ -94,8 +123,21 @@ export function buildLaserCalibration(c: LaserCalibrationConfig, cut: LaserCutSe
     notes.push(`Carré nominal ${c.size} mm, ${cut.passes} passes. Mesurer l’ouverture et l’insert séparé : kerf = (ouverture − insert) / 2. Décalage du centre d’outil = kerf / 2. Ce test n’applique aucune compensation au dessin.`);
   } else if(c.kind === "scan-offset") {
     name = "Alignement du balayage aller-retour";
-    for(let row=0;row<20;row++) paths.push({label:`Ligne ${row+1} - ${row%2?"retour":"aller"}`,points:[{x:c.x+(row%2?c.size:0),y:c.y+row*0.4},{x:c.x+(row%2?0:c.size),y:c.y+row*0.4}]});
-    notes.push(`Lignes alternées à ${cut.feed} mm/min. Comparer les extrémités des lignes aller/retour. La correction par sens est la moitié de leur décalage relatif. Répéter pour chaque vitesse utilisée. Cette version mesure le défaut sans appliquer de compensation automatique ni délai firmware.`);
+    const feeds = c.scanFeeds ?? [cut.feed];
+    range(feeds.length, 1, 10, "Nombre de vitesses");
+    feeds.forEach(feed => range(feed, 1, 30000, "Vitesse de balayage"));
+    if (new Set(feeds.map(gcodeValue)).size !== feeds.length) throw new Error("Saisissez des vitesses de balayage distinctes.");
+    for (const [i, feed] of feeds.entries()) {
+      const y = c.y + i * (19 * 0.4 + c.gap);
+      for (let row = 0; row < 20; row++) {
+        const lineY = y + row * 0.4;
+        const left = { x: c.x, y: lineY };
+        const right = { x: c.x + c.size, y: lineY };
+        paths.push({ label: `Ligne ${row + 1} - ${row % 2 ? "retour" : "aller"}`, feed, points: row % 2 ? [right, left] : [left, right] });
+      }
+      paths.push(...calibrationLabel(`F${gcodeValue(feed)}`, c.x + pitch, y + 2.8, labelHeight));
+    }
+    notes.push("Chaque bande de 20 lignes porte sa vitesse F en mm/min. Comparer les extrémités des lignes aller/retour dans chaque bande et diviser leur décalage relatif par deux.");
   } else throw new Error("Calibration inconnue.");
   return { name, code:generateVectorGCode(paths,clean,name), notes };
 }

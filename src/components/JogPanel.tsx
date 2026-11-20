@@ -57,6 +57,12 @@ export const JogPanel: React.FC<JogPanelProps> = ({
   const lastDpadTimeRef = useRef<number>(0);
   const lastAnalogSendRef = useRef<number>(0);
 
+  useEffect(() => () => {
+    if (!continuousActiveRef.current && !gamepadWasJoggingRef.current) return;
+    if (onCancelJog) onCancelJog();
+    else onSendRealtime?.(0x85);
+  }, [onCancelJog, onSendRealtime]);
+
   const canJog =
     status.connected && (status.state === 'Idle' || status.state === 'Jog' || status.state === 'Check');
 
@@ -146,6 +152,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.activeElement?.closest('dialog[open]')) return;
       if (isInputFocused(e.target) || isInputFocused(document.activeElement)) return;
       if (e.repeat && jogMode === 'step') return;
 

@@ -1084,7 +1084,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   }, [stats?.fileName, stats?.totalLines]);
 
   return (
-    <div className="relative w-full h-full min-h-[380px] bg-[#eef2f6] rounded-lg overflow-hidden border border-slate-300 shadow-sm select-none flex flex-col">
+    <div className="relative w-full h-full min-h-0 bg-[#eef2f6] rounded-lg overflow-hidden border border-slate-300 shadow-sm select-none flex flex-col">
       {/* Canvas 3D Three.js */}
       <div ref={containerRef} className="w-full h-full flex-1 cursor-grab active:cursor-grabbing" />
 

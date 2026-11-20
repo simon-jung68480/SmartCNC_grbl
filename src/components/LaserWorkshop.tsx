@@ -6,15 +6,12 @@ import {
   FileUp,
   Flame,
   FolderOpen,
-  Grid2X2,
   Image,
-  Layers,
   Play,
   RotateCcw,
   Save,
   Scan,
   Settings2,
-  Square,
 } from "lucide-react";
 import type {
   Coordinates,
@@ -25,10 +22,6 @@ import type {
 import {
   analyseLaserGCode,
   boundsOfPaths,
-  calibrationPaths,
-  generateVectorGCode,
-  materialTestPaths,
-  placePaths,
   expandLaserBounds,
   laserSpotDiameter,
   defaultLaserFocusSettings,
@@ -38,7 +31,6 @@ import {
   type LaserPath,
   type LaserScanOffset,
   type Point2,
-  type MaterialTest,
   type Placement,
 } from "../utils/laserCam";
 import type { LaserFillSettings } from "../utils/laserFill";
@@ -79,9 +71,7 @@ interface Props {
 }
 type Source =
   | { kind: "vector"; name: string; paths: LaserPath[]; warnings: string[]; objects: LaserDocumentObject[]; selectedId: string }
-  | { kind: "test"; name: string }
   | { kind: "gcode"; name: string };
-type Pattern = "material" | "square-circle" | "lines";
 const emptyDrawing: Source = { kind: "vector", name: "Dessin sans titre", paths: [], warnings: [], objects: [], selectedId: "" };
 const layerColors = [
   { hex: "#000000", name: "Noir" }, { hex: "#334155", name: "Ardoise" }, { hex: "#0369a1", name: "Bleu" }, { hex: "#b91c1c", name: "Rouge" },
@@ -108,17 +98,6 @@ const initialCut: LaserCutSettings = {
   passes: 1,
   mode: "M4",
   focus: defaultLaserFocusSettings,
-};
-const initialTest: MaterialTest = {
-  columns: 5,
-  rows: 5,
-  size: 8,
-  gap: 3,
-  minFeed: 500,
-  maxFeed: 2500,
-  minPower: 10,
-  maxPower: 50,
-  hatch: 0.4,
 };
 const numberLabel = (v: number) => Number(v.toFixed(2)).toLocaleString("fr-FR");
 const duration = (s: number) =>
@@ -207,11 +186,9 @@ export const LaserWorkshop: React.FC<Props> = ({
   const focus = cut.focus ?? initialCut.focus!;
   const changeFocus = (patch: Partial<LaserFocusSettings>) =>
     setCut((c) => ({ ...c, focus: { ...(c.focus ?? initialCut.focus!), ...patch } }));
-  const [test, setTest] = useState<MaterialTest>(initialTest),
-    [pattern, setPattern] = useState<Pattern>("material"),
-    [calibrationSize, setCalibrationSize] = useState(30);
   const [lockedRatio, setLockedRatio] = useState(true);
   const [layerDisplay, setLayerDisplay] = useState<Record<string, Pick<LaserDocumentObject, "hidden">>>({});
+
   const documentObjects = useMemo(() => {
     if (source.kind !== "vector") return [];
     const objects = source.objects.map(object => ({
@@ -227,20 +204,18 @@ export const LaserWorkshop: React.FC<Props> = ({
       source,
       placement,
       cut,
-      test,
-      pattern,
-      calibrationSize,
       fill,
       effectivePlacement,
       scanOffsets,
     }),
-    [source, placement, cut, test, pattern, calibrationSize, fill, effectivePlacement, scanOffsets],
+    [source, placement, cut, fill, effectivePlacement, scanOffsets],
   );
   const [program, setProgram] = useState<{
     name: string;
     code: string;
     signature: typeof signature | null;
     notes?: string[];
+    maxPower?: number;
     rasterOverscan?: number;
     spotDiameter?: number;
     focusSummary?: string;
@@ -297,16 +272,14 @@ export const LaserWorkshop: React.FC<Props> = ({
       },
     };
   }, [program, spotDiameter]);
-  const scaleMismatch =
-    !!program?.signature &&
-    machineMaxPower !== undefined &&
-    program.signature.cut.maxPower !== machineMaxPower;
+  const programMaxPower = program?.maxPower ?? program?.signature?.cut.maxPower;
+  const scaleMismatch = programMaxPower !== undefined && machineMaxPower !== undefined && programMaxPower !== machineMaxPower;
   const powerExceeded =
     !!analysis &&
     machineMaxPower !== undefined &&
     analysis.stats.maxSpindleSpeed > machineMaxPower;
   const focusInputsValid =
-    !focus.enabled ||
+    program?.maxPower !== undefined || !focus.enabled ||
     (Number.isFinite(focus.spotDiameter) &&
       focus.spotDiameter >= 0.02 &&
       focus.spotDiameter <= 20 &&
@@ -452,29 +425,6 @@ export const LaserWorkshop: React.FC<Props> = ({
     } catch (error) { setError((error as Error).message); }
     finally { setWorking(false); }
   };
-  const selectPattern = (kind: Pattern) => {
-    if (source.kind !== "test") setCut(current => ({ ...current, focus: initialCut.focus }));
-    setPattern(kind);
-    setSource({
-      kind: "test",
-      name:
-        kind === "material"
-          ? "Test vitesse-puissance"
-          : kind === "lines"
-            ? "Lignes de mise au point"
-            : "Carré et cercle de précision",
-    });
-    setProgram(null);
-    setWorkspaceView("preview");
-    setInspector("operation");
-    setError("");
-    setPlacement((p) => ({
-      ...p,
-      rotation: 0,
-      mirrorX: false,
-      mirrorY: false,
-    }));
-  };
   const importFiles = async (files: File[]) => {
     setWorking(true);
     setError("");
@@ -536,51 +486,31 @@ export const LaserWorkshop: React.FC<Props> = ({
     }
   };
   const generate = async () => {
+    if (source.kind !== "vector") return;
     setError("");
     setWorking(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 20));
-      let code = "",
-        notes: string[] = [];
       const generationStatus = latestStatus.current;
       const startReference = effectivePlacement.startFrom === "current-position" ? {
         point: { x: generationStatus.wpos.x, y: generationStatus.wpos.y }, frame: workFrame(generationStatus),
       } : undefined;
       if (startReference && (!generationStatus.connected || generationStatus.state !== "Idle"))
         throw new Error("La position actuelle exige une machine connectée et à l’arrêt.");
-      const machineCut = { ...cut, scanOffsets };
-      let rasterOverscan = 0;
-      let spotDiameter = laserSpotDiameter(cut);
       const describeFocus = (name: string, settings?: LaserFocusSettings) => settings?.enabled
         ? settings.controlZ ? `${name} · Z cible ${numberLabel(settings.referenceZ + settings.offset)} mm`
           : `${name} · hors focus manuel ${numberLabel(settings.offset)} mm` : "";
-      const focusSummary = source.kind === "vector"
-        ? documentObjects.filter(object => object.enabled).map(object => describeFocus(object.name, object.cut.focus)).filter(Boolean).join("\n")
-        : describeFocus(source.name, cut.focus);
-      if (source.kind === "vector") {
-        const generated = generateLaserDocument(documentObjects, machineCut);
-        code = generated.code; notes = generated.notes; rasterOverscan = generated.rasterOverscan;
-        spotDiameter = generated.spotDiameter;
-      } else if (source.kind !== "gcode") {
-        const paths =
-          pattern === "material"
-              ? materialTestPaths(test)
-              : calibrationPaths(pattern, calibrationSize);
-        const b = boundsOfPaths(paths),
-          config =
-            source.kind === "test"
-              ? { ...placement, width: b.width, height: b.height }
-              : placement;
-        const placed = placePaths(paths, config);
-        code = generateVectorGCode(placed, machineCut, source.name);
-      }
+      const focusSummary = documentObjects.filter(object => object.enabled)
+        .map(object => describeFocus(object.name, object.cut.focus)).filter(Boolean).join("\n");
+      const { code: generatedCode, notes, rasterOverscan, spotDiameter } = generateLaserDocument(documentObjects, { ...cut, scanOffsets });
+      let code = generatedCode;
       if (effectivePlacement.startFrom !== "absolute" || effectivePlacement.offset.x !== 0 || effectivePlacement.offset.y !== 0) {
         const bounds = analyseLaserGCode(code, source.name).bounds;
         if (!bounds) throw new Error("Aucun tracé gravé à positionner.");
         code = placeLaserJob(code, bounds, effectivePlacement, startReference?.point);
       }
       setProgram({
-        name: source.kind === "vector" && documentObjects.length > 1 ? "Composition laser.nc" : source.name.replace(/\.[^.]+$/, "") + ".nc",
+        name: documentObjects.length > 1 ? "Composition laser.nc" : source.name.replace(/\.[^.]+$/, "") + ".nc",
         code,
         signature,
         notes,
@@ -700,12 +630,6 @@ export const LaserWorkshop: React.FC<Props> = ({
                     <option value="M3">M3 — puissance constante</option>
                   </select>
                 </label>
-                {source.kind === "test" && pattern === "material" && (
-                  <p className="text-[11px] text-amber-800 mt-2">
-                    La grille utilise ses propres plages de vitesse et de
-                    puissance.
-                  </p>
-                )}
                 {selectedLayer && !raster && fill.mode !== "fill" && (!combinedOperation || editingContours) && (
                   <label className="mt-3 block space-y-1 text-xs text-slate-600">
                     <span>Sens du contour</span>
@@ -983,7 +907,7 @@ export const LaserWorkshop: React.FC<Props> = ({
         </div>
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
           <div className="min-w-0 space-y-2">
-            {(source.kind === "test" || !!selectedLayer) && (
+            {selectedLayer && (
               <fieldset
                 disabled={busy || working}
                 className={`${card} disabled:opacity-60`}
@@ -992,22 +916,18 @@ export const LaserWorkshop: React.FC<Props> = ({
                   Dimensions et placement
                 </h2>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {source.kind !== "test" && (
-                    <>
-                      <NumberField
-                        label="Largeur (mm)"
-                        value={placement.width}
-                        min={0.01}
-                        onChange={(v) => setSize("width", v)}
-                      />
-                      <NumberField
-                        label="Hauteur (mm)"
-                        value={placement.height}
-                        min={0.01}
-                        onChange={(v) => setSize("height", v)}
-                      />
-                    </>
-                  )}
+                  <NumberField
+                    label="Largeur (mm)"
+                    value={placement.width}
+                    min={0.01}
+                    onChange={(v) => setSize("width", v)}
+                  />
+                  <NumberField
+                    label="Hauteur (mm)"
+                    value={placement.height}
+                    min={0.01}
+                    onChange={(v) => setSize("height", v)}
+                  />
                   <NumberField
                     label="Position X (mm)"
                     value={placement.x}
@@ -1020,16 +940,14 @@ export const LaserWorkshop: React.FC<Props> = ({
                   />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-                  {source.kind !== "test" && (
-                    <label className="flex gap-1.5 items-center">
-                      <input
-                        type="checkbox"
-                        checked={lockedRatio}
-                        onChange={(e) => setLockedRatio(e.target.checked)}
-                      />
-                      Conserver les proportions
-                    </label>
-                  )}
+                  <label className="flex gap-1.5 items-center">
+                    <input
+                      type="checkbox"
+                      checked={lockedRatio}
+                      onChange={(e) => setLockedRatio(e.target.checked)}
+                    />
+                    Conserver les proportions
+                  </label>
                   <label className="flex items-center gap-1">
                     Ancrage{" "}
                     <select
@@ -1240,7 +1158,6 @@ export const LaserWorkshop: React.FC<Props> = ({
               }}
               onRemove={removeObject}
             />}
-            {source.kind === "test" && <>{operationSettings}{focusSettings}</>}
             {source.kind === "gcode" && focusSettings}
             </div>
             <div hidden={inspector !== "motion"}>
@@ -1253,98 +1170,20 @@ export const LaserWorkshop: React.FC<Props> = ({
               <LaserMachineSettings placement={effectivePlacement} onPlacement={updateJobPlacement}
                 scanOffsets={scanOffsets} onScanOffsets={setScanOffsets} disabled={busy || working} />
             </div>
-            <div className="space-y-2" hidden={inspector !== "library"}>
-            <fieldset
-              disabled={busy || working}
-              className={`${card} disabled:opacity-60`}
-            >
-              <h2 className="text-sm font-bold flex gap-2 items-center mb-3">
-                <Grid2X2 size={17} />
-                Bibliothèque de tests
-              </h2>
-              <div className="grid grid-cols-3 gap-1.5">
-                {(
-                  [
-                    ["material", "Vitesse / puissance"],
-                    ["square-circle", "Carré + cercle"],
-                    ["lines", "Mise au point"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    className={`rounded-lg border p-2 text-[11px] font-semibold ${source.kind === "test" && pattern === value ? "border-amber-500 bg-amber-50 text-amber-900" : "border-slate-200 hover:bg-slate-50"}`}
-                    onClick={() => selectPattern(value)}
-                  >
-                    {value === "material" ? (
-                      <Grid2X2 size={19} className="mx-auto mb-1" />
-                    ) : value === "lines" ? (
-                      <Layers size={19} className="mx-auto mb-1" />
-                    ) : (
-                      <Square size={19} className="mx-auto mb-1" />
-                    )}
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {source.kind === "test" &&
-                (pattern === "material" ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      {(
-                        [
-                          ["columns", "Colonnes (vitesses)", 2, 10],
-                          ["rows", "Lignes (puissances)", 2, 10],
-                          ["size", "Carré (mm)", 1, 100],
-                          ["gap", "Écart (mm)", 0, 50],
-                          ["minFeed", "Vitesse min (mm/min)", 1, 30000],
-                          ["maxFeed", "Vitesse max (mm/min)", 1, 30000],
-                          ["minPower", "Puissance min (%)", 1, 100],
-                          ["maxPower", "Puissance max (%)", 1, 100],
-                          ["hatch", "Remplissage (mm)", 0.05, 5],
-                        ] as const
-                      ).map(([key, label, min, max]) => (
-                        <NumberField
-                          key={key}
-                          label={label}
-                          value={test[key]}
-                          min={min}
-                          max={max}
-                          onChange={(value) =>
-                            setTest((t) => ({ ...t, [key]: value }))
-                          }
-                        />
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      Vitesse croissante de gauche à droite ; puissance
-                      croissante du bas vers le haut. Les valeurs de chaque case
-                      figurent dans les commentaires du G-code. Aucun texte
-                      n’est gravé.
-                    </p>
-                  </>
-                ) : (
-                  <div className="mt-3">
-                    <NumberField
-                      label="Dimension du motif (mm)"
-                      value={calibrationSize}
-                      min={1}
-                      onChange={setCalibrationSize}
-                    />
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      {pattern === "lines"
-                        ? "10 lignes à puissance fixe. Ajustez la hauteur de la tête entre les essais pour comparer la mise au point."
-                        : "Carré extérieur et cercle de diamètre 80 % du carré, pour contrôler dimensions et géométrie."}
-                    </p>
-                  </div>
-                ))}
-            </fieldset>
-            <LaserCalibrationPanel cut={cut} x={placement.x} y={placement.y} disabled={busy || working}
-              onLoadProgram={(name, code, notes) => { setSource({ kind: "gcode", name }); setProgram({ name, code, signature: null, notes }); setConfirmed(false); setError(""); setWorkspaceView("preview"); }}
-              onApplyScanOffset={entry => setScanOffsets(rows => [...rows.filter(row => row.feed !== entry.feed), entry])}
-              onApplyInterval={mm => {
-                if (raster) setRaster(current => ({ ...current, interval: mm }));
-                else setFill(current => ({ ...current, spacing: mm }));
-              }} />
+            <div hidden={inspector !== "library"}>
+              <LaserCalibrationPanel cut={cut} x={placement.x} y={placement.y} disabled={busy || working}
+                onLoadProgram={(name, code, notes, maxPower) => {
+                  setSource({ kind: "gcode", name });
+                  setProgram({ name, code, signature: null, notes, maxPower });
+                  setConfirmed(false);
+                  setError("");
+                  setWorkspaceView("preview");
+                }}
+                onApplyScanOffset={entry => setScanOffsets(rows => [...rows.filter(row => row.feed !== entry.feed), entry])}
+                onApplyInterval={mm => {
+                  if (raster) setRaster(current => ({ ...current, interval: mm }));
+                  else setFill(current => ({ ...current, spacing: mm }));
+                }} />
             </div>
             </div>
             <section className={`${card} border-amber-200`}>
@@ -1415,7 +1254,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                   setPlaybackProgram(program);
                   setWorkspaceView("preview");
                   try {
-                    await onSimulate(program.name, program.code, program.signature?.cut.maxPower ?? Math.max(1000, analysis?.stats.maxSpindleSpeed ?? 0));
+                    await onSimulate(program.name, program.code, programMaxPower ?? Math.max(1000, analysis?.stats.maxSpindleSpeed ?? 0));
                   } catch (err) { setPlaybackProgram(null); setError((err as Error).message); }
                   finally { setWorking(false); }
                 }}
