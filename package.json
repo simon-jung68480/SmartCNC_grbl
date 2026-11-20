@@ -1,6 +1,6 @@
 {
   "name": "smart-cnc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Interface de commande CNC moderne pour Arduino Uno + CNC Shield V3.0 (GRBL 1.1)",
   "type": "module",
   "main": "desktop/main.cjs",
