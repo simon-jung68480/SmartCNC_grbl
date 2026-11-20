@@ -16,7 +16,7 @@ interface Props {
   onDraw: (shape: LaserShape, path: LaserPath) => void;
   onRemove: (id: string) => void;
 }
-const button = 'rounded border border-slate-300 bg-white px-2 py-1.5 text-xs hover:bg-slate-100 disabled:opacity-40';
+const button = 'inline-flex items-center justify-center min-h-8 rounded-lg border border-slate-700/80 bg-[#1b2436] px-2.5 py-1.5 text-xs font-semibold text-slate-100 hover:bg-[#243047] disabled:opacity-40 cursor-pointer transition-colors';
 const tools = [{ tool: 'select', label: 'Sélectionner', Icon: MousePointer2 }, { tool: 'line', label: 'Ligne', Icon: Minus },
   { tool: 'rectangle', label: 'Rectangle', Icon: Square }, { tool: 'ellipse', label: 'Ellipse', Icon: Circle }] as const;
 const pathData = (path: LaserPath) => path.points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${-point.y}`).join(' ') + (path.fillClosed ? 'Z' : '');
@@ -121,19 +121,19 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
   const gridStep = Math.pow(10, Math.floor(Math.log10(Math.max(width, height) / 8)));
   const rulerStep = gridStep * 5;
   const rulerTicks = (min: number, max: number) => Array.from({ length: Math.max(0, Math.floor(max / rulerStep) - Math.ceil(min / rulerStep) + 1) }, (_, index) => (Math.ceil(min / rulerStep) + index) * rulerStep);
-  return <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-    <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-200">
-      <div><h2 className="text-sm font-bold">Plateau de dessin</h2><p className="text-[11px] text-slate-500">{tool === 'select' ? 'Glisser pour déplacer · poignée pour redimensionner' : `${laserShapeNames[tool]} · glisser sur le plateau`}</p></div>
-      <div className="flex gap-1"><button className={button} onClick={() => { setFit('bed'); setZoom(1); }}>Plateau</button><button className={button} onClick={() => { setFit('drawing'); setZoom(1); }}>Dessin</button><button className={button} aria-label="Zoom arrière du dessin" onClick={() => setZoom(value => Math.max(.25, value / 1.3))}>−</button><button className={button} aria-label="Zoom avant du dessin" onClick={() => setZoom(value => Math.min(20, value * 1.3))}>+</button></div>
+  return <section className="overflow-hidden rounded-xl border border-slate-800 bg-[#141b27] text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)]">
+    <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-800 bg-[#0f1520]">
+      <div><h2 className="text-sm font-bold text-slate-50">Plateau de dessin</h2><p className="text-[11px] text-slate-300">{tool === 'select' ? 'Glisser pour déplacer · poignée pour redimensionner' : `${laserShapeNames[tool]} · glisser sur le plateau`}</p></div>
+      <div className="flex gap-1.5"><button className={button} onClick={() => { setFit('bed'); setZoom(1); }}>Plateau</button><button className={button} onClick={() => { setFit('drawing'); setZoom(1); }}>Dessin</button><button className={button} aria-label="Zoom arrière du dessin" onClick={() => setZoom(value => Math.max(.25, value / 1.3))}>−</button><button className={button} aria-label="Zoom avant du dessin" onClick={() => setZoom(value => Math.min(20, value * 1.3))}>+</button></div>
     </div>
-    <div className="flex border-t border-slate-100">
-    <div role="group" aria-label="Outils de dessin" className="flex shrink-0 flex-col gap-1 border-r border-slate-200 bg-slate-50 p-2">
+    <div className="flex border-t border-slate-800">
+    <div role="group" aria-label="Outils de dessin" className="flex shrink-0 flex-col gap-1.5 border-r border-slate-800 bg-[#0f1520] p-2">
       {tools.map(({ tool: value, label, Icon }) => <button key={value} type="button" title={label} aria-label={label} aria-pressed={tool === value} disabled={disabled}
-        className={`grid size-9 place-items-center rounded-md disabled:opacity-40 ${tool === value ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-300' : 'text-slate-600 hover:bg-slate-200'}`} onClick={() => setTool(value)}><Icon size={17} /></button>)}
+        className={`grid size-9 place-items-center rounded-lg cursor-pointer transition-colors disabled:opacity-40 ${tool === value ? 'bg-sky-500/20 text-sky-200 ring-1 ring-sky-400' : 'text-slate-300 hover:bg-[#1b2436] hover:text-white'}`} onClick={() => setTool(value)}><Icon size={17} /></button>)}
       <button type="button" title="Supprimer le tracé sélectionné (Suppr)" aria-label="Supprimer la sélection du dessin" disabled={disabled || !selected}
-        className="grid size-9 place-items-center rounded-md text-rose-700 hover:bg-rose-100 disabled:opacity-40" onClick={() => selected && onRemove(selected.id)}><Trash2 size={17} /></button>
+        className="grid size-9 place-items-center rounded-lg text-rose-300 hover:bg-rose-950/60 cursor-pointer disabled:opacity-40" onClick={() => selected && onRemove(selected.id)}><Trash2 size={17} /></button>
     </div>
-    <div tabIndex={0} aria-label="Éditeur de composition laser" className="min-w-0 flex-1 focus:outline-sky-500" onKeyDown={event => {
+    <div tabIndex={0} aria-label="Éditeur de composition laser" className="min-w-0 flex-1 focus:outline-sky-400" onKeyDown={event => {
       if (event.key === 'Escape') { setTool('select'); drawing.current = null; setDraft(null); return; }
       if (disabled || !selected || drawing.current || drag.current) return;
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -146,7 +146,7 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
       const step = event.shiftKey ? 1 : .1;
       onPlacement(selected.id, { ...selected.placement, x: selected.placement.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0), y: selected.placement.y + (event.key === 'ArrowDown' ? -step : event.key === 'ArrowUp' ? step : 0) });
     }}>
-      <svg ref={svg} role="img" aria-label="Placement des objets dans le repère pièce en millimètres" viewBox={`${x} ${y} ${width} ${height}`} className={`h-[clamp(370px,64vh,850px)] w-full touch-none bg-slate-100 ${tool === 'select' ? '' : 'cursor-crosshair'}`}
+      <svg ref={svg} role="img" aria-label="Placement des objets dans le repère pièce en millimètres" viewBox={`${x} ${y} ${width} ${height}`} className={`h-[clamp(370px,64vh,850px)] w-full touch-none bg-[#0d121b] ${tool === 'select' ? '' : 'cursor-crosshair'}`}
         onPointerDown={event => {
           if (disabled || tool === 'select' || event.button !== 0) return;
           const start = point(event);
@@ -160,7 +160,7 @@ export function LaserDesignEditor({ objects, selectedId, bed, disabled, lockedRa
         <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill="white" />
         <rect x={bed.minX} y={-bed.maxY} width={bed.width} height={bed.height} fill={`url(#${gridId})`} stroke="#94a3b8" strokeWidth={unit} />
         <path d={`M${bed.minX} 0H${bed.maxX} M0 ${-bed.minY}V${-bed.maxY}`} stroke="#cbd5e1" strokeWidth={unit} />
-        <g fontSize={unit * 10} fill="#526477" pointerEvents="none" aria-hidden="true">
+        <g fontSize={unit * 10} fill="#cbd5e1" pointerEvents="none" aria-hidden="true">
           {rulerTicks(Math.max(bed.minX, x), Math.min(bed.maxX, x + width)).map(tick => <text key={tick} x={tick} y={-bed.maxY - unit * 4} textAnchor="middle">{Number(tick.toFixed(3))}</text>)}
           {rulerTicks(Math.max(bed.minY, -y - height), Math.min(bed.maxY, -y)).map(tick => <text key={tick} x={bed.minX - unit * 5} y={-tick + unit * 3} textAnchor="end">{Number(tick.toFixed(3))}</text>)}
         </g>

@@ -8,10 +8,10 @@ export interface LayoutSizes {
 }
 
 export const DEFAULT_LAYOUT: LayoutSizes = {
-  leftWidth: 345,
-  rightWidth: 400,
-  centerTopPercent: 55,
-  rightTopPercent: 52,
+  leftWidth: 360,
+  rightWidth: 375,
+  centerTopPercent: 62,
+  rightTopPercent: 54,
 };
 
 const STORAGE_KEY = 'smartcnc_layout_sizes';
@@ -200,14 +200,14 @@ export const VerticalSplitter: React.FC<{
     >
       <div
         className={`w-[2px] h-full rounded-full transition-colors ${
-          isActive ? 'bg-sky-500' : 'bg-slate-200/80 group-hover:bg-sky-400'
+          isActive ? 'bg-sky-400' : 'bg-slate-800/90 group-hover:bg-sky-400'
         }`}
       />
       <div
         className={`absolute top-1/2 -translate-y-1/2 w-1 h-8 rounded-full transition-opacity pointer-events-none ${
           isActive
-            ? 'bg-sky-600 opacity-100'
-            : 'bg-sky-500 opacity-0 group-hover:opacity-100'
+            ? 'bg-sky-400 opacity-100 shadow-[0_0_8px_rgba(56,189,248,0.65)]'
+            : 'bg-sky-400 opacity-0 group-hover:opacity-100'
         }`}
       />
     </div>
@@ -232,14 +232,14 @@ export const HorizontalSplitter: React.FC<{
     >
       <div
         className={`h-[2px] w-full rounded-full transition-colors ${
-          isActive ? 'bg-sky-500' : 'bg-slate-200/80 group-hover:bg-sky-400'
+          isActive ? 'bg-sky-400' : 'bg-slate-800/90 group-hover:bg-sky-400'
         }`}
       />
       <div
         className={`absolute left-1/2 -translate-x-1/2 h-1 w-8 rounded-full transition-opacity pointer-events-none ${
           isActive
-            ? 'bg-sky-600 opacity-100'
-            : 'bg-sky-500 opacity-0 group-hover:opacity-100'
+            ? 'bg-sky-400 opacity-100 shadow-[0_0_8px_rgba(56,189,248,0.65)]'
+            : 'bg-sky-400 opacity-0 group-hover:opacity-100'
         }`}
       />
     </div>

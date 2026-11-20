@@ -52,51 +52,51 @@ export function LaserPresetLibrary({ presets, current, disabled, onChange, onApp
   };
 
   return <dialog ref={dialog} aria-labelledby={titleId} onClose={onClose} onCancel={event => { if (!canDiscard()) event.preventDefault(); }}
-    className="fixed inset-0 m-auto max-h-[90dvh] w-[min(94vw,54rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-800 shadow-2xl backdrop:bg-slate-950/55">
-    <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-      <h2 id={titleId} className="flex items-center gap-2 font-semibold"><BookOpen size={18} /> Bibliothèque de réglages</h2>
+    className="fixed inset-0 m-auto max-h-[90dvh] w-[min(94vw,54rem)] overflow-hidden rounded-2xl border border-slate-700 bg-[#141b27] p-0 text-slate-100 shadow-2xl backdrop:bg-black/75">
+    <header className="flex items-center justify-between gap-2 border-b border-slate-800 bg-[#0f1520] px-4 py-3">
+      <h2 id={titleId} className="flex items-center gap-2 font-bold text-slate-50"><BookOpen size={18} className="text-sky-400" /> Bibliothèque de réglages</h2>
       <button type="button" className={button} aria-label="Fermer la bibliothèque" onClick={() => { if (canDiscard()) dialog.current?.close(); }}><X size={16} /></button>
     </header>
     <div className="grid max-h-[calc(90dvh-5rem)] gap-4 overflow-y-auto p-4 sm:grid-cols-[1fr_1.2fr]">
       <div className="min-w-0 space-y-3">
         <input autoFocus type="search" aria-label="Rechercher un préréglage" placeholder="Rechercher un préréglage" className={input} value={query} onChange={event => setQuery(event.target.value)} />
         <div className="max-h-64 space-y-3 overflow-y-auto">
-          {!groups.size && <p className="text-xs text-slate-600">{presets.length ? 'Aucun résultat.' : 'La bibliothèque est vide.'}</p>}
+          {!groups.size && <p className="text-xs text-slate-300">{presets.length ? 'Aucun résultat.' : 'La bibliothèque est vide.'}</p>}
           {[...groups].map(([group, entries]) => <section key={group} className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-600">{group || 'Sans catégorie'}</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{group || 'Sans catégorie'}</h3>
             {entries.map(entry => <button type="button" key={entry.id} aria-pressed={selectedId === entry.id}
-              className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-left text-sm aria-pressed:border-sky-400 aria-pressed:bg-sky-50"
+              className="flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-800 bg-[#090d14] px-2.5 py-1.5 text-left text-sm text-slate-100 hover:bg-[#1b2436] aria-pressed:border-sky-400 aria-pressed:bg-sky-500/20 aria-pressed:text-sky-200 cursor-pointer"
               onClick={() => {
                 if (entry.id === selectedId || !canDiscard()) return;
                 setSelectedId(entry.id); setDraftSettings(entry.settings); setName(entry.name); setCategory(entry.category); setMessage(''); setError('');
               }}>
-              <span className="truncate">{entry.name}</span><span className="shrink-0 text-xs text-slate-600">{entry.settings.kind === 'raster' ? 'Image' : 'Vectoriel'}</span>
+              <span className="truncate">{entry.name}</span><span className="shrink-0 text-xs text-slate-300">{entry.settings.kind === 'raster' ? 'Image' : 'Vectoriel'}</span>
             </button>)}
           </section>)}
         </div>
       </div>
       <div className="min-w-0 space-y-3">
-        <p className="text-xs text-slate-600">{current ? `Calque sélectionné · ${current.name}` : 'Sélectionnez un calque pour enregistrer ou appliquer un réglage.'}</p>
-        <label className="block space-y-1 text-xs"><span>Nom</span><input className={input} maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label>
-        <label className="block space-y-1 text-xs"><span>Catégorie</span><input className={input} maxLength={80} list={categoriesId} value={category} onChange={event => setCategory(event.target.value)} /></label>
+        <p className="text-xs text-slate-300">{current ? `Calque sélectionné · ${current.name}` : 'Sélectionnez un calque pour enregistrer ou appliquer un réglage.'}</p>
+        <label className="block space-y-1 text-xs font-semibold text-slate-200"><span>Nom</span><input className={input} maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label>
+        <label className="block space-y-1 text-xs font-semibold text-slate-200"><span>Catégorie</span><input className={input} maxLength={80} list={categoriesId} value={category} onChange={event => setCategory(event.target.value)} /></label>
         <datalist id={categoriesId}>{categories.map(value => <option key={value} value={value} />)}</datalist>
         {selected && draftSettings && <LaserPresetEditor settings={draftSettings} disabled={disabled} onChange={setDraftSettings} />}
         <div className="flex flex-wrap gap-2">
-          {selected && draftSettings && <button type="button" className={`${button} bg-sky-50 text-sky-900`} disabled={disabled || !dirty || !name.trim()}
+          {selected && draftSettings && <button type="button" className={`${button} !bg-sky-400 hover:!bg-sky-300 !border-sky-300 !text-slate-950 font-bold`} disabled={disabled || !dirty || !name.trim()}
             onClick={() => save(draftSettings, selected)}>Enregistrer les modifications</button>}
           {current && <button type="button" className={button} disabled={disabled || !name.trim()} onClick={() => { if (canDiscard()) save(current.settings); }}>Créer depuis le calque</button>}
           {selected && compatible && <button type="button" className={button} disabled={disabled || !name.trim()} onClick={() => { if (canDiscard()) save(current.settings, selected); }}>Remplacer par les réglages du calque</button>}
-          {selected && <button type="button" className={`${button} text-rose-700`} disabled={disabled} onClick={() => {
+          {selected && <button type="button" className={`${button} !text-rose-300 !border-rose-500/40 hover:!bg-rose-950/60`} disabled={disabled} onClick={() => {
             if (window.confirm(`Supprimer le préréglage « ${selected.name} » ?`) && commit(presets.filter(preset => preset.id !== selected.id), 'Préréglage supprimé.')) {
               setSelectedId(''); setDraftSettings(undefined); setName(''); setCategory('');
             }
           }}>Supprimer</button>}
         </div>
-        {selected && current && !compatible && <p className="text-xs text-amber-800">Choisissez un préréglage du même type que le calque.</p>}
-        {selected && <button type="button" className={button} disabled={disabled || !compatible || dirty}
+        {selected && current && !compatible && <p className="text-xs text-amber-300">Choisissez un préréglage du même type que le calque.</p>}
+        {selected && <button type="button" className={`${button} !bg-emerald-500 hover:!bg-emerald-400 !border-emerald-400 !text-slate-950 font-bold`} disabled={disabled || !compatible || dirty}
           onClick={() => { onApply(selected.settings); dialog.current?.close(); }}>Appliquer au calque</button>}
-        {message && <p role="status" className="text-xs text-emerald-800">{message}</p>}
-        {error && <p role="alert" className="text-xs text-rose-700">{error}</p>}
+        {message && <p role="status" className="text-xs text-emerald-300">{message}</p>}
+        {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
       </div>
     </div>
   </dialog>;

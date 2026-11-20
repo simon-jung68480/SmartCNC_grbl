@@ -21,7 +21,7 @@ interface Props {
   playback: JobStatus | null;
 }
 const button =
-  "inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold";
+  "inline-flex items-center justify-center gap-1.5 min-h-8 px-2.5 py-1.5 rounded-lg border border-slate-700/80 bg-[#1b2436] hover:bg-[#243047] text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40";
 const n = (v: number) => Number(v.toFixed(2)).toLocaleString("fr-FR");
 
 export function LaserPreview({
@@ -151,17 +151,17 @@ export function LaserPreview({
       b.minY < bed.minY ||
       b.maxY > bed.maxY);
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-slate-800 bg-[#141b27] text-slate-100 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.28)]">
       <div className="flex flex-wrap justify-between gap-2 items-center mb-3">
-        <h2 className="text-sm font-bold flex gap-2 items-center">
-          <Scan size={17} />
+        <h2 className="text-sm font-bold text-slate-50 flex gap-2 items-center">
+          <Scan size={17} className="text-sky-400" />
           Aperçu sur la grille machine
         </h2>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           {(["3d", "xy"] as const).map((value) => (
             <button
               key={value}
-              className={`${button} ${mode === value ? "!bg-sky-50 !border-sky-500 text-sky-800" : ""}`}
+              className={`${button} ${mode === value ? "!bg-sky-400/20 !border-sky-400 !text-sky-200" : ""}`}
               onClick={() => setMode(value)}
             >
               {value === "3d" ? "Grille machine 3D" : "Plan XY / largeur"}
@@ -169,20 +169,20 @@ export function LaserPreview({
           ))}
         </div>
       </div>
-      <p className="text-[11px] text-slate-500 mb-2">
+      <p className="text-xs text-slate-300 mb-2.5">
         Plateau {n(bedWidth)} × {n(bedHeight)} mm · grille 10 / {n(major)} mm ·
         mêmes paramètres que l’atelier CNC
       </p>
       {playback && (
-        <label className="flex items-center gap-2 text-xs text-slate-600 mb-2">
-          <input type="checkbox" checked={fullPreview} onChange={e => setFullPreview(e.target.checked)} />
+        <label className="flex items-center gap-2 text-xs text-slate-200 mb-2.5 cursor-pointer">
+          <input type="checkbox" className="accent-sky-400" checked={fullPreview} onChange={e => setFullPreview(e.target.checked)} />
           Afficher le dessin complet
-          <span aria-live="polite">· {playback.state === 'paused' ? 'En pause' : playback.state === 'completed' ? 'Gravure terminée' : playback.state === 'aborted' ? 'Lecture arrêtée' : 'Tracé progressif'} · ligne {playback.currentLineIndex + 1}</span>
+          <span aria-live="polite" className="text-slate-300">· {playback.state === 'paused' ? 'En pause' : playback.state === 'completed' ? 'Gravure terminée' : playback.state === 'aborted' ? 'Lecture arrêtée' : 'Tracé progressif'} · ligne {playback.currentLineIndex + 1}</span>
         </label>
       )}
       {mode === "3d" ? (
         <div
-          className="h-[430px] min-h-[300px] rounded-lg overflow-hidden border border-slate-300 relative"
+          className="h-[430px] min-h-[300px] rounded-xl overflow-hidden border border-slate-800 bg-[#0d121b] relative"
           aria-label="Vue 3D laser avec grille machine CNC"
         >
           {active && (
@@ -202,7 +202,7 @@ export function LaserPreview({
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-1 mb-2">
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
             <button
               className={button}
               onClick={() => {
@@ -211,7 +211,7 @@ export function LaserPreview({
                 setPan({ x: 0, y: 0 });
               }}
             >
-              <Focus size={14} />
+              <Focus size={14} className="text-sky-400" />
               Toute la machine
             </button>
             <button
@@ -240,7 +240,7 @@ export function LaserPreview({
               <ZoomIn size={15} />
             </button>
           </div>
-          <div className="h-[430px] relative rounded-lg overflow-hidden border border-slate-300 bg-slate-100">
+          <div className="h-[430px] relative rounded-xl overflow-hidden border border-slate-800 bg-[#0d121b]">
             <svg
               viewBox={`${cx - vw / 2} ${cy - vh / 2} ${vw} ${vh}`}
               className="absolute inset-0 w-full h-full touch-none cursor-grab"
@@ -308,7 +308,7 @@ export function LaserPreview({
                   x={x - status.wco.x}
                   y={-bed.minY + font * 1.6}
                   textAnchor="middle"
-                  fill="#475569"
+                  fill="#cbd5e1"
                   fontSize={font}
                 >
                   {n(x)}
@@ -320,7 +320,7 @@ export function LaserPreview({
                   x={bed.minX - font}
                   y={-(y - status.wco.y) + font / 3}
                   textAnchor="end"
-                  fill="#475569"
+                  fill="#cbd5e1"
                   fontSize={font}
                 >
                   {n(y)}
@@ -382,9 +382,10 @@ export function LaserPreview({
               )}
             </svg>
           </div>
-          <label className="text-xs text-slate-500 flex gap-2 items-center mt-2">
+          <label className="text-xs text-slate-300 flex gap-2 items-center mt-2.5 cursor-pointer">
             <input
               type="checkbox"
+              className="accent-sky-400"
               checked={rapids}
               onChange={(e) => setRapids(e.target.checked)}
             />
@@ -392,39 +393,39 @@ export function LaserPreview({
           </label>
         </>
       )}
-      <p className="text-[10px] text-slate-500 mt-2">
+      <p className="text-[11px] text-slate-300 mt-2.5 leading-relaxed">
         Graduations en coordonnées machine ; parcours en coordonnées pièce (
         {status.activeWCS}). Largeur maximale du spot : {n(spotDiameter)} mm.
         L’empreinte affichée reste une estimation.
       </p>
       {outside && (
-        <p className="text-xs text-amber-800 mt-2">
+        <p className="text-xs font-medium text-amber-300 mt-2">
           La zone gravée dépasse le plateau affiché. Vérifiez le placement et
           l’origine pièce.
         </p>
       )}
       {b && (
         <div className="grid grid-cols-3 gap-2 mt-3 text-center text-xs">
-          <div className="rounded bg-sky-50 p-2">
-            <b>
+          <div className="rounded-xl border border-sky-500/40 bg-sky-500/15 p-2.5 text-sky-100">
+            <b className="font-mono text-sky-200">
               {n(b.width)} × {n(b.height)} mm
             </b>
             <br />
-            Empreinte estimée
+            <span className="text-slate-300">Empreinte estimée</span>
           </div>
-          <div className="rounded bg-slate-50 p-2">
-            <b>
+          <div className="rounded-xl border border-slate-800 bg-[#0f1520] p-2.5 text-slate-100">
+            <b className="font-mono">
               X {n(b.minX)} → {n(b.maxX)}
             </b>
             <br />
-            Limites X
+            <span className="text-slate-300">Limites X</span>
           </div>
-          <div className="rounded bg-slate-50 p-2">
-            <b>
+          <div className="rounded-xl border border-slate-800 bg-[#0f1520] p-2.5 text-slate-100">
+            <b className="font-mono">
               Y {n(b.minY)} → {n(b.maxY)}
             </b>
             <br />
-            Limites Y
+            <span className="text-slate-300">Limites Y</span>
           </div>
         </div>
       )}

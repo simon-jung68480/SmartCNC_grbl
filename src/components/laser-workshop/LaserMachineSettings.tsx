@@ -2,8 +2,8 @@ import { Plus, Settings2, Trash2 } from "lucide-react";
 import type { LaserScanOffset, Point2 } from "../../utils/laserCam";
 import type { LaserJobAnchor, LaserJobPlacement } from "../../utils/laserJobPlacement";
 
-const field = "w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm focus:border-sky-500 focus:outline-none";
-const button = "rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40";
+const field = "w-full min-w-0 min-h-9 rounded-lg border border-slate-700 bg-[#090d14] px-2.5 py-1.5 text-sm text-slate-100 focus:border-sky-400 focus:outline-none";
+const button = "min-h-8 rounded-lg border border-slate-700/80 bg-[#1b2436] px-2.5 py-1.5 text-xs font-semibold text-slate-100 hover:bg-[#243047] transition-colors cursor-pointer disabled:opacity-40";
 const anchors: { value: LaserJobAnchor; label: string }[] = [
   { value: "top-left", label: "Haut gauche" },
   { value: "top-center", label: "Haut centre" },
@@ -36,34 +36,34 @@ function NumericInput({ value, onChange, label, min }: {
 
 export function LaserMachineSettings({ placement, onPlacement, scanOffsets, onScanOffsets, disabled }: Props) {
   return (
-    <fieldset disabled={disabled} className="space-y-3.5 rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] disabled:opacity-60">
-      <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600"><Settings2 size={15} className="text-sky-600" /> Compensations machine</h2>
-      <div className="grid grid-cols-2 gap-2 border-t border-slate-200/80 pt-3">
-        {(["x", "y"] as const).map(axis => <label key={axis} className="space-y-1 text-xs">
+    <fieldset disabled={disabled} className="space-y-3.5 rounded-xl border border-slate-800 bg-[#141b27] text-slate-100 p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.28)] disabled:opacity-60">
+      <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300"><Settings2 size={15} className="text-sky-400" /> Compensations machine</h2>
+      <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3">
+        {(["x", "y"] as const).map(axis => <label key={axis} className="space-y-1 text-xs text-slate-200">
           <span>Offset {axis.toUpperCase()} (mm)</span>
           <NumericInput label={`Offset ${axis.toUpperCase()} (mm)`} value={placement.offset[axis]}
             onChange={value => onPlacement({ ...placement, offset: { ...placement.offset, [axis]: value } })} />
         </label>)}
       </div>
-      <div className="space-y-2 border-t border-slate-200 pt-3 text-xs">
+      <div className="space-y-2 border-t border-slate-800 pt-3 text-xs">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold">Offset aller-retour</h3>
+          <h3 className="font-semibold text-slate-100">Offset aller-retour</h3>
           <button type="button" className={`${button} flex items-center gap-1`} onClick={() => {
             let feed = 1200;
             while (scanOffsets.some(point => point.feed === feed)) feed += 1000;
             onScanOffsets([...scanOffsets, { feed, offset: 0 }]);
           }}><Plus size={13} /> Ajouter</button>
         </div>
-        {scanOffsets.length > 0 && <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-slate-600"><span>Avance (mm/min)</span><span>Offset (mm)</span><span className="w-8" /></div>}
+        {scanOffsets.length > 0 && <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-slate-300"><span>Avance (mm/min)</span><span>Offset (mm)</span><span className="w-8" /></div>}
         {scanOffsets.map((point, index) => <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2" key={index}>
           <NumericInput label={`Avance du point ${index + 1}`} value={point.feed} min={1}
             onChange={feed => onScanOffsets(scanOffsets.map((row, rowIndex) => rowIndex === index ? { ...row, feed } : row))} />
           <NumericInput label={`Offset du point ${index + 1}`} value={point.offset}
             onChange={offset => onScanOffsets(scanOffsets.map((row, rowIndex) => rowIndex === index ? { ...row, offset } : row))} />
-          <button type="button" className={button} aria-label={`Supprimer le point ${index + 1}`}
+          <button type="button" className={`${button} min-w-8 flex items-center justify-center`} aria-label={`Supprimer le point ${index + 1}`}
             onClick={() => onScanOffsets(scanOffsets.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={15} /></button>
         </div>)}
-        <p className="text-slate-600">Saisissez la moitié du décalage mesuré entre les deux sens. Une valeur positive corrige dans le sens opposé au déplacement. Entre deux vitesses, la correction est interpolée.</p>
+        <p className="text-slate-300 leading-relaxed">Saisissez la moitié du décalage mesuré entre les deux sens. Une valeur positive corrige dans le sens opposé au déplacement. Entre deux vitesses, la correction est interpolée.</p>
       </div>
     </fieldset>
   );
@@ -76,8 +76,8 @@ export function LaserJobOrigin({ placement, onPlacement, position, canCapture, d
   canCapture: boolean;
   disabled: boolean;
 }) {
-  return <fieldset className="space-y-2" disabled={disabled}>
-      <label className="block space-y-1 text-xs font-semibold">
+  return <fieldset className="space-y-2.5 text-slate-100" disabled={disabled}>
+      <label className="block space-y-1 text-xs font-semibold text-slate-200">
         <span>Départ depuis</span>
         <select className={field} value={placement.startFrom} onChange={event => onPlacement({ ...placement, startFrom: event.target.value as LaserJobPlacement["startFrom"] })}>
           <option value="absolute">Coordonnées du dessin (repère pièce)</option>
@@ -86,20 +86,20 @@ export function LaserJobOrigin({ placement, onPlacement, position, canCapture, d
           <option value="user-origin">Origine utilisateur</option>
         </select>
       </label>
-      {placement.startFrom !== "absolute" && <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3 text-xs">
+      {placement.startFrom !== "absolute" && <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-3 text-xs text-slate-200">
           <span>Point d’ancrage du rectangle</span>
           <div className="grid grid-cols-3 gap-1" role="group" aria-label="Point d’ancrage du rectangle">
             {anchors.map(({ value, label }) => <button key={value} type="button" aria-label={label} title={label}
               aria-pressed={value === placement.anchor}
-              className={`h-7 w-7 rounded-md border ${value === placement.anchor ? "border-sky-700 bg-sky-700 text-white" : "border-slate-300 bg-slate-50 text-slate-500 hover:bg-sky-100"}`}
+              className={`h-8 w-8 rounded-md border transition-colors cursor-pointer ${value === placement.anchor ? "border-sky-400 bg-sky-400 text-slate-950 font-bold" : "border-slate-700 bg-[#090d14] text-slate-300 hover:bg-[#1b2436]"}`}
               onClick={() => onPlacement({ ...placement, anchor: value })}>●</button>)}
           </div>
         </div>
-        {placement.startFrom === "current-position" && <p className="text-xs text-slate-600">La position est relevée à la génération. Après un déplacement, générez à nouveau.</p>}
-        {placement.startFrom === "user-origin" && <div className="space-y-1 text-xs">
+        {placement.startFrom === "current-position" && <p className="text-xs text-slate-300">La position est relevée à la génération. Après un déplacement, générez à nouveau.</p>}
+        {placement.startFrom === "user-origin" && <div className="space-y-1.5 text-xs">
           <button type="button" className={button} disabled={!canCapture} onClick={() => onPlacement({ ...placement, userOrigin: { x: position.x, y: position.y } })}>Mémoriser la position XY</button>
-          <p className="text-slate-600">{placement.userOrigin ? `X ${placement.userOrigin.x.toFixed(3)} mm · Y ${placement.userOrigin.y.toFixed(3)} mm` : "Origine à mémoriser dans le repère pièce actif."}</p>
+          <p className="text-slate-300 font-mono">{placement.userOrigin ? `X ${placement.userOrigin.x.toFixed(3)} mm · Y ${placement.userOrigin.y.toFixed(3)} mm` : "Origine à mémoriser dans le repère pièce actif."}</p>
         </div>}
       </div>}
   </fieldset>;

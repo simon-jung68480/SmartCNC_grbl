@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client';
 import {
   Cpu,
+  Box,
+  Flame,
   Usb,
   RefreshCw,
   Power,
@@ -567,27 +569,27 @@ export const App: React.FC = () => {
 
   const connectionStateDisplay = useMemo(() => {
     if (!status.connected || status.state === 'Disconnected') {
-      return { dot: 'bg-slate-400', label: 'Déconnecté', text: 'text-slate-600' };
+      return { dot: 'bg-slate-500', label: 'Déconnecté', text: 'text-slate-400' };
     }
     if (status.state === 'Idle') {
-      return { dot: 'bg-emerald-500', label: 'Prêt', text: 'text-emerald-700' };
+      return { dot: 'bg-emerald-400', label: 'Prêt', text: 'text-emerald-300' };
     }
     if (status.state === 'Run') {
-      return { dot: 'bg-sky-500 animate-pulse', label: 'Usinage', text: 'text-sky-700' };
+      return { dot: 'bg-sky-400 animate-pulse', label: 'Usinage', text: 'text-sky-300' };
     }
     if (status.state === 'Jog') {
-      return { dot: 'bg-blue-500 animate-pulse', label: 'Jog', text: 'text-blue-700' };
+      return { dot: 'bg-sky-400 animate-pulse', label: 'Jog', text: 'text-sky-300' };
     }
     if (status.state.startsWith('Hold')) {
-      return { dot: 'bg-amber-500', label: 'Pause', text: 'text-amber-700' };
+      return { dot: 'bg-amber-400', label: 'Pause', text: 'text-amber-300' };
     }
     if (status.state === 'Home') {
-      return { dot: 'bg-amber-500 animate-pulse', label: 'Homing', text: 'text-amber-700' };
+      return { dot: 'bg-amber-400 animate-pulse', label: 'Homing', text: 'text-amber-300' };
     }
     if (status.state === 'Alarm') {
-      return { dot: 'bg-red-600 animate-ping', label: 'Alarme', text: 'text-red-700' };
+      return { dot: 'bg-red-500 animate-ping', label: 'Alarme', text: 'text-rose-300' };
     }
-    return { dot: 'bg-amber-500', label: status.state, text: 'text-amber-700' };
+    return { dot: 'bg-amber-400', label: status.state, text: 'text-amber-300' };
   }, [status.connected, status.state]);
 
   if (isPendantMode) {
@@ -612,30 +614,41 @@ export const App: React.FC = () => {
     );
   }
 
+  const openSettingsModal = () => {
+    if (status.connected) {
+      socket?.emit('cnc:settings:get');
+    }
+    setIsSettingsModalOpen(true);
+  };
+
+  const railBtnClass =
+    'relative w-12 min-h-11 rounded-xl border border-transparent flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
+
   return (
-    <div className="smartcnc-shell flex flex-col bg-[#f1f5f9] text-slate-900 overflow-hidden select-none">
+    <div className="smartcnc-shell flex bg-[#0b0f17] text-slate-100 overflow-hidden select-none">
       {/* =====================================================================
-          TOP HEADER BAR UNIFIÉE — IDENTITÉ, ATELIER, CONNEXION & SÉCURITÉ
+          RAIL LATÉRAL GAUCHE — NAVIGATION ATELIERS & OUTILS (DESKTOP >= 60rem)
       ===================================================================== */}
-      <header className="shrink-0 bg-white border-b border-slate-200 px-3 py-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 z-30 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-        {/* Gauche : Marque + Sélecteur d'atelier + Connexion */}
-        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2.5">
+      <aside
+        aria-label="Navigation principale"
+        className="app-nav-rail bg-[#111622] border-r border-slate-800 py-2.5 px-1.5 items-center justify-between gap-2 z-30"
+      >
+        {/* Haut : Marque + Sélecteur Ateliers */}
+        <div className="flex flex-col items-center gap-2.5 w-full">
           <div
-            className="flex items-center gap-2 shrink-0"
+            className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/35 text-sky-300 flex items-center justify-center shadow-inner"
             title={`SmartCNC — ${status.version || 'GRBL 1.1'}`}
           >
-            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center shadow-2xs">
-              <Cpu className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-sm tracking-tight text-slate-900">SmartCNC</span>
+            <Cpu className="w-5 h-5" />
           </div>
 
-          <nav
-            aria-label="Ateliers"
-            className="inline-flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200"
-          >
+          <div className="w-8 h-px bg-slate-800" aria-hidden="true" />
+
+          <nav aria-label="Ateliers" className="flex flex-col items-center gap-1.5 w-full">
             {(['cnc', 'laser'] as const).map((mode) => {
               const activeMode = workshop === mode;
+              const isLaser = mode === 'laser';
+              const Icon = isLaser ? Flame : Box;
               return (
                 <button
                   key={mode}
@@ -648,229 +661,365 @@ export const App: React.FC = () => {
                     }
                   }}
                   aria-current={activeMode ? 'page' : undefined}
-                  aria-label={mode === 'cnc' ? 'Atelier CNC' : 'Atelier laser'}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                  aria-label={isLaser ? 'Atelier laser' : 'Atelier CNC'}
+                  title={isLaser ? 'Atelier laser' : 'Atelier CNC'}
+                  className={`relative w-12 min-h-12 rounded-xl border flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-all cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${
                     activeMode
-                      ? 'bg-white text-sky-700 shadow-2xs border border-slate-200/80'
-                      : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                      ? isLaser
+                        ? 'bg-amber-500/15 border-amber-400/45 text-amber-200'
+                        : 'bg-sky-500/15 border-sky-400/45 text-sky-200'
+                      : 'bg-transparent border-transparent text-slate-400 hover:bg-[#1b2436] hover:text-slate-100'
                   }`}
                 >
-                  {mode === 'cnc' ? 'CNC' : 'Laser'}
+                  {activeMode && (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full ${
+                        isLaser ? 'bg-amber-400' : 'bg-sky-400'
+                      }`}
+                    />
+                  )}
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{isLaser ? 'Laser' : 'CNC'}</span>
                 </button>
               );
             })}
           </nav>
-
-          <div className="hidden sm:block h-5 w-px bg-slate-200" aria-hidden="true" />
-
-          {/* Bloc Connexion intelligent */}
-          {status.connected ? (
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div
-                title={`${status.portPath} · ${selectedBaud} bauds${status.version ? ` · ${status.version}` : ''}`}
-                className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs min-w-0"
-              >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${connectionStateDisplay.dot}`} />
-                <span className="font-mono font-semibold text-slate-800 truncate max-w-[140px]">
-                  {status.isSimulator ? 'Simulateur' : status.portPath}
-                </span>
-                <span className="text-slate-300" aria-hidden="true">·</span>
-                <span className={`font-semibold shrink-0 ${connectionStateDisplay.text}`}>
-                  {connectionStateDisplay.label}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleConnectToggle}
-                disabled={isConnecting || !socketConnected}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold text-xs border bg-red-50 hover:bg-red-100 text-red-700 border-red-200 transition-colors cursor-pointer disabled:opacity-50"
-                title="Déconnecter le contrôleur GRBL"
-              >
-                <PowerOff className="w-3.5 h-3.5" />
-                <span className="app-toolbar-wide">Déconnecter</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
-              <Usb className="app-toolbar-wide w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={selectedPort}
-                aria-label="Port série"
-                onChange={(e) => setSelectedPort(e.target.value)}
-                className="min-w-0 w-40 max-w-full bg-slate-50 text-xs font-mono text-slate-800 rounded-lg px-2 py-1 border border-slate-200 focus:outline-none focus:border-sky-500"
-              >
-                {ports.map((p) => (
-                  <option key={p.path} value={p.path}>
-                    {p.path === 'SIMULATOR'
-                      ? 'Simulateur GRBL 1.1'
-                      : `${p.path} — ${p.friendlyName}`}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={selectedBaud}
-                aria-label="Débit du port série"
-                onChange={(e) => setSelectedBaud(Number(e.target.value))}
-                className="bg-slate-50 text-xs font-mono text-slate-700 rounded-lg px-1.5 py-1 border border-slate-200 focus:outline-none focus:border-sky-500"
-              >
-                <option value={115200}>115200</option>
-                <option value={250000}>250000</option>
-                <option value={57600}>57600</option>
-                <option value={9600}>9600</option>
-              </select>
-
-              <button
-                type="button"
-                onClick={refreshPorts}
-                className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                title="Rafraîchir les ports USB"
-                aria-label="Rafraîchir les ports USB"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleConnectToggle}
-                disabled={isConnecting || !socketConnected}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold text-xs bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-600 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <Power className="w-3.5 h-3.5" />
-                <span>{isConnecting ? 'Connexion...' : 'Connecter'}</span>
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Centre : Pause / Reprendre / Arrêt d'urgence */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={handlePauseJob}
-            disabled={!status.connected || (!isRunning && status.state !== 'Jog')}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors disabled:opacity-35 disabled:pointer-events-none cursor-pointer"
-            title="Mettre en pause l'usinage ou le mouvement (Feed Hold !)"
-            aria-label="Mettre en pause"
-          >
-            <Pause className="w-3.5 h-3.5" />
-            <span className="app-toolbar-wide">Pause (!)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleResumeJob}
-            disabled={!status.connected || !isPaused}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold transition-colors disabled:opacity-35 disabled:pointer-events-none cursor-pointer"
-            title="Reprendre l'usinage après une pause (Cycle Start ~)"
-            aria-label="Reprendre"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span className="app-toolbar-wide">Reprendre (~)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSoftReset}
-            disabled={!status.connected}
-            className="ml-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs border border-red-700 shadow-2xs transition-colors disabled:opacity-40 cursor-pointer"
-            title="Arrêt d'urgence immédiat (Soft Reset 0x18)"
-          >
-            <AlertOctagon className="w-3.5 h-3.5" />
-            <span>STOP URGENCE</span>
-          </button>
-        </div>
-
-        {/* Droite : Actions principales + Cluster discret d'utilitaires */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Milieu : Outils rapides */}
+        <div className="flex flex-col items-center gap-1 w-full">
           <button
             type="button"
             onClick={() => setPendantModeWithUrl(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-semibold cursor-pointer transition-colors"
-            title="Passer en mode Télécommande Mobile / Pendant d'Atelier (optimisé smartphone tactile)"
+            title="Télécommande Mobile / Pendant d'Atelier"
             aria-label="Télécommande mobile"
+            className={`${railBtnClass} text-sky-300 hover:bg-sky-500/15 hover:border-sky-400/35`}
           >
-            <Smartphone className="w-3.5 h-3.5 text-sky-600" />
-            <span className="app-toolbar-wide">Télécommande</span>
+            <Smartphone className="w-4 h-4" />
+            <span>Mobile</span>
+          </button>
+
+          {workshop === 'cnc' && (
+            <button
+              type="button"
+              onClick={() => setLayoutDialogOpen(true)}
+              title="Personnaliser la disposition CNC"
+              aria-label="Personnaliser la disposition CNC"
+              className={`${railBtnClass} text-slate-300 hover:bg-[#1b2436] hover:text-slate-50`}
+            >
+              <Sliders className="w-4 h-4" />
+              <span>Agenc.</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsSoundModalOpen(true)}
+            title="Alertes & signaux sonores d'atelier"
+            aria-label="Alertes et signaux sonores d'atelier"
+            className={`${railBtnClass} ${
+              isAudioActive
+                ? 'text-slate-300 hover:bg-[#1b2436] hover:text-slate-50'
+                : 'bg-red-500/15 border-red-400/40 text-rose-300 hover:bg-red-500/25'
+            }`}
+          >
+            {isAudioActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            <span>Son</span>
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (status.connected) {
-                socket?.emit('cnc:settings:get');
-              }
-              setIsSettingsModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-semibold cursor-pointer transition-colors"
-            title="Paramètres de l'application & Configuration GRBL ($$)"
-            aria-label="Paramètres"
+            onClick={() => setIsNetworkModalOpen(true)}
+            title="Accès Wi-Fi Tablette / Smartphone"
+            aria-label="Accès Wi-Fi Tablette et Smartphone"
+            className={`${railBtnClass} text-slate-300 hover:bg-[#1b2436] hover:text-slate-50`}
           >
-            <Settings className="w-3.5 h-3.5 text-slate-600" />
-            <span className="app-toolbar-wide">Paramètres</span>
+            <Wifi className="w-4 h-4" />
+            <span>Wi-Fi</span>
           </button>
 
-          <div className="h-5 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => setIsPinoutModalOpen(true)}
+            title="Mémo câblage CNC Shield V3.0"
+            aria-label="Mémo câblage CNC Shield V3.0"
+            className={`${railBtnClass} text-slate-300 hover:bg-[#1b2436] hover:text-slate-50`}
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>Câblage</span>
+          </button>
+        </div>
 
-          <div className="flex items-center gap-0.5">
-            {workshop === 'cnc' && (
+        {/* Bas : Paramètres */}
+        <div className="flex flex-col items-center gap-1.5 w-full pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={openSettingsModal}
+            title="Paramètres de l'application & Configuration GRBL ($$)"
+            aria-label="Paramètres"
+            className={`${railBtnClass} text-slate-200 bg-[#1b2436]/70 border-slate-700/70 hover:bg-[#243047]`}
+          >
+            <Settings className="w-4 h-4 text-sky-300" />
+            <span>Régl.</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* =====================================================================
+          COLONNE PRINCIPALE : BARRE SUPÉRIEURE SÉCURITÉ & CONTENU ATELIER
+      ===================================================================== */}
+      <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">
+        <header className="shrink-0 min-h-[54px] bg-[#111622] border-b border-slate-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 z-30">
+          {/* Gauche : Navigation mobile (si < 60rem) + Connexion & Télémétrie Live */}
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+            {/* Outils compacts visibles uniquement sous 60rem */}
+            <div className="app-nav-mobile-tools flex-wrap items-center gap-1.5 mr-1">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-400/35 text-sky-300 flex items-center justify-center">
+                <Cpu className="w-4 h-4" />
+              </div>
+
+              <nav
+                aria-label="Ateliers (mobile)"
+                className="inline-flex items-center rounded-xl bg-[#090d14] p-0.5 border border-slate-800"
+              >
+                {(['cnc', 'laser'] as const).map((mode) => {
+                  const activeMode = workshop === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      disabled={isRunning || isPaused || status.state === 'Jog'}
+                      onClick={() => {
+                        setWorkshop(mode);
+                        if (mode === 'laser' && status.connected) {
+                          socket?.emit('cnc:settings:get');
+                        }
+                      }}
+                      aria-current={activeMode ? 'page' : undefined}
+                      className={`min-h-8 px-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-45 ${
+                        activeMode
+                          ? mode === 'laser'
+                            ? 'bg-amber-400 text-slate-950'
+                            : 'bg-sky-400 text-slate-950'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {mode === 'cnc' ? 'CNC' : 'Laser'}
+                    </button>
+                  );
+                })}
+              </nav>
+
               <button
                 type="button"
-                onClick={() => setLayoutDialogOpen(true)}
-                className="inline-flex items-center gap-1.5 p-1.5 xl:px-2 xl:py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-xs font-medium cursor-pointer transition-colors"
-                title="Personnaliser la disposition CNC"
-                aria-label="Personnaliser la disposition CNC"
+                onClick={() => setPendantModeWithUrl(true)}
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-sky-300 hover:bg-[#243047] cursor-pointer"
+                title="Télécommande mobile"
+                aria-label="Télécommande mobile"
               >
-                <Sliders className="w-3.5 h-3.5" />
-                <span className="app-toolbar-wide">Disposition</span>
+                <Smartphone className="w-4 h-4" />
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setIsSoundModalOpen(true)}
-              className={`inline-flex items-center gap-1.5 p-1.5 xl:px-2 xl:py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-                isAudioActive
-                  ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  : 'text-red-600 bg-red-50 hover:bg-red-100'
-              }`}
-              title="Alertes & signaux sonores d'atelier"
-              aria-label="Alertes et signaux sonores d'atelier"
-            >
-              {isAudioActive ? (
-                <Volume2 className="w-3.5 h-3.5" />
-              ) : (
-                <VolumeX className="w-3.5 h-3.5" />
+              <button
+                type="button"
+                onClick={openSettingsModal}
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-slate-200 hover:bg-[#243047] cursor-pointer"
+                title="Paramètres"
+                aria-label="Paramètres"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              {workshop === 'cnc' && (
+                <button
+                  type="button"
+                  onClick={() => setLayoutDialogOpen(true)}
+                  className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-slate-300 hover:bg-[#243047] cursor-pointer"
+                  title="Disposition CNC"
+                  aria-label="Disposition CNC"
+                >
+                  <Sliders className="w-4 h-4" />
+                </button>
               )}
-              <span className="app-toolbar-wide">Son</span>
+              <button
+                type="button"
+                onClick={() => setIsSoundModalOpen(true)}
+                className={`min-h-9 min-w-9 p-2 rounded-lg border cursor-pointer ${
+                  isAudioActive
+                    ? 'bg-[#1b2436] border-slate-700 text-slate-300 hover:bg-[#243047]'
+                    : 'bg-red-500/20 border-red-400/40 text-rose-300'
+                }`}
+                title="Son"
+                aria-label="Alertes sonores"
+              >
+                {isAudioActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNetworkModalOpen(true)}
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-slate-300 hover:bg-[#243047] cursor-pointer"
+                title="Wi-Fi"
+                aria-label="Accès Wi-Fi"
+              >
+                <Wifi className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPinoutModalOpen(true)}
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] border border-slate-700 text-slate-300 hover:bg-[#243047] cursor-pointer"
+                title="Câblage"
+                aria-label="Mémo câblage"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Bloc Connexion & Télémétrie Live */}
+            {status.connected ? (
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <div
+                  title={`${status.portPath} · ${selectedBaud} bauds${status.version ? ` · ${status.version}` : ''}`}
+                  className="inline-flex items-center gap-2.5 px-3 py-1.5 min-h-9 rounded-xl bg-[#090d14] border border-slate-800 text-xs min-w-0"
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${connectionStateDisplay.dot}`} />
+                  <span className={`font-bold shrink-0 ${connectionStateDisplay.text}`}>
+                    {connectionStateDisplay.label}
+                  </span>
+                  <span className="text-slate-600" aria-hidden="true">·</span>
+                  <span className="font-mono font-semibold text-slate-200 truncate max-w-[140px]">
+                    {status.isSimulator ? 'Simulateur' : status.portPath}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#1b2436] border border-slate-700 font-mono text-[11px] font-semibold text-slate-200">
+                    {status.activeWCS}
+                  </span>
+                  <span className="app-toolbar-wide text-[11px] font-mono text-slate-300 tabular-nums">
+                    F:{status.feedRate} mm/m · S:{status.spindleSpeed} RPM
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleConnectToggle}
+                  disabled={isConnecting || !socketConnected}
+                  className="inline-flex items-center gap-1.5 px-3 min-h-9 rounded-xl font-semibold text-xs border bg-red-950/60 hover:bg-red-900/70 text-rose-200 border-red-500/40 transition-colors cursor-pointer disabled:opacity-45"
+                  title="Déconnecter le contrôleur GRBL"
+                >
+                  <PowerOff className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Déconnecter</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+                <Usb className="app-toolbar-wide w-4 h-4 text-slate-400" />
+                <select
+                  value={selectedPort}
+                  aria-label="Port série"
+                  onChange={(e) => setSelectedPort(e.target.value)}
+                  className="min-w-0 w-44 max-w-full min-h-9 bg-[#1b2436] text-xs font-mono text-slate-100 rounded-xl px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-400"
+                >
+                  {ports.map((p) => (
+                    <option key={p.path} value={p.path}>
+                      {p.path === 'SIMULATOR'
+                        ? 'Simulateur GRBL 1.1'
+                        : `${p.path} — ${p.friendlyName}`}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedBaud}
+                  aria-label="Débit du port série"
+                  onChange={(e) => setSelectedBaud(Number(e.target.value))}
+                  className="min-h-9 bg-[#1b2436] text-xs font-mono text-slate-200 rounded-xl px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-400"
+                >
+                  <option value={115200}>115200</option>
+                  <option value={250000}>250000</option>
+                  <option value={57600}>57600</option>
+                  <option value={9600}>9600</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={refreshPorts}
+                  className="min-h-9 min-w-9 p-2 rounded-xl bg-[#1b2436] border border-slate-700 text-slate-300 hover:bg-[#243047] hover:text-white transition-colors cursor-pointer"
+                  title="Rafraîchir les ports USB"
+                  aria-label="Rafraîchir les ports USB"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConnectToggle}
+                  disabled={isConnecting || !socketConnected}
+                  className="inline-flex items-center gap-1.5 px-3.5 min-h-9 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer disabled:opacity-45 shadow-sm"
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  <span>{isConnecting ? 'Connexion...' : 'Connecter'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Centre : Pilule de progression job en direct */}
+          {(isRunning || isPaused) && (
+            <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 min-h-9 rounded-xl bg-[#090d14] border border-slate-800 text-xs max-w-xs">
+              <span className="font-semibold text-slate-200 truncate max-w-[130px]">
+                {job.fileName}
+              </span>
+              <div className="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden shrink-0">
+                <div
+                  className={`h-full transition-all duration-200 ${
+                    isPaused ? 'bg-amber-400' : 'bg-emerald-400'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(0, job.progressPercent || 0))}%` }}
+                />
+              </div>
+              <span className="font-mono font-bold text-emerald-300 tabular-nums shrink-0">
+                {Math.round(job.progressPercent || 0)}%
+              </span>
+            </div>
+          )}
+
+          {/* Droite : Deck Sécurité Machine */}
+          <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+            <button
+              type="button"
+              onClick={handlePauseJob}
+              disabled={!status.connected || (!isRunning && status.state !== 'Jog')}
+              className="inline-flex items-center gap-1.5 px-3.5 min-h-9 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              title="Mettre en pause l'usinage ou le mouvement (Feed Hold !)"
+              aria-label="Mettre en pause"
+            >
+              <Pause className="w-3.5 h-3.5 fill-current" />
+              <span>Pause (!)</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setIsNetworkModalOpen(true)}
-              className="inline-flex items-center gap-1.5 p-1.5 xl:px-2 xl:py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-xs font-medium cursor-pointer transition-colors"
-              title="Accès Wi-Fi Tablette / Smartphone"
-              aria-label="Accès Wi-Fi Tablette et Smartphone"
+              onClick={handleResumeJob}
+              disabled={!status.connected || !isPaused}
+              className="inline-flex items-center gap-1.5 px-3.5 min-h-9 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-bold transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              title="Reprendre l'usinage après une pause (Cycle Start ~)"
+              aria-label="Reprendre"
             >
-              <Wifi className="w-3.5 h-3.5" />
-              <span className="app-toolbar-wide">Wi-Fi</span>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Reprendre (~)</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setIsPinoutModalOpen(true)}
-              className="inline-flex items-center gap-1.5 p-1.5 xl:px-2 xl:py-1 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-xs font-medium cursor-pointer transition-colors"
-              title="Mémo câblage CNC Shield V3.0"
-              aria-label="Mémo câblage CNC Shield V3.0"
+              onClick={handleSoftReset}
+              disabled={!status.connected}
+              className="ml-1.5 inline-flex items-center gap-1.5 px-4 min-h-10 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs border border-red-400/60 shadow-[0_0_16px_rgba(220,38,38,0.35)] transition-colors disabled:opacity-35 cursor-pointer"
+              title="Arrêt d'urgence immédiat (Soft Reset 0x18)"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span className="app-toolbar-wide">Câblage</span>
+              <AlertOctagon className="w-4 h-4" />
+              <span>STOP URGENCE</span>
             </button>
           </div>
-        </div>
-      </header>
-      <div className={workshop === 'laser' ? 'flex flex-1 min-h-0' : 'hidden'}>
+        </header>
+
+        <div className={workshop === 'laser' ? 'flex flex-1 min-h-0' : 'hidden'}>
         <LaserWorkshop
           status={status} job={job} settings={grblSettings}
           machineEnvelope={machineEnvelope} preferences={preferences} active={workshop === 'laser'}
@@ -1007,34 +1156,34 @@ export const App: React.FC = () => {
           MODAL 2 : MÉMO CÂBLAGE ARDUINO UNO + CNC SHIELD V3.0 (GRBL 1.1)
       ===================================================================== */}
       {isPinoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
+                <div className="p-2 rounded-xl bg-sky-500/15 border border-sky-400/35 text-sky-300">
                   <Cpu className="w-4 h-4" />
                 </div>
-                <h2 className="text-base font-bold text-slate-900">
+                <h2 className="text-base font-bold text-slate-50">
                   Mémo Câblage : Arduino Uno + CNC Shield V3.0 (GRBL 1.1)
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPinoutModalOpen(false)}
-                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] hover:bg-[#243047] border border-slate-700 text-slate-300 hover:text-white cursor-pointer"
                 aria-label="Fermer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex gap-3">
-              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-800 space-y-1.5">
-                <p className="font-bold text-amber-900">
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-400/35 flex gap-3">
+              <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-200 space-y-2">
+                <p className="font-bold text-amber-300">
                   Inversion des broches Z+ et SpnEn sur CNC Shield V3.0 avec GRBL 1.1 :
                 </p>
-                <ul className="list-disc list-inside space-y-1 pt-0.5 font-mono text-slate-700">
+                <ul className="list-disc list-inside space-y-1 font-mono text-slate-200">
                   <li>Fin de course Z (Z-Limit) ➔ Broche marquée SpnEn (Pin D12)</li>
                   <li>Broche PWM / Laser (0-5V) ➔ Broche marquée Z+ / Z- (Pin D11)</li>
                   <li>Palpeur XY / Z-Probe (G38.2) ➔ Broche marquée SCL (Pin A5) + GND</li>
@@ -1046,7 +1195,7 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsPinoutModalOpen(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs cursor-pointer"
+                className="min-h-9 px-4 py-1.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-xs cursor-pointer"
               >
                 Fermer
               </button>
@@ -1059,28 +1208,28 @@ export const App: React.FC = () => {
           MODAL 3 : ACCÈS WI-FI TABLETTE / SMARTPHONE
       ===================================================================== */}
       {isNetworkModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+                <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-400/35 text-emerald-300">
                   <Wifi className="w-4 h-4" />
                 </div>
-                <h2 className="text-sm font-bold text-slate-900">
+                <h2 className="text-sm font-bold text-slate-50">
                   Accès Tablette / Téléphone en Wi-Fi
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsNetworkModalOpen(false)}
-                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="min-h-9 min-w-9 p-2 rounded-lg bg-[#1b2436] hover:bg-[#243047] border border-slate-700 text-slate-300 hover:text-white cursor-pointer"
                 aria-label="Fermer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               Ouvre l’une de ces adresses sur ton téléphone ou ta tablette connectée au même Wi-Fi :
             </p>
 
@@ -1089,19 +1238,19 @@ export const App: React.FC = () => {
                 networkInfo.urls.map((url) => (
                   <div
                     key={url}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-1.5"
+                    className="p-3 rounded-xl bg-[#090d14] border border-slate-800 flex flex-col gap-1.5"
                   >
-                    <div className="flex items-center justify-between font-mono text-xs text-emerald-800 font-bold">
+                    <div className="flex items-center justify-between font-mono text-xs text-emerald-300 font-bold">
                       <span>{url}</span>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     </div>
-                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-200 text-[11px] gap-2">
-                      <span className="text-slate-600 font-medium shrink-0">Télécommande :</span>
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-800 text-[11px] gap-2">
+                      <span className="text-slate-400 font-medium shrink-0">Télécommande :</span>
                       <a
                         href={`${url}?mode=pendant`}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-mono text-sky-700 hover:text-sky-900 font-bold underline truncate"
+                        className="font-mono text-sky-300 hover:text-sky-200 font-bold underline truncate"
                       >
                         {url}?mode=pendant
                       </a>
@@ -1109,18 +1258,18 @@ export const App: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700">
+                <div className="p-3 rounded-xl bg-[#090d14] border border-slate-800 font-mono text-xs text-slate-200">
                   http://localhost:3000
                 </div>
               )}
             </div>
 
-            <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-xs text-sky-900 flex items-start gap-2.5">
-              <Smartphone className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-400/35 text-xs text-sky-100 flex items-start gap-2.5">
+              <Smartphone className="w-4 h-4 text-sky-300 shrink-0 mt-0.5" />
               <div className="leading-relaxed">
-                <strong className="block font-bold mb-0.5">Favori Télécommande Smartphone :</strong>
+                <strong className="block font-bold text-sky-200 mb-0.5">Favori Télécommande Smartphone :</strong>
                 <span>
-                  Ajoute l'adresse avec <code className="bg-white px-1 py-0.5 rounded border border-sky-200 font-mono text-[11px] font-bold">?mode=pendant</code> sur l'écran d'accueil de ton smartphone pour lancer directement la télécommande tactile d'atelier !
+                  Ajoute l'adresse avec <code className="bg-[#090d14] px-1.5 py-0.5 rounded border border-sky-400/40 font-mono text-[11px] font-bold text-sky-300">?mode=pendant</code> sur l'écran d'accueil de ton smartphone pour lancer directement la télécommande tactile d'atelier !
                 </span>
               </div>
             </div>
@@ -1129,7 +1278,7 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNetworkModalOpen(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs cursor-pointer"
+                className="min-h-9 px-4 py-1.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-xs cursor-pointer"
               >
                 Fermer
               </button>
@@ -1161,6 +1310,7 @@ export const App: React.FC = () => {
           onZeroWorkAxis={handleZeroWorkAxis}
         />
       )}
+      </div>
     </div>
   );
 };

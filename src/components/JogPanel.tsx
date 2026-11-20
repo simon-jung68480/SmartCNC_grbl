@@ -387,50 +387,50 @@ export const JogPanel: React.FC<JogPanelProps> = ({
   const isCoolantActive = status.accessories.floodCoolant || status.accessories.mistCoolant;
 
   const padBtnClass =
-    'relative flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed h-12 select-none touch-none';
+    'relative flex flex-col items-center justify-center rounded-xl border border-slate-700/80 bg-[#1b2436] hover:bg-[#243047] active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed min-h-[50px] select-none touch-none';
 
   return (
-    <div className="bg-white border border-slate-200/90 text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.04)] rounded-xl p-3 flex flex-col gap-2.5 select-none">
+    <div className="bg-[#141b27] border border-slate-800 text-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.28)] rounded-xl p-3.5 flex flex-col gap-2.5 select-none">
       {/* En-tête : 2 Onglets segmentés Jog XY/Z vs Broche & Aux avec état live permanent */}
-      <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+      <div className="grid grid-cols-2 gap-1 bg-[#090d14] p-1 rounded-xl border border-slate-800">
         <button
           type="button"
           onClick={() => setActiveTab('jog')}
-          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
+          className={`min-h-9 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'jog'
-              ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
-              : 'text-slate-600 hover:text-slate-900 border border-transparent'
+              ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
+              : 'text-slate-400 hover:text-slate-100 border border-transparent'
           }`}
         >
-          <Move className="w-3.5 h-3.5 text-sky-600" />
+          <Move className="w-3.5 h-3.5 text-sky-400" />
           <span>Jog XY/Z</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('spindle')}
-          className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all cursor-pointer ${
+          className={`min-h-9 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'spindle'
-              ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
-              : 'text-slate-600 hover:text-slate-900 border border-transparent'
+              ? 'bg-[#1b2436] text-slate-50 border border-slate-700 shadow-xs'
+              : 'text-slate-400 hover:text-slate-100 border border-transparent'
           }`}
         >
           <Fan
             className={`w-3.5 h-3.5 shrink-0 ${
-              isSpindleActive ? 'text-amber-600 animate-spin' : 'text-slate-500'
+              isSpindleActive ? 'text-amber-400 animate-spin' : 'text-slate-400'
             }`}
           />
           <span className="truncate">Broche & Aux</span>
           {isSpindleActive ? (
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-mono text-[10px] font-bold shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-mono text-[11px] font-bold shrink-0">
               {status.spindleSpeed}
             </span>
           ) : isCoolantActive ? (
-            <span className="px-1.5 py-0.2 rounded-full bg-sky-100 text-sky-800 font-mono text-[10px] font-bold shrink-0">
+            <span className="px-1.5 py-0.5 rounded-full bg-sky-400 text-slate-950 font-mono text-[11px] font-bold shrink-0">
               AUX
             </span>
           ) : (
-            <span className="text-[10px] font-mono text-slate-400 shrink-0">OFF</span>
+            <span className="text-[11px] font-mono text-slate-400 shrink-0">OFF</span>
           )}
         </button>
       </div>
@@ -439,26 +439,26 @@ export const JogPanel: React.FC<JogPanelProps> = ({
         <>
           {/* Sous-en-tête : Pas / Continu + Clavier / Manette */}
           <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <div className="inline-flex items-center bg-[#090d14] p-0.5 rounded-xl border border-slate-800">
               <button
                 type="button"
                 onClick={() => setJogMode('step')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                   jogMode === 'step'
-                    ? 'bg-white text-slate-900 border border-slate-200/80 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                    ? 'bg-sky-400 text-slate-950 shadow-2xs'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
-                <Move className="w-3 h-3 text-sky-600" />
+                <Move className="w-3 h-3" />
                 <span>Pas</span>
               </button>
               <button
                 type="button"
                 onClick={() => setJogMode('continuous')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                className={`min-h-8 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                   jogMode === 'continuous'
-                    ? 'bg-amber-500 text-white border border-amber-600 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                    ? 'bg-amber-400 text-slate-950 shadow-2xs'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <Hand className="w-3 h-3" />
@@ -466,18 +466,18 @@ export const JogPanel: React.FC<JogPanelProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setKeyboardEnabled((v) => !v)}
                 title="Activer/Désactiver le pilotage au clavier (Flèches, PageUp/Down, Pavé num, [ / ], Espace = Pause)"
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-colors cursor-pointer ${
                   keyboardEnabled
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-slate-50 border-slate-200 text-slate-500'
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
+                    : 'bg-[#1b2436] border-slate-700 text-slate-400'
                 }`}
               >
-                <Keyboard className="w-3 h-3" />
+                <Keyboard className="w-3.5 h-3.5" />
                 <span>{keyboardEnabled ? 'Clavier' : 'Clavier OFF'}</span>
               </button>
 
@@ -487,13 +487,13 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     ? `Manette active : ${gamepadName}`
                     : 'Branchez une manette USB et appuyez sur un bouton'
                 }
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-semibold ${
+                className={`min-h-8 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${
                   gamepadConnected
-                    ? 'bg-sky-50 border-sky-200 text-sky-800'
-                    : 'bg-slate-50 border-slate-200 text-slate-400'
+                    ? 'bg-sky-500/15 border-sky-400/40 text-sky-300'
+                    : 'bg-[#0f1520] border-slate-800 text-slate-400'
                 }`}
               >
-                <Gamepad2 className={`w-3 h-3 ${gamepadConnected ? 'text-sky-600' : ''}`} />
+                <Gamepad2 className={`w-3.5 h-3.5 ${gamepadConnected ? 'text-sky-400' : ''}`} />
                 <span className="truncate max-w-[85px]">
                   {gamepadConnected ? gamepadActiveAxis || 'Manette' : 'Manette'}
                 </span>
@@ -516,7 +516,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 title="Diagonale Arrière-Gauche (X- Y+)"
                 aria-label="Diagonale X- Y+"
               >
-                <ArrowUpLeft className="w-4 h-4 text-slate-500" />
+                <ArrowUpLeft className="w-4 h-4 text-slate-300" />
               </button>
 
               {/* Y+ */}
@@ -526,11 +526,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerDown={() => handleDirectionPointerDown(0, 1, 0)}
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
-                className={`${padBtnClass} border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:border-emerald-400`}
+                className={`${padBtnClass} border-emerald-400/35 hover:border-emerald-400/70`}
                 title="Y+ (Arrière)"
               >
-                <ArrowUp className="w-4 h-4 text-emerald-600" />
-                <span className="text-[11px] font-mono font-bold text-emerald-700 leading-none">Y+</span>
+                <ArrowUp className="w-4 h-4 text-emerald-400" />
+                <span className="text-[11px] font-mono font-bold text-emerald-300 leading-none">Y+</span>
               </button>
 
               {/* X+ Y+ */}
@@ -544,7 +544,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 title="Diagonale Arrière-Droite (X+ Y+)"
                 aria-label="Diagonale X+ Y+"
               >
-                <ArrowUpRight className="w-4 h-4 text-slate-500" />
+                <ArrowUpRight className="w-4 h-4 text-slate-300" />
               </button>
 
               {/* X- */}
@@ -554,11 +554,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerDown={() => handleDirectionPointerDown(-1, 0, 0)}
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
-                className={`${padBtnClass} border-red-200 bg-red-50/40 hover:bg-red-50 hover:border-red-400`}
+                className={`${padBtnClass} border-rose-400/35 hover:border-rose-400/70`}
                 title="X- (Gauche)"
               >
-                <ArrowLeft className="w-4 h-4 text-red-600" />
-                <span className="text-[11px] font-mono font-bold text-red-700 leading-none">X-</span>
+                <ArrowLeft className="w-4 h-4 text-rose-400" />
+                <span className="text-[11px] font-mono font-bold text-rose-300 leading-none">X-</span>
               </button>
 
               {/* STOP JOG (0x85) central */}
@@ -567,14 +567,14 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 disabled={!status.connected}
                 onClick={sendCancelJog}
                 title="Arrêt immédiat du Jog (Octet temps réel 0x85)"
-                className={`flex flex-col items-center justify-center rounded-xl border font-mono font-bold transition-colors cursor-pointer h-12 ${
+                className={`flex flex-col items-center justify-center rounded-xl border font-mono font-bold transition-colors cursor-pointer min-h-[50px] ${
                   status.state === 'Jog' || isHoldingContinuous
-                    ? 'bg-red-600 border-red-700 text-white'
-                    : 'bg-red-50 border-red-200 hover:bg-red-600 text-red-700 hover:text-white'
+                    ? 'bg-red-600 border-red-400 text-white'
+                    : 'bg-red-600/20 border-red-500/50 hover:bg-red-600 text-rose-200 hover:text-white'
                 }`}
               >
                 <OctagonX className="w-4 h-4" />
-                <span className="text-[10px] tracking-wider leading-none mt-0.5">STOP</span>
+                <span className="text-[11px] tracking-wider leading-none mt-0.5">STOP</span>
               </button>
 
               {/* X+ */}
@@ -584,11 +584,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerDown={() => handleDirectionPointerDown(1, 0, 0)}
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
-                className={`${padBtnClass} border-red-200 bg-red-50/40 hover:bg-red-50 hover:border-red-400`}
+                className={`${padBtnClass} border-rose-400/35 hover:border-rose-400/70`}
                 title="X+ (Droite)"
               >
-                <ArrowRight className="w-4 h-4 text-red-600" />
-                <span className="text-[11px] font-mono font-bold text-red-700 leading-none">X+</span>
+                <ArrowRight className="w-4 h-4 text-rose-400" />
+                <span className="text-[11px] font-mono font-bold text-rose-300 leading-none">X+</span>
               </button>
 
               {/* X- Y- */}
@@ -602,7 +602,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 title="Diagonale Avant-Gauche (X- Y-)"
                 aria-label="Diagonale X- Y-"
               >
-                <ArrowDownLeft className="w-4 h-4 text-slate-500" />
+                <ArrowDownLeft className="w-4 h-4 text-slate-300" />
               </button>
 
               {/* Y- */}
@@ -612,11 +612,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerDown={() => handleDirectionPointerDown(0, -1, 0)}
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
-                className={`${padBtnClass} border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:border-emerald-400`}
+                className={`${padBtnClass} border-emerald-400/35 hover:border-emerald-400/70`}
                 title="Y- (Avant)"
               >
-                <ArrowDown className="w-4 h-4 text-emerald-600" />
-                <span className="text-[11px] font-mono font-bold text-emerald-700 leading-none">Y-</span>
+                <ArrowDown className="w-4 h-4 text-emerald-400" />
+                <span className="text-[11px] font-mono font-bold text-emerald-300 leading-none">Y-</span>
               </button>
 
               {/* X+ Y- */}
@@ -630,7 +630,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 title="Diagonale Avant-Droite (X+ Y-)"
                 aria-label="Diagonale X+ Y-"
               >
-                <ArrowDownRight className="w-4 h-4 text-slate-500" />
+                <ArrowDownRight className="w-4 h-4 text-slate-300" />
               </button>
             </div>
 
@@ -643,11 +643,11 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
                 title="Monter la fraise (Z+)"
-                className="flex-1 flex flex-col items-center justify-center rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-400 active:bg-blue-100 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none touch-none"
+                className="flex-1 min-h-[50px] flex flex-col items-center justify-center rounded-xl border border-sky-400/35 bg-[#1b2436] hover:bg-[#243047] hover:border-sky-400/70 active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed select-none touch-none"
               >
-                <ArrowUp className="w-4 h-4 text-blue-600" />
-                <span className="font-mono text-xs font-bold text-blue-700 leading-none mt-0.5">Z+</span>
-                <span className="text-[9px] text-slate-500 mt-0.5">Monter</span>
+                <ArrowUp className="w-4 h-4 text-sky-400" />
+                <span className="font-mono text-xs font-bold text-sky-300 leading-none mt-0.5">Z+</span>
+                <span className="text-[11px] text-slate-300 mt-0.5">Monter</span>
               </button>
 
               <button
@@ -657,22 +657,22 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 onPointerUp={handleDirectionPointerUp}
                 onPointerLeave={handleDirectionPointerUp}
                 title="Descendre la fraise (Z-)"
-                className="flex-1 flex flex-col items-center justify-center rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-400 active:bg-blue-100 text-slate-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none touch-none"
+                className="flex-1 min-h-[50px] flex flex-col items-center justify-center rounded-xl border border-sky-400/35 bg-[#1b2436] hover:bg-[#243047] hover:border-sky-400/70 active:translate-y-px shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-slate-100 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed select-none touch-none"
               >
-                <span className="text-[9px] text-slate-500 mb-0.5">Desc.</span>
-                <span className="font-mono text-xs font-bold text-blue-700 leading-none">Z-</span>
-                <ArrowDown className="w-4 h-4 text-blue-600 mt-0.5" />
+                <span className="text-[11px] text-slate-300 mb-0.5">Desc.</span>
+                <span className="font-mono text-xs font-bold text-sky-300 leading-none">Z-</span>
+                <ArrowDown className="w-4 h-4 text-sky-400 mt-0.5" />
               </button>
             </div>
           </div>
 
           {/* Sélecteur de Pas (Step Size) : 0.01 à 100 mm + Champ personnalisé */}
-          <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-200/80 flex flex-col gap-1.5">
+          <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
                 Pas ({status.unit}) <span className="text-slate-400 font-normal">[ / ]</span>
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <input
                   type="number"
                   aria-label="Pas d'incrément personnalisé"
@@ -685,9 +685,9 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     const v = parseFloat(e.target.value);
                     if (!isNaN(v) && v > 0) setStepSize(v);
                   }}
-                  className="w-16 bg-white border border-slate-200 focus:border-sky-500 rounded-md px-1.5 py-0.5 font-mono text-xs font-bold text-slate-900 text-right focus:outline-none"
+                  className="w-18 min-h-8 bg-[#090d14] border border-slate-700 focus:border-sky-400 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none"
                 />
-                <span className="text-[10px] font-mono text-slate-400">{status.unit}</span>
+                <span className="text-[11px] font-mono text-slate-400">{status.unit}</span>
               </div>
             </div>
 
@@ -699,10 +699,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     key={preset}
                     type="button"
                     onClick={() => selectStep(preset)}
-                    className={`py-1 rounded-md font-mono text-[11px] font-bold border transition-colors cursor-pointer ${
+                    className={`min-h-8 py-1 rounded-lg font-mono text-[11px] font-bold border transition-colors cursor-pointer ${
                       active
-                        ? 'bg-sky-600 border-sky-600 text-white'
-                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                        ? 'bg-sky-400 border-sky-300 text-slate-950'
+                        : 'bg-[#1b2436] border-slate-700 text-slate-200 hover:bg-[#243047]'
                     }`}
                   >
                     {preset}
@@ -713,12 +713,12 @@ export const JogPanel: React.FC<JogPanelProps> = ({
           </div>
 
           {/* Réglages rapides de Vitesse XY et Vitesse Z (mm/min) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Vitesse XY */}
-            <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-200/80 flex flex-col gap-1.5">
+            <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Gauge className="w-3 h-3 text-emerald-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
                   XY
                 </span>
                 <div className="flex items-center gap-1">
@@ -730,21 +730,21 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     step={100}
                     value={xyFeedRate}
                     onChange={(e) => setXyFeedRate(Math.max(10, Number(e.target.value) || 100))}
-                    className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-900 text-right focus:outline-none focus:border-emerald-500"
+                    className="w-16 min-h-8 bg-[#090d14] border border-slate-700 rounded-lg px-1.5 py-0.5 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none focus:border-emerald-400"
                   />
-                  <span className="text-[9px] font-mono text-slate-400">mm/m</span>
+                  <span className="text-[11px] font-mono text-slate-400">mm/m</span>
                 </div>
               </div>
-              <div className="flex items-center divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
+              <div className="flex items-center divide-x divide-slate-700/80 rounded-lg border border-slate-700 bg-[#1b2436] overflow-hidden">
                 {XY_FEED_PRESETS.map((f) => (
                   <button
                     key={f}
                     type="button"
                     onClick={() => setXyFeedRate(f)}
-                    className={`flex-1 py-1 text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                    className={`min-h-8 flex-1 py-1 text-[11px] font-mono font-bold transition-colors cursor-pointer ${
                       xyFeedRate === f
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'text-slate-200 hover:bg-[#243047]'
                     }`}
                   >
                     {f}
@@ -754,10 +754,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
             </div>
 
             {/* Vitesse Z */}
-            <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-200/80 flex flex-col gap-1.5">
+            <div className="bg-[#0f1520] p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5">
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Gauge className="w-3 h-3 text-blue-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-sky-400" />
                   Z
                 </span>
                 <div className="flex items-center gap-1">
@@ -769,21 +769,21 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     step={50}
                     value={zFeedRate}
                     onChange={(e) => setZFeedRate(Math.max(10, Number(e.target.value) || 50))}
-                    className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-900 text-right focus:outline-none focus:border-blue-500"
+                    className="w-16 min-h-8 bg-[#090d14] border border-slate-700 rounded-lg px-1.5 py-0.5 font-mono text-xs font-bold text-slate-100 text-right focus:outline-none focus:border-sky-400"
                   />
-                  <span className="text-[9px] font-mono text-slate-400">mm/m</span>
+                  <span className="text-[11px] font-mono text-slate-400">mm/m</span>
                 </div>
               </div>
-              <div className="flex items-center divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
+              <div className="flex items-center divide-x divide-slate-700/80 rounded-lg border border-slate-700 bg-[#1b2436] overflow-hidden">
                 {Z_FEED_PRESETS.map((f) => (
                   <button
                     key={f}
                     type="button"
                     onClick={() => setZFeedRate(f)}
-                    className={`flex-1 py-1 text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                    className={`min-h-8 flex-1 py-1 text-[11px] font-mono font-bold transition-colors cursor-pointer ${
                       zFeedRate === f
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'text-slate-700 hover:bg-slate-100'
+                        ? 'bg-sky-400 text-slate-950'
+                        : 'text-slate-200 hover:bg-[#243047]'
                     }`}
                   >
                     {f}
@@ -795,28 +795,28 @@ export const JogPanel: React.FC<JogPanelProps> = ({
 
           {/* Bandeau de sécurité rapide si broche ou arrosage actif */}
           {(isSpindleActive || isCoolantActive) && (
-            <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs">
-              <div className="flex items-center gap-2 font-mono text-[11px] font-semibold text-amber-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-400/40 text-xs">
+              <div className="flex items-center gap-2 font-mono text-[11px] font-semibold text-amber-200">
                 {isSpindleActive && (
-                  <span className="inline-flex items-center gap-1">
-                    <Fan className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <Fan className="w-3.5 h-3.5 text-amber-400 animate-spin" />
                     Broche {status.accessories.spindleCw ? 'M3' : 'M4'} · {status.spindleSpeed} RPM
                   </span>
                 )}
                 {isCoolantActive && (
-                  <span className="inline-flex items-center gap-1 text-sky-800">
-                    <Droplets className="w-3.5 h-3.5 text-sky-600" />
+                  <span className="inline-flex items-center gap-1 text-sky-300">
+                    <Droplets className="w-3.5 h-3.5 text-sky-400" />
                     {status.accessories.floodCoolant ? 'M8' : 'M7'}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 {isSpindleActive && (
                   <button
                     type="button"
                     disabled={!status.connected}
                     onClick={() => onSendCommand('M5')}
-                    className="px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] cursor-pointer"
+                    className="min-h-8 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] cursor-pointer"
                   >
                     STOP M5
                   </button>
@@ -826,7 +826,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                     type="button"
                     disabled={!status.connected}
                     onClick={() => onSendCommand('M9')}
-                    className="px-2 py-0.5 rounded-md bg-sky-700 hover:bg-sky-800 text-white font-bold text-[11px] cursor-pointer"
+                    className="min-h-8 px-2.5 py-1 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-[11px] cursor-pointer"
                   >
                     M9
                   </button>
@@ -838,22 +838,22 @@ export const JogPanel: React.FC<JogPanelProps> = ({
       ) : (
         /* ONGLET 2 : BROCHE (SPINDLE PWM) & ARROSAGE / ASPIRATION */
         <div className="flex flex-col gap-2.5">
-          <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/80 flex flex-col gap-2.5">
+          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Fan
                   className={`w-4 h-4 ${
-                    isSpindleActive ? 'text-amber-600 animate-spin' : 'text-slate-500'
+                    isSpindleActive ? 'text-amber-400 animate-spin' : 'text-slate-400'
                   }`}
                 />
-                <span className="text-xs font-bold text-slate-800">Broche PWM</span>
+                <span className="text-xs font-bold text-slate-100">Broche PWM</span>
               </div>
               <div className="font-mono text-xs flex items-center gap-2">
-                <span className="text-slate-500">
-                  Cible <strong className="text-slate-900">{spindleRpm}</strong>
+                <span className="text-slate-400">
+                  Cible <strong className="text-slate-100">{spindleRpm}</strong>
                 </span>
-                <span className="text-slate-300">|</span>
-                <span className="text-amber-700 font-bold">
+                <span className="text-slate-600">|</span>
+                <span className="text-amber-300 font-bold">
                   Actuel {status.spindleSpeed} RPM
                 </span>
               </div>
@@ -869,7 +869,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 step={500}
                 value={spindleRpm}
                 onChange={(e) => setSpindleRpm(Number(e.target.value))}
-                className="flex-1 accent-amber-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                className="flex-1 accent-amber-400 h-2 bg-slate-800 rounded-lg cursor-pointer"
               />
               <span className="font-mono text-[11px] text-slate-400">24k</span>
             </div>
@@ -879,10 +879,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand(`M3 S${spindleRpm}`)}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
+                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
                   status.accessories.spindleCw
-                    ? 'bg-amber-500 border-amber-600 text-white'
-                    : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-100'
+                    ? 'bg-amber-400 border-amber-300 text-slate-950'
+                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
                 }`}
               >
                 <Fan className="w-3.5 h-3.5" />
@@ -893,10 +893,10 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand(`M4 S${spindleRpm}`)}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
+                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
                   status.accessories.spindleCcw
-                    ? 'bg-orange-500 border-orange-600 text-white'
-                    : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-100'
+                    ? 'bg-orange-400 border-orange-300 text-slate-950'
+                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
                 }`}
               >
                 <Fan className="w-3.5 h-3.5" />
@@ -907,7 +907,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand('M5')}
-                className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-red-50 border border-red-200 hover:bg-red-600 text-red-700 hover:text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-40"
+                className="min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-red-950/60 border border-red-500/45 hover:bg-red-600 text-rose-200 hover:text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-35"
               >
                 <PowerOff className="w-3.5 h-3.5" />
                 <span>STOP (M5)</span>
@@ -915,8 +915,8 @@ export const JogPanel: React.FC<JogPanelProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/80 flex flex-col gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <div className="bg-[#0f1520] p-3 rounded-xl border border-slate-800 flex flex-col gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Arrosage & Aspiration
             </span>
             <div className="grid grid-cols-3 gap-1.5">
@@ -924,13 +924,13 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand('M8')}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 ${
+                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
                   status.accessories.floodCoolant
-                    ? 'bg-sky-600 border-sky-600 text-white font-bold'
-                    : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-100'
+                    ? 'bg-sky-400 border-sky-300 text-slate-950'
+                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
                 }`}
               >
-                <Droplets className={`w-3.5 h-3.5 ${status.accessories.floodCoolant ? 'text-white' : 'text-sky-600'}`} />
+                <Droplets className={`w-3.5 h-3.5 ${status.accessories.floodCoolant ? 'text-slate-950' : 'text-sky-400'}`} />
                 <span>Flood (M8)</span>
               </button>
 
@@ -938,13 +938,13 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand('M7')}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 ${
+                className={`min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer disabled:opacity-35 ${
                   status.accessories.mistCoolant
-                    ? 'bg-sky-600 border-sky-600 text-white font-bold'
-                    : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-100'
+                    ? 'bg-sky-400 border-sky-300 text-slate-950'
+                    : 'bg-[#1b2436] border-slate-700 text-slate-100 hover:bg-[#243047]'
                 }`}
               >
-                <Wind className={`w-3.5 h-3.5 ${status.accessories.mistCoolant ? 'text-white' : 'text-sky-600'}`} />
+                <Wind className={`w-3.5 h-3.5 ${status.accessories.mistCoolant ? 'text-slate-950' : 'text-sky-400'}`} />
                 <span>Mist (M7)</span>
               </button>
 
@@ -952,7 +952,7 @@ export const JogPanel: React.FC<JogPanelProps> = ({
                 type="button"
                 disabled={!status.connected}
                 onClick={() => onSendCommand('M9')}
-                className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
+                className="min-h-10 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-[#1b2436] border border-slate-700 hover:bg-[#243047] text-slate-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-35"
               >
                 <span>Arrêt (M9)</span>
               </button>

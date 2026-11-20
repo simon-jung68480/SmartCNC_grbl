@@ -598,24 +598,25 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-2 sm:p-5">
-      <div className="bg-white border border-slate-300 text-slate-800 rounded-2xl shadow-2xl w-full max-w-7xl h-full flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-5">
+      <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl shadow-2xl w-full max-w-7xl h-full flex flex-col overflow-hidden">
         {/* Barre de navigation principale supérieure : GRBL ($$) vs Préférences App */}
-        <div className="px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="px-5 py-2.5 bg-[#0f1520] border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setMainTab('grbl')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              aria-pressed={mainTab === 'grbl'}
+              className={`flex items-center gap-2 min-h-9 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mainTab === 'grbl'
-                  ? 'bg-white text-sky-700 shadow-xs border border-slate-300'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  ? 'bg-[#1b2436] text-sky-300 shadow-xs border border-slate-700'
+                  : 'text-slate-300 hover:text-white hover:bg-[#1b2436]/60 border border-transparent'
               }`}
             >
-              <Cpu className="w-4 h-4 text-sky-600" />
+              <Cpu className="w-4 h-4 text-sky-400" />
               <span>Paramètres GRBL ($$) & Matériel</span>
               {modifiedSettings.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200 border border-amber-400/50">
                   {modifiedSettings.length}
                 </span>
               )}
@@ -624,13 +625,14 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
             <button
               type="button"
               onClick={() => setMainTab('app')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              aria-pressed={mainTab === 'app'}
+              className={`flex items-center gap-2 min-h-9 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mainTab === 'app'
-                  ? 'bg-white text-sky-700 shadow-xs border border-slate-300'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                  ? 'bg-[#1b2436] text-sky-300 shadow-xs border border-slate-700'
+                  : 'text-slate-300 hover:text-white hover:bg-[#1b2436]/60 border border-transparent'
               }`}
             >
-              <Sliders className="w-4 h-4 text-sky-600" />
+              <Sliders className="w-4 h-4 text-sky-400" />
               <span>Préférences de l'Application</span>
             </button>
           </div>
@@ -638,8 +640,9 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+            className="min-h-9 min-w-9 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436] transition cursor-pointer"
             title="Fermer (Échap)"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -651,23 +654,23 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* En-tête de l'onglet GRBL */}
-            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="px-5 py-3.5 bg-[#111622] border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-600">
+                <div className="p-2.5 rounded-xl bg-sky-500/15 border border-sky-500/40 text-sky-400">
                   <Settings className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-900">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-bold text-slate-50">
                       Configuration EEPROM GRBL 1.1 ($$) & Calibrage CNC Shield V3.0
                     </h2>
                     {modifiedSettings.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-200 border border-amber-400/50">
                         {modifiedSettings.length} modifié(s)
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-300">
                     Paramètres stockés en mémoire non-volatile de l'Arduino Uno (ATmega328P)
                   </p>
                 </div>
@@ -690,7 +693,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                   type="button"
                   onClick={handleReadFromArduino}
                   disabled={!connected}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-sky-700 border border-slate-300 transition disabled:opacity-40 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-sky-300 border border-slate-700/80 transition disabled:opacity-40 cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Lire depuis l'Arduino ($$)</span>
@@ -699,18 +702,18 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={handleExportProfile}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  <Download className="w-3.5 h-3.5 text-slate-300" />
                   <span>Exporter (.json)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer"
                 >
-                  <Upload className="w-3.5 h-3.5 text-slate-500" />
+                  <Upload className="w-3.5 h-3.5 text-slate-300" />
                   <span>Importer (.json)</span>
                 </button>
 
@@ -718,7 +721,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                   type="button"
                   onClick={handleSaveToEeprom}
                   disabled={!connected}
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition disabled:opacity-40 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm transition disabled:opacity-40 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Enregistrer dans l'EEPROM</span>
@@ -728,14 +731,14 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
         {/* Bannière de retour d'action */}
         {saveFeedback && (
-          <div className="px-5 py-2 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="px-5 py-2.5 bg-emerald-950/60 border-b border-emerald-500/40 text-emerald-200 text-xs font-semibold flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{saveFeedback}</span>
           </div>
         )}
 
         {/* Barre de recherche & Catégories */}
-        <div className="px-5 py-3 bg-white border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="px-5 py-3 bg-[#141b27] border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="relative w-full lg:w-72 shrink-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -743,7 +746,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher ($100, vitesse, homing...)"
-              className="w-full bg-white border border-slate-300 focus:border-sky-500 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none"
+              className="w-full min-h-9 bg-[#090d14] border border-slate-700 focus:border-sky-400 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none"
             />
           </div>
 
@@ -753,10 +756,10 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap border transition ${
+                className={`min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap border transition cursor-pointer ${
                   selectedCategory === cat.id
-                    ? 'bg-sky-50 border-sky-400 text-sky-800'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-200'
+                    : 'bg-[#1b2436] border-slate-700/80 text-slate-200 hover:bg-[#243047] hover:text-white'
                 }`}
               >
                 {cat.label}
@@ -768,7 +771,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
         {/* Contenu principal en 2 colonnes : Liste des paramètres $$ + Assistants CNC Shield V3.0 */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* Colonne Gauche (7/12) : Liste des paramètres GRBL */}
-          <div className="lg:col-span-7 overflow-y-auto p-4 space-y-2.5 border-r border-slate-200 bg-white">
+          <div className="lg:col-span-7 overflow-y-auto p-4 space-y-2.5 border-r border-slate-800 bg-[#0b0f17]">
             {filteredSettings.map((setting) => {
               const currentVal = editedValues[setting.id] ?? setting.value;
               const isModified = Math.abs(currentVal - setting.value) > 0.0001;
@@ -780,27 +783,27 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                   key={setting.id}
                   className={`p-3.5 rounded-xl border transition ${
                     isModified
-                      ? 'bg-amber-50/70 border-amber-300'
-                      : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                      ? 'bg-amber-950/35 border-amber-400/60'
+                      : 'bg-[#141b27] border-slate-800 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-sky-50 border border-sky-200 font-mono text-xs font-bold text-sky-700">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded bg-sky-500/15 border border-sky-500/40 font-mono text-xs font-bold text-sky-300">
                           {setting.code}
                         </span>
-                        <h4 className="text-xs font-bold text-slate-900">{setting.name}</h4>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600 font-mono">
+                        <h4 className="text-xs font-bold text-slate-50">{setting.name}</h4>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#090d14] border border-slate-800 text-slate-300 font-mono">
                           {setting.category}
                         </span>
                         {isModified && (
-                          <span className="text-[10px] font-bold text-amber-700">
+                          <span className="text-[11px] font-bold text-amber-300">
                             ● Modifié (était {setting.value})
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
                         {setting.description}
                       </p>
                     </div>
@@ -813,16 +816,16 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                           onClick={() =>
                             handleValueChange(setting.id, currentVal === 1 ? 0 : 1)
                           }
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                          className={`min-h-9 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
                             currentVal === 1
-                              ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
-                              : 'bg-white border-slate-300 text-slate-600'
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                              : 'bg-[#1b2436] border-slate-700 text-slate-300 hover:text-white'
                           }`}
                         >
                           {currentVal === 1 ? '1 (Activé)' : '0 (Désactivé)'}
                         </button>
                       ) : (
-                        <div className="flex items-center bg-white border border-slate-300 rounded-lg overflow-hidden">
+                        <div className="flex items-center bg-[#090d14] border border-slate-700 rounded-lg overflow-hidden">
                           <input
                             type="number"
                             step="any"
@@ -830,9 +833,9 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                             onChange={(e) =>
                               handleValueChange(setting.id, parseFloat(e.target.value))
                             }
-                            className="w-24 px-2.5 py-1.5 bg-white text-right font-mono text-xs font-bold text-slate-900 focus:outline-none"
+                            className="w-24 min-h-9 px-2.5 py-1.5 bg-[#090d14] text-right font-mono text-xs font-bold text-slate-100 focus:outline-none"
                           />
-                          <span className="px-2 py-1.5 bg-slate-100 text-[10px] font-mono text-slate-600 border-l border-slate-300">
+                          <span className="px-2.5 py-2 bg-[#0f1520] text-[11px] font-mono text-slate-300 border-l border-slate-700">
                             {setting.unit}
                           </span>
                         </div>
@@ -842,36 +845,36 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
                   {/* Cases à cocher visuelles d'inversion d'axes X/Y/Z pour $2, $3, $23 */}
                   {isAxisBitmask && (
-                    <div className="mt-2.5 pt-2.5 border-t border-slate-200 flex flex-wrap items-center gap-3 text-xs">
-                      <span className="text-[11px] text-slate-600 font-medium flex items-center gap-1">
-                        <Sliders className="w-3 h-3 text-sky-600" />
+                    <div className="mt-2.5 pt-2.5 border-t border-slate-800 flex flex-wrap items-center gap-2.5 text-xs">
+                      <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1">
+                        <Sliders className="w-3.5 h-3.5 text-sky-400" />
                         Masque d'inversion d'axes :
                       </span>
                       {[
-                        { axis: 'Inverser X', bit: 1, color: 'text-red-600' },
-                        { axis: 'Inverser Y', bit: 2, color: 'text-emerald-700' },
-                        { axis: 'Inverser Z', bit: 4, color: 'text-blue-700' },
+                        { axis: 'Inverser X', bit: 1, color: 'text-rose-400' },
+                        { axis: 'Inverser Y', bit: 2, color: 'text-emerald-400' },
+                        { axis: 'Inverser Z', bit: 4, color: 'text-sky-400' },
                       ].map((item) => {
                         const checked = (Math.round(currentVal) & item.bit) !== 0;
                         return (
                           <label
                             key={item.bit}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition ${
+                            className={`inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg border cursor-pointer select-none transition ${
                               checked
-                                ? 'bg-sky-50 border-sky-400 text-slate-900'
-                                : 'bg-white border-slate-300 text-slate-600'
+                                ? 'bg-sky-500/20 border-sky-400 text-slate-100'
+                                : 'bg-[#090d14] border-slate-700 text-slate-300 hover:border-slate-600'
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => handleToggleBitmask(setting.id, item.bit)}
-                              className="rounded border-slate-300 bg-white text-sky-600"
+                              className="rounded border-slate-600 bg-[#090d14] accent-sky-400"
                             />
                             <span className={`font-bold ${item.color}`}>
                               {item.axis}
                             </span>
-                            <span className="text-[10px] font-mono text-slate-500">
+                            <span className="text-[11px] font-mono text-slate-400">
                               (+{item.bit})
                             </span>
                           </label>
@@ -885,19 +888,19 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
           </div>
 
           {/* Colonne Droite (5/12) : Calculateur Pas/mm CNC Shield V3.0 & Assistant Calibration */}
-          <div className="lg:col-span-5 overflow-y-auto p-4 space-y-4 bg-white">
+          <div className="lg:col-span-5 overflow-y-auto p-4 space-y-4 bg-[#111622]">
             <HomingDiagnostics status={status} />
             {/* 1. Calculateur matériel Pas/mm (Spécial CNC Shield V3.0) */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+            <div className="p-4 rounded-2xl bg-[#141b27] border border-slate-800 space-y-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600">
+                <div className="p-2 rounded-lg bg-indigo-500/15 border border-indigo-500/40 text-indigo-300">
                   <Calculator className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-50">
                     Calculateur de Pas/mm (CNC Shield V3.0)
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-300">
                     Configurez vos cavaliers MS0/MS1/MS2 et votre transmission mécanique
                   </p>
                 </div>
@@ -905,7 +908,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
               {/* Type de transmission */}
               <div className="space-y-1 text-xs">
-                <label className="block text-slate-700 font-semibold">
+                <label className="block text-slate-200 font-semibold">
                   1. Type de transmission mécanique
                 </label>
                 <select
@@ -913,7 +916,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                   onChange={(e) =>
                     setTransmissionType(e.target.value as typeof transmissionType)
                   }
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                  className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100"
                 >
                   <option value="t8-lead4">
                     Vis trapézoïdale T8 — Avance 4 mm/tour (Standard CNC 3018 / 2 filets)
@@ -939,7 +942,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
               {/* Angle Moteur & Type de Driver */}
               <div className="grid grid-cols-2 gap-2.5 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
+                  <label className="block text-slate-200 font-semibold mb-1">
                     2. Moteur Nema 17 / 23
                   </label>
                   <select
@@ -947,7 +950,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                     onChange={(e) =>
                       setMotorStepsPerRev(Number(e.target.value) as 200 | 400)
                     }
-                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100"
                   >
                     <option value={200}>1.8° (200 pas/tr)</option>
                     <option value={400}>0.9° (400 pas/tr)</option>
@@ -955,7 +958,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">
+                  <label className="block text-slate-200 font-semibold mb-1">
                     3. Driver sur CNC Shield
                   </label>
                   <select
@@ -963,7 +966,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                     onChange={(e) =>
                       setDriverType(e.target.value as 'A4988' | 'DRV8825')
                     }
-                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100"
                   >
                     <option value="A4988">Pololu A4988 (1/16 max)</option>
                     <option value="DRV8825">DRV8825 (1/32 max)</option>
@@ -972,13 +975,13 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
               </div>
 
               {/* Cavaliers Jumpers MS0 / MS1 / MS2 sous le driver */}
-              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-700 font-semibold flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-sky-600" />
+              <div className="p-3 rounded-xl bg-[#090d14] border border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-200 font-semibold flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-sky-400" />
                     Cavaliers (Jumpers) sous le driver :
                   </span>
-                  <span className="text-[11px] font-mono text-sky-700 font-bold">
+                  <span className="text-[11px] font-mono text-sky-300 font-bold">
                     {microsteppingInfo.label}
                   </span>
                 </div>
@@ -999,10 +1002,10 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                         onClick={() =>
                           setJumpers((prev) => ({ ...prev, [j.key]: !prev[j.key] }))
                         }
-                        className={`py-2 px-2 rounded-lg border text-center font-mono text-[11px] transition ${
+                        className={`min-h-10 py-2 px-2 rounded-lg border text-center font-mono text-[11px] transition cursor-pointer ${
                           active
-                            ? 'bg-sky-50 border-sky-400 text-sky-900 font-bold'
-                            : 'bg-slate-50 border-slate-200 text-slate-500'
+                            ? 'bg-sky-500/20 border-sky-400 text-sky-200 font-bold'
+                            : 'bg-[#1b2436] border-slate-700 text-slate-300 hover:text-white'
                         }`}
                       >
                         <div>{j.label}</div>
@@ -1016,33 +1019,33 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
               </div>
 
               {/* Résultat & Boutons d'application en 1 clic à $100, $101, $102 */}
-              <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 space-y-2.5">
+              <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/40 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">Valeur calculée :</span>
-                  <span className="text-lg font-mono font-extrabold text-sky-700">
+                  <span className="text-xs font-medium text-slate-200">Valeur calculée :</span>
+                  <span className="text-lg font-mono font-extrabold text-sky-300">
                     {calculatedStepsPerMm} pas/mm
                   </span>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleValueChange(100, calculatedStepsPerMm)}
-                    className="py-1.5 px-2 rounded-lg bg-white hover:bg-red-50 text-red-700 border border-red-300 text-[11px] font-bold transition"
+                    className="min-h-9 py-1.5 px-2 rounded-lg bg-[#1b2436] hover:bg-rose-950/60 text-rose-300 border border-rose-500/40 text-[11px] font-bold transition cursor-pointer"
                   >
                     → $100 (X)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleValueChange(101, calculatedStepsPerMm)}
-                    className="py-1.5 px-2 rounded-lg bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 text-[11px] font-bold transition"
+                    className="min-h-9 py-1.5 px-2 rounded-lg bg-[#1b2436] hover:bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition cursor-pointer"
                   >
                     → $101 (Y)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleValueChange(102, calculatedStepsPerMm)}
-                    className="py-1.5 px-2 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 text-[11px] font-bold transition"
+                    className="min-h-9 py-1.5 px-2 rounded-lg bg-[#1b2436] hover:bg-sky-950/60 text-sky-300 border border-sky-500/40 text-[11px] font-bold transition cursor-pointer"
                   >
                     → $102 (Z)
                   </button>
@@ -1053,7 +1056,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                       handleValueChange(101, calculatedStepsPerMm);
                       handleValueChange(102, calculatedStepsPerMm);
                     }}
-                    className="py-1.5 px-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold transition"
+                    className="min-h-9 py-1.5 px-2 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 text-[11px] font-bold transition cursor-pointer"
                   >
                     Tous X/Y/Z
                   </button>
@@ -1062,16 +1065,16 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
             </div>
 
             {/* 2. Assistant de calibration par mesure réelle (Pied à coulisse / Réglet) */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5 text-xs">
+            <div className="p-4 rounded-2xl bg-[#141b27] border border-slate-800 space-y-3.5 text-xs">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700">
+                <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">
                   <Ruler className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-50">
                     Assistant de Calibration par Mesure Réelle
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-300">
                     Corrigez les pas/mm à partir d'une mesure au pied à coulisse
                   </p>
                 </div>
@@ -1089,10 +1092,10 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                     key={ax.id}
                     type="button"
                     onClick={() => setCalibAxisId(ax.id)}
-                    className={`py-1.5 px-2 rounded-lg font-bold border transition ${
+                    className={`min-h-9 py-1.5 px-2 rounded-lg font-bold border transition cursor-pointer ${
                       calibAxisId === ax.id
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
-                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                        : 'bg-[#1b2436] border-slate-700 text-slate-200 hover:bg-[#243047]'
                     }`}
                   >
                     {ax.label}
@@ -1102,7 +1105,7 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Distance demandée (mm)
                   </label>
                   <input
@@ -1111,11 +1114,11 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                     step="any"
                     value={requestedDistMm}
                     onChange={(e) => setRequestedDistMm(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Distance réelle mesurée (mm)
                   </label>
                   <input
@@ -1124,18 +1127,18 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                     step="any"
                     value={measuredDistMm}
                     onChange={(e) => setMeasuredDistMm(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono text-slate-900"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-1.5 font-mono text-slate-100"
                   />
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-[#090d14] border border-slate-800 flex items-center justify-between gap-2">
                 <div className="space-y-0.5 font-mono text-[11px]">
-                  <div className="text-slate-500">
+                  <div className="text-slate-300">
                     Actuel (${calibAxisId}) :{' '}
-                    <span className="text-slate-900 font-semibold">{currentAxisSteps} pas/mm</span>
+                    <span className="text-slate-100 font-semibold">{currentAxisSteps} pas/mm</span>
                   </div>
-                  <div className="text-emerald-700 font-bold flex items-center gap-1">
+                  <div className="text-emerald-400 font-bold flex items-center gap-1">
                     <span>Corrigé :</span>
                     <ArrowRight className="w-3 h-3" />
                     <span className="text-sm">{calibratedStepsPerMm} pas/mm</span>
@@ -1145,17 +1148,17 @@ export const GrblSettingsModal: React.FC<GrblSettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleValueChange(calibAxisId, calibratedStepsPerMm)}
-                  className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                  className="min-h-9 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition cursor-pointer"
                 >
                   Appliquer à ${calibAxisId}
                 </button>
               </div>
 
-              <div className="flex items-start gap-2 text-[11px] text-slate-600 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-[11px] text-amber-100 bg-amber-950/40 p-2.5 rounded-lg border border-amber-500/40">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <span>
                   Astuce : Après avoir appliqué vos nouveaux pas/mm, cliquez sur{' '}
-                  <strong className="text-emerald-700">Enregistrer dans l'EEPROM</strong>{' '}
+                  <strong className="text-emerald-300">Enregistrer dans l'EEPROM</strong>{' '}
                   en haut à droite pour flasher l'Arduino Uno.
                 </span>
               </div>

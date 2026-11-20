@@ -2,8 +2,8 @@
 
 @layer base {
   :root {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    color-scheme: light;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
   }
 
   .font-mono {
@@ -16,8 +16,8 @@
   select:focus-visible,
   textarea:focus-visible,
   summary:focus-visible {
-    outline: 2px solid #0284c7;
-    outline-offset: 1px;
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 }
 
@@ -28,9 +28,14 @@
 }
 
 .app-toolbar-wide,
+.app-nav-rail,
 .cnc-splitter,
 .cnc-column-group {
   display: none;
+}
+
+.app-nav-mobile-tools {
+  display: flex;
 }
 
 .cnc-column-tabs,
@@ -44,8 +49,16 @@
 }
 
 @container smartcnc (min-width: 60rem) {
-  .cnc-column-tabs {
+  .cnc-column-tabs,
+  .app-nav-mobile-tools {
     display: none;
+  }
+
+  .app-nav-rail {
+    display: flex;
+    flex-direction: column;
+    width: 64px;
+    flex-shrink: 0;
   }
 
   .cnc-splitter,
@@ -69,21 +82,21 @@
   }
 }
 
-/* Light mode discrete scrollbars */
+/* Dark Obsidian Cockpit discrete scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #0b0f17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #2a3447;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #475569;
 }

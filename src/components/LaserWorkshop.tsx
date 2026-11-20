@@ -80,10 +80,10 @@ const layerColors = [
 ];
 const layerColorName = (color: string) => layerColors.find(entry => entry.hex === color.toLowerCase())?.name ?? color;
 const tabClass = (selected: boolean) =>
-  "rounded-md px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 " +
+  "min-h-8 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer disabled:opacity-40 " +
   (selected
-    ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80"
-    : "text-slate-600 hover:text-slate-900 border border-transparent");
+    ? "bg-[#1b2436] text-slate-50 shadow-xs border border-slate-700"
+    : "text-slate-300 hover:text-white border border-transparent");
 const initialPlacement: Placement = {
   width: 50,
   height: 50,
@@ -576,11 +576,11 @@ export const LaserWorkshop: React.FC<Props> = ({
                 disabled={busy || working}
                 className={`${card} disabled:opacity-60`}
               >
-                <h2 className="text-sm font-bold flex gap-2 items-center mb-3">
-                  <Settings2 size={17} />
+                <h2 className="text-sm font-bold text-slate-50 flex gap-2 items-center mb-3">
+                  <Settings2 size={17} className="text-sky-400" />
                   Réglages de gravure
                 </h2>
-                {combinedOperation && <div className="mb-3 inline-flex gap-1 rounded-lg bg-slate-100 p-1 border border-slate-200" role="group" aria-label="Opération du calque">
+                {combinedOperation && <div className="mb-3 inline-flex gap-1 rounded-xl bg-[#090d14] p-1 border border-slate-800" role="group" aria-label="Opération du calque">
                   <button type="button" className={tabClass(!editingContours)} aria-pressed={!editingContours} onClick={() => setSelectedOperation("fill")}>Remplissage</button>
                   <button type="button" className={tabClass(editingContours)} aria-pressed={editingContours} onClick={() => setSelectedOperation("contours")}>Contour</button>
                 </div>}
@@ -616,13 +616,13 @@ export const LaserWorkshop: React.FC<Props> = ({
                 {machineMaxPower !== undefined &&
                   machineMaxPower !== cut.maxPower && (
                     <button
-                      className="text-xs text-sky-700 underline mt-2"
+                      className="text-xs text-sky-300 hover:text-sky-200 underline mt-2 cursor-pointer"
                       onClick={() => changeCut("maxPower", machineMaxPower)}
                     >
                       Utiliser $30 = {machineMaxPower} de la machine
                     </button>
                   )}
-                <label className="block text-xs text-slate-600 mt-3 space-y-1">
+                <label className="block text-xs text-slate-300 mt-3 space-y-1">
                   <span>Commande de puissance (machine)</span>
                   <select
                     className={input}
@@ -634,7 +634,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                   </select>
                 </label>
                 {selectedLayer && !raster && fill.mode !== "fill" && (!combinedOperation || editingContours) && (
-                  <label className="mt-3 block space-y-1 text-xs text-slate-600">
+                  <label className="mt-3 block space-y-1 text-xs text-slate-300">
                     <span>Sens du contour</span>
                     <select className={input} value={contourDirection} onChange={event => changeContourDirection(event.target.value as LaserCutSettings["contourDirection"])}>
                       <option value="original">Sens du tracé</option>
@@ -644,9 +644,9 @@ export const LaserWorkshop: React.FC<Props> = ({
                   </label>
                 )}
                 {raster && (
-                  <div className="border-t border-slate-200 mt-3 pt-3 space-y-2">
-                    <h3 className="font-semibold text-xs flex gap-1.5">
-                      <Image size={14} />
+                  <div className="border-t border-slate-800 mt-3 pt-3 space-y-2.5">
+                    <h3 className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                      <Image size={14} className="text-sky-400" />
                       Traitement de l’image
                     </h3>
                     <NumberField
@@ -666,11 +666,11 @@ export const LaserWorkshop: React.FC<Props> = ({
                         setRaster((r) => ({ ...r, overscan: v }))
                       }
                     />
-                    <label className="flex gap-2 text-xs">
-                      <input type="checkbox" checked={raster.bidirectional !== false} onChange={event => setRaster(current => ({ ...current, bidirectional: event.target.checked }))} />
+                    <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                      <input type="checkbox" className="accent-sky-400" checked={raster.bidirectional !== false} onChange={event => setRaster(current => ({ ...current, bidirectional: event.target.checked }))} />
                       Balayage bidirectionnel
                     </label>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
                       Débordement laser éteint avant et après chaque ligne, pour
                       accélérer et ralentir hors de la gravure.
                     </p>
@@ -701,9 +701,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                         }
                       />
                     )}
-                    <label className="flex gap-2 text-xs">
+                    <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
                       <input
                         type="checkbox"
+                        className="accent-sky-400"
                         checked={raster.invert}
                         onChange={(e) =>
                           setRaster((r) => ({ ...r, invert: e.target.checked }))
@@ -711,7 +712,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                       />
                       Inverser noir et blanc
                     </label>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
                       Noir = puissance choisie ; blanc = laser éteint. Aucun
                       détourage vectoriel automatique.
                     </p>
@@ -724,8 +725,8 @@ export const LaserWorkshop: React.FC<Props> = ({
                 disabled={busy || working}
                 className={`${card} disabled:opacity-60`}
               >
-                <h2 className="text-sm font-bold mb-3">Contour et remplissage</h2>
-                <label className="block text-xs space-y-1">
+                <h2 className="text-sm font-bold text-slate-50 mb-3">Contour et remplissage</h2>
+                <label className="block text-xs text-slate-300 space-y-1">
                   <span>Type de gravure</span>
                   <select
                     className={input}
@@ -762,14 +763,14 @@ export const LaserWorkshop: React.FC<Props> = ({
                       <NumberField label="Surbalayage par extrémité (mm)" value={fill.overscan ?? 0} min={0} max={50}
                         onChange={overscan => setFill(current => ({ ...current, overscan }))} />
                     </div>
-                    <label className="mt-3 flex gap-2 text-xs">
-                      <input type="checkbox" checked={fill.bidirectional !== false}
+                    <label className="mt-3 flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                      <input type="checkbox" className="accent-sky-400" checked={fill.bidirectional !== false}
                         onChange={event => setFill(current => ({ ...current, bidirectional: event.target.checked }))} />
                       Balayage bidirectionnel
                     </label>
-                    <p className="mt-2 text-[11px] text-slate-600">0° pour des lignes horizontales, 90° pour des lignes verticales. Le surbalayage prolonge le trajet, laser éteint.</p>
+                    <p className="mt-2 text-[11px] text-slate-300 leading-relaxed">0° pour des lignes horizontales, 90° pour des lignes verticales. Le surbalayage prolonge le trajet, laser éteint.</p>
                     <button
-                      className="text-xs underline text-sky-700 mt-2"
+                      className="text-xs underline text-sky-300 hover:text-sky-200 mt-2 cursor-pointer"
                       onClick={() =>
                         setFill((f) => ({
                           ...f,
@@ -781,9 +782,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                     >
                       Pas = 80 % de la largeur du spot
                     </button>
-                    <label className="flex gap-2 items-start text-xs mt-3">
+                    <label className="flex gap-2 items-center text-xs text-slate-200 mt-3 cursor-pointer">
                       <input
                         type="checkbox"
+                        className="accent-sky-400"
                         checked={fill.crossHatch}
                         onChange={(e) =>
                           setFill((f) => ({
@@ -794,9 +796,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                       />
                       Hachures croisées (second balayage à 90°)
                     </label>
-                    <label className="flex gap-2 items-start text-xs mt-2">
+                    <label className="flex gap-2 items-center text-xs text-slate-200 mt-2 cursor-pointer">
                       <input
                         type="checkbox"
+                        className="accent-sky-400"
                         checked={fill.respectSvgFill}
                         onChange={(e) =>
                           setFill((f) => ({
@@ -807,7 +810,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                       />
                       Respecter les zones pleines du SVG (fill / fill-rule)
                     </label>
-                    <p className="text-[10px] text-slate-500 mt-2">
+                    <p className="text-[11px] text-slate-300 mt-2 leading-relaxed">
                       Les trous restent vides et les surfaces qui se chevauchent
                       sont réunies. En DXF, les contours fermés imbriqués
                       définissent les trous. Le centre des hachures est décalé
@@ -823,9 +826,9 @@ export const LaserWorkshop: React.FC<Props> = ({
     workCoordinateSystem={status.activeWCS} changeFocus={changeFocus} />;
 
   return (
-    <main className="flex-1 min-h-0 overflow-auto bg-[#f1f5f9] text-slate-800">
+    <main className="flex-1 min-h-0 overflow-auto bg-[#0b0f17] text-slate-100">
       {layerDialogOpen && selectedLayer && <LaserLayerDialog name={selectedLayer.name} focusSettings={focusSettings} onClose={() => setLayerDialogOpen(false)}>
-        {selectedGroupSize > 1 && <p className="rounded-xl bg-sky-50 border border-sky-200 px-3 py-2 text-xs text-sky-900">Ces réglages s’appliquent aux {selectedGroupSize} objets du calque {layerColorName(selectedLayer.color!)}.</p>}
+        {selectedGroupSize > 1 && <p className="rounded-xl bg-sky-500/15 border border-sky-500/40 px-3 py-2 text-xs text-sky-200">Ces réglages s’appliquent aux {selectedGroupSize} objets du calque {layerColorName(selectedLayer.color!)}.</p>}
         {operationSettings}
       </LaserLayerDialog>}
       {presetLibraryOpen && <LaserPresetLibrary presets={presets} disabled={busy || working}
@@ -839,14 +842,14 @@ export const LaserWorkshop: React.FC<Props> = ({
         {error && (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-800"
+            className="rounded-xl border border-rose-500/40 bg-rose-950/50 px-3.5 py-2.5 text-xs font-medium text-rose-200"
           >
             {error}
           </div>
         )}
         {/* Barre d'outils laser unifiée (fichiers + statut $32 + sélecteur Dessin/Aperçu) */}
         <div
-          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/90 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-[#141b27] px-3 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.28)]"
           role="group"
           aria-label="Barre d’outils laser"
         >
@@ -878,7 +881,7 @@ export const LaserWorkshop: React.FC<Props> = ({
 
           <div className="flex flex-wrap items-center gap-1.5">
             <div
-              className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0"
               title="Atelier laser"
             >
               <Flame size={16} />
@@ -916,7 +919,7 @@ export const LaserWorkshop: React.FC<Props> = ({
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <span className="hidden xl:inline text-[11px] font-mono text-slate-500">
+            <span className="hidden xl:inline text-[11px] font-mono text-slate-300">
               {source.kind === "vector"
                 ? `${documentObjects.length} calque${documentObjects.length === 1 ? "" : "s"}`
                 : source.name}{" "}
@@ -924,10 +927,10 @@ export const LaserWorkshop: React.FC<Props> = ({
             </span>
 
             <span
-              className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
                 laserMode === 1
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                  : "bg-amber-50 border-amber-200 text-amber-900"
+                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                  : "bg-amber-500/15 border-amber-500/40 text-amber-300"
               }`}
             >
               GRBL $32{" "}
@@ -949,9 +952,9 @@ export const LaserWorkshop: React.FC<Props> = ({
               <span>Lire GRBL</span>
             </button>
 
-            <div className="h-5 w-px bg-slate-200 hidden sm:block" aria-hidden="true" />
+            <div className="h-5 w-px bg-slate-800 hidden sm:block" aria-hidden="true" />
 
-            <div className="inline-flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <div className="inline-flex items-center gap-1 bg-[#090d14] p-1 rounded-xl border border-slate-800">
               {source.kind === "vector" && (
                 <button
                   type="button"
@@ -964,10 +967,10 @@ export const LaserWorkshop: React.FC<Props> = ({
               )}
               <button
                 type="button"
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
+                className={`inline-flex items-center gap-1.5 min-h-8 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 ${
                   workspaceView === "preview" && !!program
-                    ? "bg-sky-600 text-white shadow-2xs"
-                    : "bg-sky-700 hover:bg-sky-800 text-white"
+                    ? "bg-sky-400 text-slate-950 shadow-sm"
+                    : "bg-sky-400 hover:bg-sky-300 text-slate-950"
                 }`}
                 aria-pressed={workspaceView === "preview" && !!program}
                 disabled={
@@ -986,7 +989,7 @@ export const LaserWorkshop: React.FC<Props> = ({
           </div>
         </div>
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
-          <div className="min-w-0 space-y-2">
+          <div className="min-w-0 space-y-2.5">
             {selectedLayer && (
               <fieldset
                 disabled={busy || working}
@@ -1019,16 +1022,17 @@ export const LaserWorkshop: React.FC<Props> = ({
                     onChange={(v) => setPlacement((p) => ({ ...p, y: v }))}
                   />
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-                  <label className="flex gap-1.5 items-center">
+                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-slate-200">
+                  <label className="flex gap-1.5 items-center cursor-pointer">
                     <input
                       type="checkbox"
+                      className="accent-sky-400"
                       checked={lockedRatio}
                       onChange={(e) => setLockedRatio(e.target.checked)}
                     />
                     Conserver les proportions
                   </label>
-                  <label className="flex items-center gap-1">
+                  <label className="flex items-center gap-1.5">
                     Ancrage{" "}
                     <select
                       className={`${input} !w-auto !text-xs`}
@@ -1046,7 +1050,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                   </label>
                   {!raster && (
                     <>
-                      <label className="flex items-center gap-1">
+                      <label className="flex items-center gap-1.5">
                         Rotation{" "}
                         <select
                           className={`${input} !w-auto !text-xs`}
@@ -1065,9 +1069,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                           ))}
                         </select>
                       </label>
-                      <label className="flex gap-1.5">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
+                          className="accent-sky-400"
                           checked={placement.mirrorX}
                           onChange={(e) =>
                             setPlacement((p) => ({
@@ -1078,9 +1083,10 @@ export const LaserWorkshop: React.FC<Props> = ({
                         />
                         Miroir X
                       </label>
-                      <label className="flex gap-1.5">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
+                          className="accent-sky-400"
                           checked={placement.mirrorY}
                           onChange={(e) =>
                             setPlacement((p) => ({
@@ -1113,18 +1119,18 @@ export const LaserWorkshop: React.FC<Props> = ({
               onRemove={removeObject}
             />}
             </div>
-            {source.kind === "vector" && workspaceView === "design" && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)]" role="group" aria-label="Couleur du calque">
-              <span className="mr-1 text-xs font-semibold text-slate-600">Couleur du calque</span>
+            {source.kind === "vector" && workspaceView === "design" && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-[#141b27] px-3 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.28)]" role="group" aria-label="Couleur du calque">
+              <span className="mr-1 text-xs font-semibold text-slate-300">Couleur du calque</span>
               {layerColors.map(({ hex, name }) => <button key={hex} type="button" title={name} aria-label={name}
-                className="size-6 rounded-md border border-black/10 aria-pressed:ring-2 aria-pressed:ring-slate-700 aria-pressed:ring-offset-2 disabled:opacity-40 cursor-pointer"
+                className="size-7 rounded-lg border border-white/25 aria-pressed:ring-2 aria-pressed:ring-sky-400 aria-pressed:ring-offset-2 aria-pressed:ring-offset-[#141b27] disabled:opacity-40 cursor-pointer"
                 style={{ backgroundColor: hex }} aria-pressed={selectedLayer?.color?.toLowerCase() === hex && !selectedLayer.isolatedColor}
                 disabled={!selectedLayer || busy || working} onClick={() => {
                   if (selectedLayer) editLayer(selectedLayer.id, object => assignLaserLayerColor(object, hex, documentObjects));
                 }} />)}
-              {selectedGroupSize > 1 && <span className="text-xs text-slate-600">{selectedGroupSize} objets partagent les réglages de ce calque</span>}
+              {selectedGroupSize > 1 && <span className="text-xs text-slate-300">{selectedGroupSize} objets partagent les réglages de ce calque</span>}
             </div>}
               {source.kind === "vector" && source.warnings.length > 0 && (
-                <ul className="text-[11px] text-amber-800 space-y-1 mt-3 list-disc pl-4">
+                <ul className="text-[11px] text-amber-300 space-y-1 mt-3 list-disc pl-4">
                   {source.warnings.map((w) => (
                     <li key={w}>{w}</li>
                   ))}
@@ -1148,10 +1154,10 @@ export const LaserWorkshop: React.FC<Props> = ({
               <section className={card}>
                 <div className="flex flex-wrap justify-between gap-2 items-center">
                   <div>
-                    <h2 className="text-sm font-bold break-all">
+                    <h2 className="text-sm font-bold text-slate-50 break-all">
                       {program.name}
                     </h2>
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-xs text-slate-300 mt-1">
                       {analysis?.lines.length.toLocaleString("fr-FR")} lignes ·
                       estimation{" "}
                       {duration(analysis?.stats.estimatedTimeSec || 0)} (hors
@@ -1170,35 +1176,35 @@ export const LaserWorkshop: React.FC<Props> = ({
                 {stale && !busy && (
                   <p
                     role="status"
-                    className="text-xs text-amber-800 bg-amber-50 p-2 mt-3 rounded"
+                    className="text-xs text-amber-200 bg-amber-950/50 border border-amber-500/40 p-2.5 mt-3 rounded-lg"
                   >
                     {referenceStale ? "La position ou le repère de départ a changé. Régénérez le G-code." : "Les réglages ont changé. Régénérez le G-code pour mettre à jour le parcours."}
                   </p>
                 )}
                 {analysis?.warnings.map((w) => (
-                  <p key={w} className="text-xs text-amber-800 mt-2">
+                  <p key={w} className="text-xs text-amber-300 mt-2">
                     {w}
                   </p>
                 ))}
                 {program.notes?.map((note) => (
-                  <p key={note} className="text-xs text-amber-800 mt-2">
+                  <p key={note} className="text-xs text-amber-300 mt-2">
                     {note}
                   </p>
                 ))}
                 {!analysis?.engraving.length && (
-                  <p className="text-xs text-amber-800 mt-2">
+                  <p className="text-xs text-amber-300 mt-2">
                     Aucun déplacement avec laser actif et puissance positive
                     détecté.
                   </p>
                 )}
                 <button
-                  className="text-xs underline text-slate-600 mt-3"
+                  className="text-xs underline text-sky-300 hover:text-sky-200 mt-3 cursor-pointer"
                   onClick={() => setShowCode((v) => !v)}
                 >
                   {showCode ? "Masquer" : "Afficher"} le G-code
                 </button>
                 {showCode && (
-                  <pre className="max-h-60 overflow-auto text-[11px] bg-slate-950 text-slate-300 p-3 rounded-lg mt-2 whitespace-pre-wrap">
+                  <pre className="max-h-60 overflow-auto text-[11px] bg-[#090d14] border border-slate-800 text-slate-200 p-3 rounded-xl mt-2 whitespace-pre-wrap font-mono">
                     {program.code.split("\n").slice(0, 2000).join("\n")}
                     {(analysis?.lines.length || 0) > 2000
                       ? "\n; Aperçu limité à 2 000 lignes. Exportez pour consulter le fichier complet."
@@ -1209,7 +1215,7 @@ export const LaserWorkshop: React.FC<Props> = ({
             )}
           </div>
           <div className="space-y-3 min-w-0">
-            <div className="grid grid-cols-4 gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1" role="group" aria-label="Panneaux laser">
+            <div className="grid grid-cols-4 gap-1 rounded-xl border border-slate-800 bg-[#090d14] p-1" role="group" aria-label="Panneaux laser">
               <button type="button" className={tabClass(inspector === "operation")} aria-pressed={inspector === "operation"} onClick={() => setInspector("operation")}>Calques</button>
               <button type="button" className={tabClass(inspector === "motion")} aria-pressed={inspector === "motion"} onClick={() => setInspector("motion")}>Déplacer</button>
               <button type="button" className={tabClass(inspector === "machine")} aria-pressed={inspector === "machine"} onClick={() => setInspector("machine")}>Machine</button>
@@ -1266,16 +1272,16 @@ export const LaserWorkshop: React.FC<Props> = ({
                 }} />
             </div>
             </div>
-            <section className={`${card} border-amber-200`}>
-              <h2 className="text-sm font-bold flex gap-2 items-center mb-3">
-                <Flame size={17} className="text-amber-600" />
+            <section className={`${card} border-amber-500/40`}>
+              <h2 className="text-sm font-bold text-slate-50 flex gap-2 items-center mb-3">
+                <Flame size={17} className="text-amber-400" />
                 Commandes laser
               </h2>
               {source.kind !== "gcode" && <LaserJobOrigin placement={effectivePlacement} onPlacement={updateJobPlacement}
                 position={status.wpos} canCapture={canMove} disabled={busy || working} />}
               <div className="mt-3 grid grid-cols-2 gap-1.5">
               <button
-                className={button}
+                className={`${button} !min-h-9`}
                 onClick={frame}
                 disabled={
                   !canMove ||
@@ -1292,13 +1298,13 @@ export const LaserWorkshop: React.FC<Props> = ({
                   )
                 }
               >
-                <Scan size={15} />
+                <Scan size={15} className="text-sky-400" />
                 Cadrer sans laser
               </button>
-                <button className={button} onClick={download} disabled={!program || stale}><Download size={15} /> Exporter</button>
+                <button className={`${button} !min-h-9`} onClick={download} disabled={!program || stale}><Download size={15} /> Exporter</button>
               </div>
-              <details className="my-2 text-xs text-slate-600">
-                <summary className="cursor-pointer font-semibold">Options de cadrage</summary>
+              <details className="my-2.5 text-xs text-slate-300">
+                <summary className="cursor-pointer font-semibold text-slate-100">Options de cadrage</summary>
                 <div className="mt-2">
               <NumberField
                 label="Marge autour de la gravure (mm)"
@@ -1306,17 +1312,17 @@ export const LaserWorkshop: React.FC<Props> = ({
                 min={0}
                 onChange={setMargin}
               />
-              <p className="text-[10px] text-slate-500 mt-2">
+              <p className="text-[11px] text-slate-300 mt-2 leading-relaxed">
                 Tour du rectangle à la hauteur Z actuelle. Aucun allumage laser,
                 aucun mouvement Z. Utilise l’avance de déplacement.
               </p>
               {rasterOverscan > 0 && (
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-300 mt-1">
                   Le cadrage inclut au moins {rasterOverscan} mm de marge de surbalayage.
                 </p>
               )}
               {coordinateMismatch && (
-                <p className="text-xs text-amber-800 mt-2">
+                <p className="text-xs text-amber-300 mt-2">
                   Le programme sélectionne un repère différent de{" "}
                   {status.activeWCS}. Sélectionnez le bon repère avant de
                   cadrer.
@@ -1325,7 +1331,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                 </div>
               </details>
               <button
-                className={`${button} w-full mb-2`}
+                className={`${button} !min-h-9 w-full mb-2.5`}
                 disabled={!program || stale || busy || working || (status.connected && !status.isSimulator)}
                 onClick={async () => {
                   if (!program) return;
@@ -1339,24 +1345,24 @@ export const LaserWorkshop: React.FC<Props> = ({
                   finally { setWorking(false); }
                 }}
               >
-                <Play size={16} /> Simuler le G-code
+                <Play size={16} className="text-sky-400" /> Simuler le G-code
               </button>
               {program && status.connected && !status.isSimulator && laserMode !== 1 && (
-                <p className="text-xs text-amber-800 mb-3">
+                <p className="text-xs text-amber-300 mb-3">
                   Activez le mode laser $32=1 dans les paramètres GRBL, puis
                   relisez les paramètres.
                 </p>
               )}
               {(scaleMismatch || powerExceeded) && (
-                <p className="text-xs text-red-700 mb-3">
+                <p className="text-xs text-rose-300 mb-3">
                   Échelle de puissance incompatible avec $30={machineMaxPower}.
                   Corrigez S maximal et régénérez, ou vérifiez le G-code
                   importé.
                 </p>
               )}
-              <label className="flex gap-2 items-start text-xs leading-relaxed">
+              <label className="flex gap-2 items-start text-xs text-slate-200 leading-relaxed cursor-pointer">
                 <input
-                  className="mt-0.5"
+                  className="mt-0.5 accent-amber-400"
                   type="checkbox"
                   checked={confirmed}
                   disabled={busy || !program || stale}
@@ -1369,7 +1375,7 @@ export const LaserWorkshop: React.FC<Props> = ({
                 </span>
               </label>
               <button
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm p-3 mt-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm p-3 mt-3 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={!startAllowed}
                 onClick={() => {
                   if (
@@ -1390,41 +1396,41 @@ export const LaserWorkshop: React.FC<Props> = ({
               </button>
               <div className="grid grid-cols-3 gap-1.5 mt-2">
                 <button
-                  className={button}
+                  className={`${button} !min-h-9`}
                   disabled={job.state !== "running"}
                   onClick={onPause}
                 >
                   Pause
                 </button>
                 <button
-                  className={button}
+                  className={`${button} !min-h-9`}
                   disabled={job.state !== "paused"}
                   onClick={onResume}
                 >
                   Reprendre
                 </button>
                 <button
-                  className={`${button} !text-red-700`}
+                  className={`${button} !min-h-9 !text-rose-300 !border-rose-500/40 hover:!bg-rose-950/60`}
                   disabled={!busy}
                   onClick={onStop}
                 >
                   Arrêter
                 </button>
               </div>
-              {job.totalLines > 0 && <div className="h-1.5 rounded bg-slate-100 overflow-hidden mt-4">
+              {job.totalLines > 0 && <div className="h-2 rounded-full bg-[#090d14] border border-slate-800 overflow-hidden mt-4">
                 <div
-                  className="h-full bg-amber-500"
+                  className="h-full bg-amber-400 transition-all duration-200"
                   style={{
                     width: `${Math.min(100, Math.max(0, job.progressPercent))}%`,
                   }}
                 />
               </div>}
-              {job.totalLines > 0 && <p className="text-[11px] text-slate-500 mt-2">
+              {job.totalLines > 0 && <p className="text-xs text-slate-300 font-mono mt-2">
                 {job.progressPercent.toFixed(1)} % · {job.acknowledgedLines}/
                 {job.totalLines} lignes
               </p>}
               {busy && (
-                <p className="text-[10px] mt-1 text-slate-500 break-all">
+                <p className="text-[11px] mt-1 text-slate-300 break-all">
                   {job.fileName}
                 </p>
               )}

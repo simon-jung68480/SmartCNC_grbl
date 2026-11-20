@@ -291,77 +291,77 @@ function renderHighlightedGCodeLine(line: string): React.ReactNode {
 
         if (/^G0*0(\b|$)/.test(upper)) {
           return (
-            <span key={idx} className="text-amber-700 font-bold">
+            <span key={idx} className="text-amber-400 font-bold">
               {token}
             </span>
           );
         }
         if (/^G0*1(\b|$)/.test(upper)) {
           return (
-            <span key={idx} className="text-blue-700 font-bold">
+            <span key={idx} className="text-sky-400 font-bold">
               {token}
             </span>
           );
         }
         if (/^G0*[23](\b|$)/.test(upper)) {
           return (
-            <span key={idx} className="text-purple-700 font-bold">
+            <span key={idx} className="text-violet-400 font-bold">
               {token}
             </span>
           );
         }
         if (/^G\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-slate-800 font-semibold">
+            <span key={idx} className="text-slate-100 font-semibold">
               {token}
             </span>
           );
         }
         if (/^M\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-purple-700 font-bold">
+            <span key={idx} className="text-fuchsia-400 font-bold">
               {token}
             </span>
           );
         }
         if (/^X[-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-red-600 font-medium">
+            <span key={idx} className="text-rose-400 font-medium">
               {token}
             </span>
           );
         }
         if (/^Y[-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-emerald-700 font-medium">
+            <span key={idx} className="text-emerald-400 font-medium">
               {token}
             </span>
           );
         }
         if (/^Z[-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-blue-700 font-medium">
+            <span key={idx} className="text-sky-300 font-medium">
               {token}
             </span>
           );
         }
         if (/^[IJ][-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-slate-600">
+            <span key={idx} className="text-slate-300">
               {token}
             </span>
           );
         }
         if (/^F[-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-amber-700 font-semibold">
+            <span key={idx} className="text-amber-300 font-semibold">
               {token}
             </span>
           );
         }
         if (/^S[-+]?\d*\.?\d+/.test(upper)) {
           return (
-            <span key={idx} className="text-amber-700 font-semibold">
+            <span key={idx} className="text-amber-300 font-semibold">
               {token}
             </span>
           );
@@ -374,7 +374,7 @@ function renderHighlightedGCodeLine(line: string): React.ReactNode {
           );
         }
         return (
-          <span key={idx} className="text-slate-800">
+          <span key={idx} className="text-slate-200">
             {token}
           </span>
         );
@@ -750,8 +750,8 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
   return (
     <div
-      className={`flex flex-col h-full bg-white text-slate-800 border rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors ${
-        isDragging ? 'border-sky-500 bg-sky-50/40' : 'border-slate-200/90'
+      className={`flex flex-col h-full bg-[#141b27] text-slate-100 border rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.28)] transition-colors ${
+        isDragging ? 'border-sky-400 bg-sky-950/30' : 'border-slate-800'
       }`}
       onDragOver={(e) => {
         e.preventDefault();
@@ -761,52 +761,52 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
       onDrop={handleDrop}
     >
       {/* Barre 1 : Fichier, actions fichier & édition unifiées */}
-      <div className="px-3 py-2 bg-slate-50/80 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shrink-0">
-            <FileCode className="w-4 h-4 text-sky-600" />
+      <div className="px-3 py-2.5 bg-[#0f1520] border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-lg bg-[#090d14] border border-slate-800 text-sky-400 shrink-0">
+            <FileCode className="w-4 h-4 text-sky-400" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-xs font-bold text-slate-900 truncate max-w-[220px]">
+              <h3 className="text-sm font-bold text-slate-50 truncate max-w-[220px]">
                 {job.fileName || 'Aucun fichier G-Code chargé'}
               </h3>
               {job.heightmapApplied && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <Layers className="w-2.5 h-2.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
+                  <Layers className="w-3 h-3" />
                   Heightmap Z
                 </span>
               )}
               {isCheckMode && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40">
                   Test $C
                 </span>
               )}
             </div>
-            <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 flex-wrap">
+            <div className="text-[11px] text-slate-300 font-mono flex items-center gap-1.5 flex-wrap">
               {hasGCode ? (
                 <>
                   <span>{lines.length.toLocaleString('fr-FR')} lignes</span>
-                  <span>·</span>
+                  <span className="text-slate-600">·</span>
                   <button
                     type="button"
                     onClick={handleFrameBoundingBox}
-                    className="inline-flex items-center gap-1 text-slate-600 hover:text-sky-600 hover:underline cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1 text-sky-300 hover:text-sky-200 hover:underline cursor-pointer transition-colors"
                     title="Ouvrir l'assistant de Cadrage / Framing"
                   >
                     <span>{(computedBounds.size.x || 0).toFixed(1)} × {(computedBounds.size.y || 0).toFixed(1)} mm</span>
-                    <Maximize2 className="w-2.5 h-2.5 text-sky-500" />
+                    <Maximize2 className="w-3 h-3 text-sky-400" />
                   </button>
                 </>
               ) : (
-                'Glissez-déposez un fichier .nc / .gcode ou choisissez un modèle'
+                <span className="text-slate-400">Glissez-déposez un fichier .nc / .gcode ou choisissez un modèle</span>
               )}
             </div>
           </div>
         </div>
 
         {/* Boutons fichier + éditeur regroupés */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -823,10 +823,10 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isRunning}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40"
             title="Charger un fichier G-Code (.nc, .gcode, .tap, .ngc, .txt)"
           >
-            <Upload className="w-3 h-3 text-slate-500" />
+            <Upload className="w-3.5 h-3.5 text-sky-400" />
             <span>Ouvrir</span>
           </button>
 
@@ -835,11 +835,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
               type="button"
               onClick={() => setShowSampleDropdown((v) => !v)}
               disabled={isRunning}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1 min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40"
               title="Charger un programme G-Code d'exemple"
             >
               <span>Exemples</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
             </button>
 
             {showSampleDropdown && (
@@ -848,8 +848,8 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   className="fixed inset-0 z-30"
                   onClick={() => setShowSampleDropdown(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-40 py-1.5 divide-y divide-slate-100">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50">
+                <div className="absolute right-0 mt-1.5 w-80 bg-[#141b27] border border-slate-700 rounded-xl shadow-2xl z-40 py-1.5 divide-y divide-slate-800">
+                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-[#0f1520]">
                     Programmes G-Code prêts à l'emploi
                   </div>
                   {sampleFiles.map((sample) => (
@@ -861,12 +861,12 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         setShowSampleDropdown(false);
                         setIsEditing(false);
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-50 transition flex flex-col gap-0.5 cursor-pointer"
+                      className="w-full text-left px-3 py-2.5 hover:bg-[#1b2436] transition flex flex-col gap-0.5 cursor-pointer"
                     >
-                      <span className="text-xs font-semibold text-slate-800">
+                      <span className="text-xs font-semibold text-slate-100">
                         {sample.name}
                       </span>
-                      <span className="text-[11px] text-slate-500 leading-tight">
+                      <span className="text-[11px] text-slate-300 leading-tight">
                         {sample.description}
                       </span>
                     </button>
@@ -880,14 +880,14 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             type="button"
             onClick={() => setShowSpoilboardModal(true)}
             disabled={isRunning}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40"
             title="Ouvrir le générateur de surfaçage martyr (Spoilboard Wizard)"
           >
-            <Wand2 className="w-3 h-3 text-sky-600" />
+            <Wand2 className="w-3.5 h-3.5 text-sky-400" />
             <span>Surfaçage</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+          <div className="h-5 w-px bg-slate-800 mx-0.5" aria-hidden="true" />
 
           {!isEditing ? (
             <button
@@ -898,27 +898,27 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
               }}
               disabled={isRunning}
               title="Éditer le programme complet (ou double-cliquez sur une ligne)"
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 min-h-8 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer disabled:opacity-40"
             >
-              <Edit3 className="w-3 h-3 text-slate-500" />
+              <Edit3 className="w-3.5 h-3.5 text-slate-300" />
               <span>Éditer</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={handleSaveFullEdit}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer"
+                className="inline-flex items-center gap-1 min-h-8 px-2.5 py-1 rounded-lg text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition cursor-pointer"
               >
-                <Save className="w-3 h-3" />
+                <Save className="w-3.5 h-3.5" />
                 <span>Appliquer</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer"
+                className="inline-flex items-center gap-1 min-h-8 px-2.5 py-1 rounded-lg text-xs bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80 transition cursor-pointer"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
                 <span>Annuler</span>
               </button>
             </div>
@@ -928,18 +928,18 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
             <button
               type="button"
               onClick={handleExportGCode}
-              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition cursor-pointer"
+              className="min-h-8 min-w-8 flex items-center justify-center rounded-lg bg-[#1b2436] hover:bg-[#243047] text-slate-200 hover:text-white border border-slate-700/80 transition cursor-pointer"
               title="Exporter le fichier G-Code (.nc)"
               aria-label="Exporter le G-Code"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* Barre 2 : Contrôles contextuels d'exécution + Progression + Ligne active */}
-      <div className="px-3 py-2 bg-white border-b border-slate-200 space-y-2">
+      <div className="px-3 py-2.5 bg-[#141b27] border-b border-slate-800 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Boutons contextuels selon l'état */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -949,7 +949,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   type="button"
                   onClick={onStartJob}
                   disabled={!connected || !hasGCode}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none shadow-2xs"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition cursor-pointer disabled:opacity-40 disabled:pointer-events-none shadow-sm"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Lancer</span>
@@ -959,10 +959,10 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   type="button"
                   onClick={handleFrameBoundingBox}
                   disabled={!connected}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 transition cursor-pointer disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 transition cursor-pointer disabled:opacity-40"
                   title="Ouvrir l'assistant de Cadrage / Framing (Vérification du brut et brides de serrage)"
                 >
-                  <Maximize2 className="w-3.5 h-3.5 text-sky-600" />
+                  <Maximize2 className="w-3.5 h-3.5 text-sky-400" />
                   <span>Cadrage</span>
                 </button>
 
@@ -970,14 +970,15 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   type="button"
                   onClick={onToggleCheckMode}
                   disabled={!connected}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer disabled:opacity-40 ${
+                  aria-pressed={isCheckMode}
+                  className={`inline-flex items-center gap-1.5 min-h-9 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer disabled:opacity-40 ${
                     isCheckMode
-                      ? 'bg-amber-50 border-amber-300 text-amber-800'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                      ? 'bg-amber-500/15 border-amber-400/50 text-amber-200'
+                      : 'bg-[#1b2436] hover:bg-[#243047] border-slate-700/80 text-slate-200'
                   }`}
                   title="Activer/Désactiver le mode de vérification syntaxique GRBL ($C) sans mouvement moteur"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${isCheckMode ? 'text-amber-300' : 'text-amber-400'}`} />
                   <span>Test $C</span>
                 </button>
               </>
@@ -988,7 +989,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                     type="button"
                     onClick={onPauseJob}
                     disabled={!connected}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition cursor-pointer disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition cursor-pointer disabled:opacity-40"
                     title="Pause d'avance / Feed Hold (!)"
                   >
                     <Pause className="w-3.5 h-3.5 fill-current" />
@@ -999,7 +1000,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                     type="button"
                     onClick={onResumeJob}
                     disabled={!connected}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white ring-2 ring-sky-400/40 transition cursor-pointer disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-sky-400 hover:bg-sky-300 text-slate-950 ring-2 ring-sky-400/40 transition cursor-pointer disabled:opacity-40"
                     title="Reprendre l'usinage / Cycle Start (~)"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -1011,7 +1012,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   type="button"
                   onClick={onStopJob}
                   disabled={!connected}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition cursor-pointer disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition cursor-pointer disabled:opacity-40"
                   title="Arrêter le programme"
                 >
                   <Square className="w-3.5 h-3.5 fill-current" />
@@ -1022,18 +1023,18 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
           </div>
 
           {/* Statut & temps */}
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             <span
-              className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] tracking-wider border ${
+              className={`px-2 py-0.5 rounded-md font-bold uppercase text-[11px] tracking-wider border ${
                 isPaused
-                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
                   : isRunning
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
                   : job.state === 'completed'
-                  ? 'bg-sky-50 text-sky-800 border-sky-200'
+                  ? 'bg-sky-500/15 text-sky-300 border-sky-500/40'
                   : job.state === 'error' || job.state === 'aborted'
-                  ? 'bg-rose-50 text-rose-800 border-rose-200'
-                  : 'bg-slate-50 text-slate-600 border-slate-200'
+                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+                  : 'bg-[#090d14] text-slate-300 border-slate-700/80'
               }`}
             >
               {isPaused
@@ -1049,41 +1050,41 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                 : 'Prêt'}
             </span>
 
-            <span className="font-mono text-slate-900 font-bold tabular-nums">
+            <span className="font-mono text-slate-50 font-bold tabular-nums">
               {displayProgress.toFixed(1)}%
             </span>
 
-            <span className="font-mono text-slate-500 text-[11px] tabular-nums">
-              <strong className="text-slate-800">{job.acknowledgedLines}</strong>/{job.totalLines || lines.length}
+            <span className="font-mono text-slate-400 text-[11px] tabular-nums">
+              <strong className="text-slate-100">{job.acknowledgedLines}</strong>/{job.totalLines || lines.length}
             </span>
 
-            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-600 tabular-nums" title="Temps écoulé / restant estimé">
+            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-300 tabular-nums" title="Temps écoulé / restant estimé">
               <Clock className="w-3 h-3 text-slate-400" />
-              <strong className="text-slate-800">{formatDuration(liveElapsedMs)}</strong>
-              <span className="text-slate-300">/</span>
-              <strong className="text-amber-700">{formatDuration(job.estimatedRemainingMs)}</strong>
+              <strong className="text-slate-100">{formatDuration(liveElapsedMs)}</strong>
+              <span className="text-slate-600">/</span>
+              <strong className="text-amber-300">{formatDuration(job.estimatedRemainingMs)}</strong>
             </span>
           </div>
         </div>
 
         {/* Barre de progression fine */}
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
+        <div className="w-full h-2 bg-[#090d14] rounded-full overflow-hidden border border-slate-800">
           <div
-            className="h-full bg-emerald-600 transition-all duration-200"
+            className="h-full bg-emerald-400 transition-all duration-200"
             style={{ width: `${displayProgress}%` }}
           />
         </div>
 
         {/* Ligne active compacte */}
-        <div className="flex items-center justify-between gap-2 bg-slate-50/80 px-2.5 py-1 rounded-lg border border-slate-200/80 text-[11px] font-mono">
-          <div className="flex items-center gap-1.5 truncate min-w-0">
-            <span className="text-sky-600 font-bold shrink-0">▶</span>
-            <span className="text-slate-800 font-medium truncate">
+        <div className="flex items-center justify-between gap-2 bg-[#090d14] px-2.5 py-1.5 rounded-lg border border-slate-800/90 text-xs font-mono">
+          <div className="flex items-center gap-2 truncate min-w-0">
+            <span className="text-sky-400 font-bold shrink-0">▶</span>
+            <span className="text-slate-100 font-medium truncate">
               {job.currentCommand || lines[job.currentLineIndex] || (isRunning ? `Ligne #${job.currentLineIndex + 1}` : 'En attente de lancement')}
             </span>
           </div>
           {!isRunning && hasGCode && (
-            <span className="hidden sm:inline text-[10px] font-sans text-slate-400 shrink-0">
+            <span className="hidden sm:inline text-[11px] font-sans text-slate-400 shrink-0">
               Double-clic sur une ligne pour éditer
             </span>
           )}
@@ -1094,27 +1095,27 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
       <div
         ref={scrollContainerRef}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        className="flex-1 min-h-[160px] overflow-y-auto bg-slate-50/60 text-slate-800 font-mono text-xs select-text"
+        className="flex-1 min-h-[160px] overflow-y-auto bg-[#090d14] text-slate-200 font-mono text-xs select-text"
       >
         {isEditing ? (
           <textarea
             value={draftGCode}
             onChange={(e) => setDraftGCode(e.target.value)}
             spellCheck={false}
-            className="w-full h-full min-h-[220px] p-3 bg-white text-slate-900 font-mono text-xs focus:outline-none resize-none leading-relaxed"
+            className="w-full h-full min-h-[220px] p-3 bg-[#090d14] text-slate-100 placeholder:text-slate-500 font-mono text-xs focus:outline-none resize-none leading-relaxed"
             placeholder="Saisissez ou collez votre programme G-Code ici..."
           />
         ) : !hasGCode ? (
-          <div className="h-full flex flex-col items-center justify-center p-6 text-center text-slate-500">
-            <Upload className="w-7 h-7 text-slate-400 mb-2" />
-            <p className="text-xs font-semibold text-slate-700">
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center text-slate-400">
+            <Upload className="w-8 h-8 text-slate-500 mb-2.5" />
+            <p className="text-sm font-semibold text-slate-200">
               Aucun programme G-Code chargé
             </p>
-            <p className="text-[11px] text-slate-500 mt-1 max-w-sm">
-              Glissez un fichier <code className="text-slate-800 font-semibold">.nc</code> ou{' '}
-              <code className="text-slate-800 font-semibold">.gcode</code> ici, utilisez le menu{' '}
-              <strong className="text-slate-800">Exemples</strong> ou lancez le{' '}
-              <strong className="text-slate-800">Surfaçage Martyr</strong>.
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
+              Glissez un fichier <code className="text-sky-300 bg-[#141b27] px-1 py-0.5 rounded font-semibold">.nc</code> ou{' '}
+              <code className="text-sky-300 bg-[#141b27] px-1 py-0.5 rounded font-semibold">.gcode</code> ici, utilisez le menu{' '}
+              <strong className="text-slate-100">Exemples</strong> ou lancez le{' '}
+              <strong className="text-slate-100">Surfaçage Martyr</strong>.
             </p>
           </div>
         ) : (
@@ -1148,24 +1149,24 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         setEditingLineValue(line);
                       }
                     }}
-                    className={`group flex items-center px-2 border-b border-slate-200/70 ${
+                    className={`group flex items-center px-2 border-b border-slate-800/70 ${
                       isCurrent
-                        ? 'bg-sky-100 border-l-2 border-sky-600'
+                        ? 'bg-sky-500/20 border-l-2 border-sky-400'
                         : isDone
-                        ? 'bg-emerald-50/70 text-slate-500'
-                        : 'hover:bg-slate-100'
+                        ? 'bg-emerald-950/35 text-slate-400'
+                        : 'hover:bg-[#141b27]'
                     }`}
                   >
                     {/* Numéro de ligne + statut */}
-                    <div className="w-16 shrink-0 flex items-center gap-1 select-none text-[10px] text-slate-400 pr-2 border-r border-slate-200">
+                    <div className="w-16 shrink-0 flex items-center gap-1 select-none text-[11px] text-slate-400 pr-2 border-r border-slate-800">
                       <span className="w-3 text-center">
                         {isCurrent ? (
-                          <span className="text-sky-600 font-bold">▶</span>
+                          <span className="text-sky-400 font-bold">▶</span>
                         ) : isDone ? (
-                          <span className="text-emerald-600 font-bold">✓</span>
+                          <span className="text-emerald-400 font-bold">✓</span>
                         ) : null}
                       </span>
-                      <span className="text-right flex-1">{index + 1}</span>
+                      <span className="text-right flex-1 tabular-nums">{index + 1}</span>
                     </div>
 
                     {/* Contenu ou champ d'édition rapide */}
@@ -1181,19 +1182,19 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                               if (e.key === 'Escape') setEditingLineIndex(null);
                             }}
                             autoFocus
-                            className="flex-1 bg-white border border-sky-500 rounded px-2 py-0 text-xs text-slate-900 focus:outline-none"
+                            className="flex-1 bg-[#141b27] border border-sky-400 rounded px-2 py-0 text-xs text-slate-100 focus:outline-none"
                           />
                           <button
                             type="button"
                             onClick={() => handleSaveSingleLine(index)}
-                            className="px-1.5 py-0 rounded bg-emerald-600 text-white text-[10px]"
+                            className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold text-[11px]"
                           >
                             OK
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingLineIndex(null)}
-                            className="px-1.5 py-0 rounded bg-slate-200 text-slate-700 text-[10px]"
+                            className="px-2 py-0.5 rounded bg-[#1b2436] text-slate-200 border border-slate-700 text-[11px]"
                           >
                             ESC
                           </button>
@@ -1207,14 +1208,14 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
                     {/* Actions rapides par ligne au survol */}
                     {!isRunning && !isLineEditing && (
-                      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 pl-2">
+                      <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-1 pl-2">
                         <button
                           type="button"
                           onClick={() => {
                             setEditingLineIndex(index);
                             setEditingLineValue(line);
                           }}
-                          className="p-0.5 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800"
+                          className="p-1 rounded hover:bg-[#1b2436] text-slate-300 hover:text-white"
                           title="Modifier cette ligne"
                         >
                           <Edit3 className="w-3 h-3" />
@@ -1222,7 +1223,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handleInsertLineAfter(index)}
-                          className="p-0.5 rounded hover:bg-slate-200 text-slate-500 hover:text-emerald-700"
+                          className="p-1 rounded hover:bg-[#1b2436] text-slate-300 hover:text-emerald-400"
                           title="Insérer une ligne en dessous"
                         >
                           <Plus className="w-3 h-3" />
@@ -1230,7 +1231,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDeleteLine(index)}
-                          className="p-0.5 rounded hover:bg-slate-200 text-slate-500 hover:text-rose-600"
+                          className="p-1 rounded hover:bg-[#1b2436] text-slate-300 hover:text-rose-400"
                           title="Supprimer cette ligne"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -1245,20 +1246,20 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
         )}
       </div>
 
-      {/* Modale Générateur de Surfaçage Martyr (Spoilboard Wizard) en Mode Clair */}
+      {/* Modale Générateur de Surfaçage Martyr (Spoilboard Wizard) */}
       {showSpoilboardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-[2px] p-4">
-          <div className="bg-white border border-slate-200 text-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
-            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="bg-[#141b27] border border-slate-700 text-slate-100 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
+            <div className="px-5 py-3.5 bg-[#0f1520] border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded bg-sky-50 border border-sky-200 text-sky-600">
+                <div className="p-2 rounded-lg bg-sky-500/15 border border-sky-500/40 text-sky-400">
                   <Wand2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-bold text-slate-50">
                     Générateur de Surfaçage Martyr & Framing
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-300">
                     Créez un programme G-Code sur mesure pour surfacer votre plateau MDF
                   </p>
                 </div>
@@ -1266,7 +1267,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSpoilboardModal(false)}
-                className="p-1.5 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+                className="min-h-8 min-w-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-[#1b2436]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1274,7 +1275,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
+                <label className="block text-slate-200 font-semibold mb-1.5">
                   Stratégie d'usinage
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1292,10 +1293,10 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                           mode: opt.id as SpoilboardConfig['mode'],
                         }))
                       }
-                      className={`py-2 px-3 rounded font-semibold border text-center transition ${
+                      className={`min-h-9 py-2 px-3 rounded-lg font-semibold border text-center transition ${
                         wizardConfig.mode === opt.id
-                          ? 'bg-sky-600 border-sky-600 text-white'
-                          : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                          ? 'bg-sky-400 border-sky-300 text-slate-950 font-bold'
+                          : 'bg-[#1b2436] border-slate-700/80 text-slate-200 hover:bg-[#243047]'
                       }`}
                     >
                       {opt.label}
@@ -1306,7 +1307,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Largeur X à surfacer (mm)
                   </label>
                   <input
@@ -1321,11 +1322,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         widthX: Math.max(1, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Profondeur Y à surfacer (mm)
                   </label>
                   <input
@@ -1340,7 +1341,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         lengthY: Math.max(1, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                   />
                 </div>
               </div>
@@ -1349,7 +1350,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-600 mb-1">
+                      <label className="block text-slate-300 mb-1 font-medium">
                         Diamètre Fraise (mm)
                       </label>
                       <input
@@ -1364,11 +1365,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                             toolDiameter: Math.max(0.5, Number(e.target.value)),
                           }))
                         }
-                        className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                        className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 mb-1">
+                      <label className="block text-slate-300 mb-1 font-medium">
                         Recouvrement (% du diamètre)
                       </label>
                       <input
@@ -1386,14 +1387,14 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                             ),
                           }))
                         }
-                        className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                        className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-600 mb-1">
+                      <label className="block text-slate-300 mb-1 font-medium">
                         Profondeur Totale Z (mm)
                       </label>
                       <input
@@ -1408,11 +1409,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                             totalDepth: Math.max(0.05, Number(e.target.value)),
                           }))
                         }
-                        className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                        className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-600 mb-1">
+                      <label className="block text-slate-300 mb-1 font-medium">
                         Profondeur par passe (mm)
                       </label>
                       <input
@@ -1427,7 +1428,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                             depthPerPass: Math.max(0.05, Number(e.target.value)),
                           }))
                         }
-                        className="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-900 font-mono"
+                        className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono"
                       />
                     </div>
                   </div>
@@ -1436,7 +1437,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Avance F (mm/min)
                   </label>
                   <input
@@ -1451,11 +1452,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         feedRate: Math.max(50, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Plongée Z (mm/min)
                   </label>
                   <input
@@ -1470,11 +1471,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         plungeRate: Math.max(10, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Broche S (RPM)
                   </label>
                   <input
@@ -1489,11 +1490,11 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         spindleSpeed: Math.max(0, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 mb-1">
+                  <label className="block text-slate-300 mb-1 font-medium">
                     Z Sécurité (mm)
                   </label>
                   <input
@@ -1508,7 +1509,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         safeZ: Math.max(1, Number(e.target.value)),
                       }))
                     }
-                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-slate-900 font-mono"
+                    className="w-full min-h-9 bg-[#090d14] border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 font-mono"
                   />
                 </div>
               </div>
@@ -1524,18 +1525,18 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                         finishPerimeter: e.target.checked,
                       }))
                     }
-                    className="rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-500"
+                    className="rounded border-slate-600 bg-[#090d14] text-sky-400 focus:ring-sky-400"
                   />
-                  <span className="text-slate-700">
+                  <span className="text-slate-200">
                     Ajouter une passe de finition sur le périmètre extérieur
                   </span>
                 </label>
               )}
 
-              <div className="p-3 rounded bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px] font-mono text-slate-700">
+              <div className="p-3 rounded-lg bg-[#090d14] border border-slate-800 flex items-center justify-between text-xs font-mono text-slate-300">
                 <span>
                   Pas latéral:{' '}
-                  <strong className="text-blue-700">
+                  <strong className="text-sky-400">
                     {(
                       wizardConfig.toolDiameter *
                       (wizardConfig.stepoverPercent / 100)
@@ -1545,7 +1546,7 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                 </span>
                 <span>
                   Passes Z:{' '}
-                  <strong className="text-emerald-700">
+                  <strong className="text-emerald-400">
                     {Math.max(
                       1,
                       Math.ceil(wizardConfig.totalDepth / wizardConfig.depthPerPass)
@@ -1553,23 +1554,23 @@ export const GCodeStreamerPanel: React.FC<GCodeStreamerPanelProps> = ({
                   </strong>
                 </span>
                 <span>
-                  Origine: <strong className="text-amber-700">Avant-Gauche (X0 Y0)</strong>
+                  Origine: <strong className="text-amber-300">Avant-Gauche (X0 Y0)</strong>
                 </span>
               </div>
             </div>
 
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="px-5 py-3 bg-[#0f1520] border-t border-slate-800 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowSpoilboardModal(false)}
-                className="px-3.5 py-2 rounded text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
+                className="min-h-9 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700/80"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={generateSpoilboardGCode}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition"
+                className="inline-flex items-center gap-1.5 min-h-9 px-4 py-2 rounded-lg text-xs font-bold bg-sky-400 hover:bg-sky-300 text-slate-950 transition"
               >
                 <Wand2 className="w-3.5 h-3.5" />
                 <span>Générer et Charger le G-Code</span>

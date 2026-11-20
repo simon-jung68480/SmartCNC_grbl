@@ -103,55 +103,55 @@ function getStateBadge(state: MachineState, connected: boolean) {
   if (!connected || state === 'Disconnected') {
     return {
       label: 'DÉCONNECTÉ',
-      badgeClass: 'bg-slate-100 text-slate-600 border-slate-300',
-      dotClass: 'bg-slate-400',
+      badgeClass: 'bg-[#1b2436] text-slate-300 border-slate-700',
+      dotClass: 'bg-slate-500',
       icon: WifiOff,
     };
   }
   if (state === 'Idle') {
     return {
       label: 'PRÊT (IDLE)',
-      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-      dotClass: 'bg-emerald-500 animate-pulse',
+      badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+      dotClass: 'bg-emerald-400 animate-pulse',
       icon: CheckCircle2,
     };
   }
   if (state === 'Run') {
     return {
       label: 'EN USINAGE',
-      badgeClass: 'bg-sky-50 text-sky-800 border-sky-300',
-      dotClass: 'bg-sky-500 animate-pulse',
+      badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/40',
+      dotClass: 'bg-sky-400 animate-pulse',
       icon: Play,
     };
   }
   if (state === 'Jog') {
     return {
       label: 'JOGGING',
-      badgeClass: 'bg-blue-50 text-blue-800 border-blue-300',
-      dotClass: 'bg-blue-500 animate-pulse',
+      badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/40',
+      dotClass: 'bg-blue-400 animate-pulse',
       icon: Navigation,
     };
   }
   if (state.startsWith('Hold')) {
     return {
       label: `PAUSE (${state})`,
-      badgeClass: 'bg-amber-50 text-amber-900 border-amber-300',
-      dotClass: 'bg-amber-500 animate-ping',
+      badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
+      dotClass: 'bg-amber-400 animate-ping',
       icon: Pause,
     };
   }
   if (state === 'Alarm') {
     return {
       label: 'ALARME GRBL',
-      badgeClass: 'bg-red-50 text-red-900 border-red-400 animate-pulse',
-      dotClass: 'bg-red-600 animate-ping',
+      badgeClass: 'bg-red-600/25 text-red-200 border-red-500/60 animate-pulse',
+      dotClass: 'bg-red-500 animate-ping',
       icon: AlertTriangle,
     };
   }
   return {
     label: state.toUpperCase(),
-    badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
-    dotClass: 'bg-amber-500',
+    badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
+    dotClass: 'bg-amber-400',
     icon: AlertTriangle,
   };
 }
@@ -412,20 +412,20 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-100 text-slate-900 select-none touch-manipulation flex flex-col font-sans pb-28">
+    <div className="min-h-screen w-full bg-[#0b0f17] text-slate-100 select-none touch-manipulation flex flex-col font-sans pb-28">
       {/* =====================================================================
           EN-TÊTE PENDANT : ÉTAT MACHINE, DÉVERROUILLER $X & BASCULE BUREAU
       ===================================================================== */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-300 px-3 py-2.5 shadow-xs flex items-center justify-between gap-2">
+      <header className="sticky top-0 z-40 bg-[#111622] border-b border-slate-800 px-3 py-2.5 shadow-lg flex items-center justify-between gap-2">
         {/* Titre & Badge d'état */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-[#090d14] border border-slate-700 flex items-center justify-center text-sky-400 shrink-0 shadow-xs">
             <Smartphone className="w-4 h-4 text-sky-400" />
           </div>
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0 gap-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm text-slate-900 tracking-tight">SmartCNC</span>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 border border-sky-300">
+              <span className="font-extrabold text-sm text-slate-50 tracking-tight">SmartCNC</span>
+              <span className="text-[11px] uppercase font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/40">
                 Pendant
               </span>
             </div>
@@ -446,13 +446,13 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
             type="button"
             onClick={handleUnlock}
             title="Déverrouiller GRBL ($X)"
-            className={`flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold border transition-colors shadow-xs cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-1 min-h-10 px-3 py-2 rounded-xl text-xs font-bold border transition-colors shadow-xs cursor-pointer active:scale-95 ${
               isAlarm
-                ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 ring-2 ring-amber-400 animate-pulse'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-300'
+                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300 ring-2 ring-amber-400/50 animate-pulse'
+                : 'bg-[#1b2436] hover:bg-[#243047] text-slate-100 border-slate-700'
             }`}
           >
-            <Unlock className="w-4 h-4 text-amber-500 shrink-0" />
+            <Unlock className={`w-4 h-4 shrink-0 ${isAlarm ? 'text-slate-950' : 'text-amber-400'}`} />
             <span>$X</span>
           </button>
 
@@ -460,7 +460,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
             type="button"
             onClick={onExitPendant}
             title="Basculer vers l'interface complète Desktop"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white border border-slate-900 shadow-xs cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 min-h-10 px-3 py-2 rounded-xl text-xs font-bold bg-[#1b2436] hover:bg-[#243047] text-slate-100 border border-slate-700 shadow-xs cursor-pointer active:scale-95"
           >
             <Monitor className="w-4 h-4 text-sky-300 shrink-0" />
             <span className="hidden xs:inline">Bureau</span>
@@ -472,14 +472,14 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           BANNIÈRE D'ALARME GRBL (SI ACTIVE)
       ===================================================================== */}
       {isAlarm && (
-        <div className="bg-red-50 border-b border-red-300 p-3 flex items-start justify-between gap-3 text-red-950 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="bg-red-950/60 border-b border-red-500/50 p-3 flex items-start justify-between gap-3 text-red-100 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div>
-              <div className="text-xs font-extrabold uppercase tracking-wide text-red-900">
+              <div className="text-xs font-extrabold uppercase tracking-wide text-red-200">
                 {alarmDetail?.title || `Alarme GRBL #${status.alarmCode || '?'}`}
               </div>
-              <div className="text-xs text-red-800 mt-0.5 leading-snug">
+              <div className="text-xs text-red-100 mt-0.5 leading-snug">
                 {alarmDetail?.desc || status.alarmMessage || 'Machine verrouillée pour sécurité.'}
               </div>
             </div>
@@ -487,7 +487,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           <button
             type="button"
             onClick={handleUnlock}
-            className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold shrink-0 shadow-xs cursor-pointer active:scale-95"
+            className="min-h-9 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shrink-0 shadow-xs cursor-pointer active:scale-95"
           >
             Déverrouiller ($X)
           </button>
@@ -501,17 +501,17 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
         {/* ===================================================================
             SECTION 1 : DRO TACTILE GÉANT (LISIBLE À 1 MÈTRE)
         =================================================================== */}
-        <section className="bg-white border border-slate-300 rounded-2xl p-3.5 shadow-sm flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <section className="bg-[#141b27] border border-slate-800 rounded-2xl p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.28)] flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div className="flex items-center gap-2">
-              <Gauge className="w-4 h-4 text-slate-700" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <Gauge className="w-4 h-4 text-sky-400" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                 Coordonnées Pièce (DRO)
               </h2>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              <span className="font-bold">{status.activeWCS}</span>
-              <span>•</span>
+            <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-200 bg-[#090d14] px-2.5 py-0.5 rounded border border-slate-800">
+              <span className="font-bold text-sky-300">{status.activeWCS}</span>
+              <span className="text-slate-600">•</span>
               <span>{status.unit.toUpperCase()}</span>
             </div>
           </div>
@@ -519,16 +519,16 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           {/* AXES X, Y, Z EN GRANDS CHIFFRES */}
           <div className="flex flex-col gap-2">
             {/* AXE X */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div className="bg-[#090d14] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-9 h-9 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 flex items-center justify-center font-black text-lg shrink-0">
+                <span className="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/40 flex items-center justify-center font-black text-lg shrink-0">
                   X
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none truncate">
+                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-50 tracking-tight leading-none truncate">
                     {formatCoord(status.wpos.x)}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-600 mt-1">
+                  <span className="text-[11px] font-mono text-slate-300 mt-1">
                     MPos: {formatCoord(status.mpos.x)}
                   </span>
                 </div>
@@ -538,23 +538,23 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 disabled={!isMotionAllowed}
                 onClick={() => handleZeroWork('X')}
                 title="Mettre X = 0 à la position actuelle"
-                className="min-w-[76px] h-12 rounded-xl bg-white hover:bg-rose-50 border-2 border-rose-400 text-rose-800 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
+                className="min-w-[76px] h-12 rounded-xl bg-[#1b2436] hover:bg-rose-950/60 border-2 border-rose-500/60 text-rose-200 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
               >
                 X = 0
               </button>
             </div>
 
             {/* AXE Y */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div className="bg-[#090d14] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-black text-lg shrink-0">
+                <span className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 flex items-center justify-center font-black text-lg shrink-0">
                   Y
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none truncate">
+                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-50 tracking-tight leading-none truncate">
                     {formatCoord(status.wpos.y)}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-600 mt-1">
+                  <span className="text-[11px] font-mono text-slate-300 mt-1">
                     MPos: {formatCoord(status.mpos.y)}
                   </span>
                 </div>
@@ -564,23 +564,23 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 disabled={!isMotionAllowed}
                 onClick={() => handleZeroWork('Y')}
                 title="Mettre Y = 0 à la position actuelle"
-                className="min-w-[76px] h-12 rounded-xl bg-white hover:bg-emerald-50 border-2 border-emerald-500 text-emerald-800 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
+                className="min-w-[76px] h-12 rounded-xl bg-[#1b2436] hover:bg-emerald-950/60 border-2 border-emerald-500/60 text-emerald-200 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
               >
                 Y = 0
               </button>
             </div>
 
             {/* AXE Z */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div className="bg-[#090d14] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-9 h-9 rounded-lg bg-sky-100 text-sky-800 border border-sky-300 flex items-center justify-center font-black text-lg shrink-0">
+                <span className="w-10 h-10 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/40 flex items-center justify-center font-black text-lg shrink-0">
                   Z
                 </span>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none truncate">
+                  <span className="font-mono text-3xl sm:text-4xl font-black text-slate-50 tracking-tight leading-none truncate">
                     {formatCoord(status.wpos.z)}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-600 mt-1">
+                  <span className="text-[11px] font-mono text-slate-300 mt-1">
                     MPos: {formatCoord(status.mpos.z)}
                   </span>
                 </div>
@@ -590,7 +590,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 disabled={!isMotionAllowed}
                 onClick={() => handleZeroWork('Z')}
                 title="Mettre Z = 0 à la position actuelle"
-                className="min-w-[76px] h-12 rounded-xl bg-white hover:bg-sky-50 border-2 border-sky-500 text-sky-800 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
+                className="min-w-[76px] h-12 rounded-xl bg-[#1b2436] hover:bg-sky-950/60 border-2 border-sky-500/60 text-sky-200 text-sm font-extrabold shadow-xs transition-transform active:scale-90 cursor-pointer disabled:opacity-40 flex items-center justify-center"
               >
                 Z = 0
               </button>
@@ -598,13 +598,13 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           </div>
 
           {/* GROS BOUTONS D'ORIGINES RAPIDES */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800">
             {/* Prendre Origine Pièce (XYZ = 0) */}
             <button
               type="button"
               disabled={!isMotionAllowed}
               onClick={() => handleZeroWork('ALL')}
-              className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
+              className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-300 text-slate-950 font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
             >
               <Target className="w-5 h-5 shrink-0" />
               <span>Prendre Origine Pièce (XYZ = 0)</span>
@@ -619,7 +619,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                   onSendCommand('$H');
                 }}
                 title="Lancer le cycle Homing automatique sur les capteurs de fin de course ($H)"
-                className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
+                className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-sky-400 hover:bg-sky-300 active:bg-sky-200 text-slate-950 font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
               >
                 <Home className="w-5 h-5 shrink-0" />
                 <span>Cycle Homing ($H)</span>
@@ -630,9 +630,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 disabled={!isMotionAllowed}
                 onClick={handleMachineZeroHere}
                 title="Définit la position actuelle comme 0 Machine sans capteurs"
-                className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 active:bg-amber-200 border-2 border-amber-500 text-amber-900 font-bold text-sm shadow-xs transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
+                className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/35 border-2 border-amber-400/70 text-amber-200 font-bold text-sm shadow-xs transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
               >
-                <LocateFixed className="w-5 h-5 text-amber-700 shrink-0" />
+                <LocateFixed className="w-5 h-5 text-amber-300 shrink-0" />
                 <span>Mettre Machine à 0;0;0</span>
               </button>
             )}
@@ -647,9 +647,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 triggerHaptic(30);
                 onSendCommand('G90 G0 X0 Y0');
               }}
-              className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-800 active:scale-95 cursor-pointer disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl bg-[#1b2436] hover:bg-[#243047] border border-slate-700 text-xs font-bold text-slate-100 active:scale-95 cursor-pointer disabled:opacity-40"
             >
-              <Navigation className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <Navigation className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span>Aller à X0 Y0</span>
             </button>
 
@@ -660,9 +660,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 triggerHaptic(30);
                 onSendCommand('G90 G0 Z10');
               }}
-              className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-bold text-slate-800 active:scale-95 cursor-pointer disabled:opacity-40"
+              className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl bg-[#1b2436] hover:bg-[#243047] border border-slate-700 text-xs font-bold text-slate-100 active:scale-95 cursor-pointer disabled:opacity-40"
             >
-              <ArrowUpToLine className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <ArrowUpToLine className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span>Monter Z Sécurité (+10)</span>
             </button>
           </div>
@@ -671,22 +671,22 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
         {/* ===================================================================
             SECTION 2 : PAVÉ DE JOGGING HAUTE RÉACTIVITÉ
         =================================================================== */}
-        <section className="bg-white border border-slate-300 rounded-2xl p-3.5 shadow-sm flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <section className="bg-[#141b27] border border-slate-800 rounded-2xl p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.28)] flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-slate-700" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <Sliders className="w-4 h-4 text-sky-400" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                 Pavé de Jogging Tactile
               </h2>
             </div>
-            <div className="text-[11px] font-mono text-slate-600">
-              Vitesse : <strong className="text-slate-800">{xyFeedRate}</strong> mm/min
+            <div className="text-xs font-mono text-slate-300">
+              Vitesse : <strong className="text-slate-50">{xyFeedRate}</strong> mm/min
             </div>
           </div>
 
           {/* SÉLECTEUR DE PAS TACTILE GÉANT */}
           <div className="flex flex-col gap-1.5">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
               Incrément de Pas :
             </div>
             <div className="grid grid-cols-6 gap-1.5">
@@ -703,8 +703,8 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                     }}
                     className={`h-11 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
                       isSelected
-                        ? 'bg-sky-600 text-white border-2 border-sky-700 shadow-md scale-102'
-                        : 'bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-200'
+                        ? 'bg-sky-400 text-slate-950 border-2 border-sky-300 shadow-md scale-102'
+                        : 'bg-[#1b2436] text-slate-100 border border-slate-700 hover:bg-[#243047]'
                     }`}
                   >
                     {val}
@@ -721,8 +721,8 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 }}
                 className={`h-11 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
                   jogMode === 'continuous'
-                    ? 'bg-amber-600 text-white border-2 border-amber-700 shadow-md scale-102'
-                    : 'bg-slate-100 text-amber-800 border border-slate-300 hover:bg-amber-50'
+                    ? 'bg-amber-400 text-slate-950 border-2 border-amber-300 shadow-md scale-102'
+                    : 'bg-[#1b2436] text-amber-300 border border-slate-700 hover:bg-[#243047]'
                 }`}
                 title="Maintenir la touche enfoncée pour avancer, relâcher pour stopper"
               >
@@ -742,10 +742,10 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, -1, 1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 flex flex-col items-center justify-center text-slate-700 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
+                className="h-16 rounded-xl bg-[#1b2436] hover:bg-[#243047] active:bg-[#2d3b56] border border-slate-700 flex flex-col items-center justify-center text-slate-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
               >
-                <ArrowUpLeft className="w-6 h-6 text-slate-600" />
-                <span className="text-[10px] font-mono font-bold mt-0.5">X- Y+</span>
+                <ArrowUpLeft className="w-6 h-6 text-slate-300" />
+                <span className="text-[11px] font-mono font-bold mt-0.5">X- Y+</span>
               </button>
 
               <button
@@ -754,9 +754,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 0, 1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border-2 border-emerald-400 flex flex-col items-center justify-center text-emerald-900 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="h-16 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 active:bg-emerald-800/60 border-2 border-emerald-500/60 flex flex-col items-center justify-center text-emerald-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowUp className="w-7 h-7 text-emerald-700 stroke-[2.5]" />
+                <ArrowUp className="w-7 h-7 text-emerald-300 stroke-[2.5]" />
                 <span className="text-xs font-mono font-black">Y+</span>
               </button>
 
@@ -766,10 +766,10 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 1, 1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 flex flex-col items-center justify-center text-slate-700 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
+                className="h-16 rounded-xl bg-[#1b2436] hover:bg-[#243047] active:bg-[#2d3b56] border border-slate-700 flex flex-col items-center justify-center text-slate-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
               >
-                <ArrowUpRight className="w-6 h-6 text-slate-600" />
-                <span className="text-[10px] font-mono font-bold mt-0.5">X+ Y+</span>
+                <ArrowUpRight className="w-6 h-6 text-slate-300" />
+                <span className="text-[11px] font-mono font-bold mt-0.5">X+ Y+</span>
               </button>
 
               {/* Ligne 2 : X- | STOP JOG | X+ */}
@@ -779,9 +779,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, -1, 0, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 border-2 border-rose-400 flex flex-col items-center justify-center text-rose-900 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="h-16 rounded-xl bg-rose-950/50 hover:bg-rose-900/60 active:bg-rose-800/60 border-2 border-rose-500/60 flex flex-col items-center justify-center text-rose-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowLeft className="w-7 h-7 text-rose-700 stroke-[2.5]" />
+                <ArrowLeft className="w-7 h-7 text-rose-300 stroke-[2.5]" />
                 <span className="text-xs font-mono font-black">X-</span>
               </button>
 
@@ -790,7 +790,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 type="button"
                 onClick={handleStopJog}
                 title="Arrêter immédiatement le déplacement Jog"
-                className="h-16 rounded-xl bg-slate-800 hover:bg-slate-900 active:bg-black border-2 border-slate-900 text-white flex flex-col items-center justify-center shadow-md transition-transform active:scale-92 cursor-pointer"
+                className="h-16 rounded-xl bg-[#090d14] hover:bg-slate-900 active:bg-black border-2 border-red-500/60 text-white flex flex-col items-center justify-center shadow-md transition-transform active:scale-92 cursor-pointer"
               >
                 <OctagonX className="w-6 h-6 text-red-400" />
                 <span className="text-[11px] font-black uppercase tracking-tight mt-0.5">
@@ -804,9 +804,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 1, 0, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 border-2 border-rose-400 flex flex-col items-center justify-center text-rose-900 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="h-16 rounded-xl bg-rose-950/50 hover:bg-rose-900/60 active:bg-rose-800/60 border-2 border-rose-500/60 flex flex-col items-center justify-center text-rose-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowRight className="w-7 h-7 text-rose-700 stroke-[2.5]" />
+                <ArrowRight className="w-7 h-7 text-rose-300 stroke-[2.5]" />
                 <span className="text-xs font-mono font-black">X+</span>
               </button>
 
@@ -817,10 +817,10 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, -1, -1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 flex flex-col items-center justify-center text-slate-700 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
+                className="h-16 rounded-xl bg-[#1b2436] hover:bg-[#243047] active:bg-[#2d3b56] border border-slate-700 flex flex-col items-center justify-center text-slate-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
               >
-                <ArrowDownLeft className="w-6 h-6 text-slate-600" />
-                <span className="text-[10px] font-mono font-bold mt-0.5">X- Y-</span>
+                <ArrowDownLeft className="w-6 h-6 text-slate-300" />
+                <span className="text-[11px] font-mono font-bold mt-0.5">X- Y-</span>
               </button>
 
               <button
@@ -829,9 +829,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 0, -1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border-2 border-emerald-400 flex flex-col items-center justify-center text-emerald-900 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="h-16 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 active:bg-emerald-800/60 border-2 border-emerald-500/60 flex flex-col items-center justify-center text-emerald-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowDown className="w-7 h-7 text-emerald-700 stroke-[2.5]" />
+                <ArrowDown className="w-7 h-7 text-emerald-300 stroke-[2.5]" />
                 <span className="text-xs font-mono font-black">Y-</span>
               </button>
 
@@ -841,10 +841,10 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 1, -1, 0)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="h-16 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 flex flex-col items-center justify-center text-slate-700 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
+                className="h-16 rounded-xl bg-[#1b2436] hover:bg-[#243047] active:bg-[#2d3b56] border border-slate-700 flex flex-col items-center justify-center text-slate-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40"
               >
-                <ArrowDownRight className="w-6 h-6 text-slate-600" />
-                <span className="text-[10px] font-mono font-bold mt-0.5">X+ Y-</span>
+                <ArrowDownRight className="w-6 h-6 text-slate-300" />
+                <span className="text-[11px] font-mono font-bold mt-0.5">X+ Y-</span>
               </button>
             </div>
 
@@ -857,11 +857,11 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 0, 0, 1)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="flex-1 min-h-[100px] rounded-xl bg-sky-50 hover:bg-sky-100 active:bg-sky-200 border-2 border-sky-400 flex flex-col items-center justify-center text-sky-950 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="flex-1 min-h-[100px] rounded-xl bg-sky-950/50 hover:bg-sky-900/60 active:bg-sky-800/60 border-2 border-sky-500/60 flex flex-col items-center justify-center text-sky-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowUp className="w-8 h-8 text-sky-700 stroke-[3]" />
+                <ArrowUp className="w-8 h-8 text-sky-300 stroke-[3]" />
                 <span className="text-sm font-mono font-black mt-1">Z+</span>
-                <span className="text-[10px] font-bold text-sky-800">Monter</span>
+                <span className="text-[11px] font-bold text-sky-300">Monter</span>
               </button>
 
               {/* Z- (Descendre la fraise) */}
@@ -871,11 +871,11 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                 onPointerDown={(e) => handleJogPointerDown(e, 0, 0, -1)}
                 onPointerUp={handleJogPointerUp}
                 onPointerCancel={handleJogPointerCancel}
-                className="flex-1 min-h-[100px] rounded-xl bg-sky-50 hover:bg-sky-100 active:bg-sky-200 border-2 border-sky-400 flex flex-col items-center justify-center text-sky-950 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
+                className="flex-1 min-h-[100px] rounded-xl bg-sky-950/50 hover:bg-sky-900/60 active:bg-sky-800/60 border-2 border-sky-500/60 flex flex-col items-center justify-center text-sky-200 transition-transform active:scale-92 cursor-pointer disabled:opacity-40 shadow-xs"
               >
-                <ArrowDown className="w-8 h-8 text-sky-700 stroke-[3]" />
+                <ArrowDown className="w-8 h-8 text-sky-300 stroke-[3]" />
                 <span className="text-sm font-mono font-black mt-1">Z-</span>
-                <span className="text-[10px] font-bold text-sky-800">Descendre</span>
+                <span className="text-[11px] font-bold text-sky-300">Descendre</span>
               </button>
             </div>
           </div>
@@ -884,25 +884,25 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
         {/* ===================================================================
             SECTION 3 : PALPAGE Z-PROBE RAPIDE (TOUCH PLATE)
         =================================================================== */}
-        <section className="bg-white border border-slate-300 rounded-2xl p-3.5 shadow-sm flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <section className="bg-[#141b27] border border-slate-800 rounded-2xl p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.28)] flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-blue-600" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <Radio className="w-4 h-4 text-sky-400" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                 Palpage Z Rapide (Sonde Pin A5)
               </h2>
             </div>
             {/* Indicateur de contact sonde en direct */}
             <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
+              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
                 status.pins.probe
-                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-400 animate-pulse'
-                  : 'bg-slate-100 text-slate-600 border border-slate-300'
+                  ? 'bg-emerald-500/15 text-emerald-200 border-emerald-500/50 animate-pulse'
+                  : 'bg-[#090d14] text-slate-300 border-slate-800'
               }`}
             >
               <span
                 className={`w-2 h-2 rounded-full ${
-                  status.pins.probe ? 'bg-emerald-600' : 'bg-slate-400'
+                  status.pins.probe ? 'bg-emerald-400' : 'bg-slate-500'
                 }`}
               />
               <span>{status.pins.probe ? 'CONTACT FERMÉ' : 'SONDE OUVERTE'}</span>
@@ -911,9 +911,9 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
 
           {/* Choix rapide de l'épaisseur de cale */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-300">
               <span>Épaisseur de Cale Z :</span>
-              <span className="font-mono text-blue-700 font-extrabold text-xs">
+              <span className="font-mono text-sky-300 font-extrabold text-xs">
                 {plateThickness.toFixed(2)} mm
               </span>
             </div>
@@ -926,10 +926,10 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
                     key={plate.label}
                     type="button"
                     onClick={() => handleApplyThickness(plate.thickness)}
-                    className={`py-2 px-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer active:scale-95 text-center ${
+                    className={`min-h-10 py-2 px-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer active:scale-95 text-center ${
                       isSelected
-                        ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-300'
+                        ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-xs font-extrabold'
+                        : 'bg-[#1b2436] hover:bg-[#243047] text-slate-100 border-slate-700'
                     }`}
                   >
                     {plate.label}
@@ -944,7 +944,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
             type="button"
             disabled={!isMotionAllowed}
             onClick={handleLaunchZProbe}
-            className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
+            className="flex items-center justify-center gap-2 h-13 px-4 rounded-xl bg-sky-400 hover:bg-sky-300 active:bg-sky-200 text-slate-950 font-extrabold text-sm shadow-md transition-transform active:scale-95 cursor-pointer disabled:opacity-40"
           >
             <Play className="w-5 h-5 fill-current shrink-0" />
             <span>Lancer Palpage Z Direct ({plateThickness.toFixed(1)} mm)</span>
@@ -955,13 +955,13 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
       {/* =====================================================================
           BARRE D'URGENCE FIXE EN BAS D'ÉCRAN (ACCÈS RAPIDE INCONDITIONNEL)
       ===================================================================== */}
-      <footer className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t-2 border-slate-300 px-3 py-2 shadow-2xl flex items-center gap-2">
+      <footer className="fixed bottom-0 inset-x-0 z-50 bg-[#111622]/95 backdrop-blur-md border-t-2 border-slate-800 px-3 py-2 shadow-2xl flex items-center gap-2">
         {/* GROS BOUTON STOP URGENCE */}
         <button
           type="button"
           onClick={handleEmergencyStop}
           title="Arrêt d'urgence immédiat (Soft Reset 0x18)"
-          className="flex-1 h-13 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white flex items-center justify-center gap-2 font-black text-sm uppercase tracking-wider shadow-lg border-2 border-red-700 cursor-pointer active:scale-95"
+          className="flex-1 h-13 rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 text-white flex items-center justify-center gap-2 font-black text-sm uppercase tracking-wider shadow-lg border-2 border-red-400/60 cursor-pointer active:scale-95"
         >
           <AlertOctagon className="w-6 h-6 shrink-0 animate-pulse" />
           <span>STOP URGENCE</span>
@@ -973,7 +973,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           disabled={!status.connected || (!isRunning && status.state !== 'Jog')}
           onClick={handlePause}
           title="Mettre en pause (Feed Hold !)"
-          className="h-13 px-3.5 sm:px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-35 disabled:pointer-events-none active:scale-95"
+          className="h-13 px-3.5 sm:px-4 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-35 disabled:pointer-events-none active:scale-95"
         >
           <Pause className="w-5 h-5 fill-current shrink-0" />
           <span>Pause (!)</span>
@@ -985,7 +985,7 @@ export const MobilePendantView: React.FC<MobilePendantViewProps> = ({
           disabled={!status.connected || !isPaused}
           onClick={handleResume}
           title="Reprendre l'usinage (Cycle Start ~)"
-          className="h-13 px-3.5 sm:px-4 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-35 disabled:pointer-events-none active:scale-95"
+          className="h-13 px-3.5 sm:px-4 rounded-xl bg-sky-400 hover:bg-sky-300 active:bg-sky-500 text-slate-950 font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-35 disabled:pointer-events-none active:scale-95"
         >
           <Play className="w-5 h-5 fill-current shrink-0" />
           <span>Reprendre (~)</span>
